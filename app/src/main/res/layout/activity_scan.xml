@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".ScanActivity">
+
+    <include
+        android:id="@+id/include"
+        layout="@layout/app_bar_scan_photo" />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <org.opencv.android.JavaCameraView
+            android:id="@+id/svScan"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentBottom="true"
+            app:camera_id="any"
+            app:show_fps="true"/>
+    </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/linlay1"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:background="@color/color_white"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/ivCamera"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="10dp"
+            android:src="@drawable/ic_photo_camera" />
+    </LinearLayout>
+
+</LinearLayout>
