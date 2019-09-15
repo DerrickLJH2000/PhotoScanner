@@ -24,13 +24,20 @@
             android:layout_alignParentBottom="true"
             app:camera_id="any"
             app:show_fps="true"/>
+        <ImageView
+            android:id="@+id/ivResult"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentBottom="true"
+            android:visibility="gone"/>
     </RelativeLayout>
 
     <LinearLayout
         android:id="@+id/linlay1"
         android:layout_width="match_parent"
         android:layout_height="55dp"
-        android:background="@color/color_white"
+        android:background="@color/colorPrimary"
         android:gravity="center"
         android:orientation="horizontal">
 
