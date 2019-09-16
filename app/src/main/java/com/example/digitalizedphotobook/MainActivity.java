@@ -42,54 +42,40 @@ public class MainActivity extends AppCompatActivity {
                 Manifest.permission.CAMERA);
 
         if (permissionCheck == PermissionChecker.PERMISSION_GRANTED) {
+            rvSavedPhotos.setHasFixedSize(true);
+            layManager = new GridLayoutManager(this, 3);
+            rvSavedPhotos.setLayoutManager(layManager);
 
+            adapter = new SavedPhotoAdapter(photoArr);
+            rvSavedPhotos.setAdapter(adapter);
+            photoArr.add("Sample 1");
+            photoArr.add("Sample 2");
+            photoArr.add("Sample 3");
+            photoArr.add("Sample 4");
+
+            ivCameraIntent.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    //Toast.makeText(MainActivity.this, "Launch Scan Activity", Toast.LENGTH_SHORT).show();
+                    Intent i = new Intent(MainActivity.this, ScanActivity.class);
+                    startActivity(i);
+                }
+            });
+
+            ivLoadGallery.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent i = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                    startActivityForResult(i, IMAGE_PICKER_SELECT);
+                }
+            });
 
         } else {
             Log.e("Permission Status" , "Permission not granted");
             ActivityCompat.requestPermissions(MainActivity.this,
                     new String[]{Manifest.permission.CAMERA},reqPermissionId);
         }
-        rvSavedPhotos.setHasFixedSize(true);
-        layManager = new GridLayoutManager(this, 3);
-        rvSavedPhotos.setLayoutManager(layManager);
 
-        adapter = new SavedPhotoAdapter(photoArr);
-        rvSavedPhotos.setAdapter(adapter);
-        // Retrieve all images from SQLite database, convert file/base64 to bitmap
-        photoArr.add("Sample 1");
-        photoArr.add("Sample 2");
-        photoArr.add("Sample 3");
-        photoArr.add("Sample 4");
-        photoArr.add("Sample 5");
-        photoArr.add("Sample 6");
-        photoArr.add("Sample 7");
-        photoArr.add("Sample 8");
-        photoArr.add("Sample 9");
-        photoArr.add("Sample 1");
-        photoArr.add("Sample 2");
-        photoArr.add("Sample 3");
-        photoArr.add("Sample 4");
-        photoArr.add("Sample 5");
-        photoArr.add("Sample 6");
-        photoArr.add("Sample 7");
-        photoArr.add("Sample 8");
-        photoArr.add("Sample 9");
-        ivCameraIntent.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //Toast.makeText(MainActivity.this, "Launch Scan Activity", Toast.LENGTH_SHORT).show();
-                Intent i = new Intent(MainActivity.this, ScanActivity.class);
-                startActivity(i);
-            }
-        });
-
-        ivLoadGallery.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent i = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                startActivityForResult(i, IMAGE_PICKER_SELECT);
-            }
-        });
     }
 
     @Override
