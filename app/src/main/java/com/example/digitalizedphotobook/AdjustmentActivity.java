@@ -62,7 +62,7 @@ public class AdjustmentActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
 
         Bitmap bitmap = ((BitmapDrawable) ivAdjust.getDrawable()).getBitmap();
-        Utils.bitmapToMat(bitmap, imgMat);
+//        Utils.bitmapToMat(bitmap, imgMat);
 
         final String[] matArr = this.getResources().getStringArray(R.array.mats);
 
