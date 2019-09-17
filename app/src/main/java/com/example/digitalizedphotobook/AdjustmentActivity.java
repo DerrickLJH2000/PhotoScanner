@@ -1,11 +1,17 @@
 package com.example.digitalizedphotobook;
 
+import android.Manifest;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Handler;
+import android.support.annotation.NonNull;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.content.PermissionChecker;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -15,6 +21,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -25,7 +32,7 @@ import org.opencv.imgproc.Imgproc;
 
 public class AdjustmentActivity extends AppCompatActivity {
     private static final String TAG = "AdjustmentActivity";
-    ImageView ivBack, ivColour, ivConfirm, ivAdjust;
+    ImageView ivBack, ivColour, ivConfirm, ivAdjust, ivResult;
     RelativeLayout rellay1;
     ProgressBar progressBar;
     private int mProgressStatus = 0;
@@ -58,10 +65,15 @@ public class AdjustmentActivity extends AppCompatActivity {
         ivBack = findViewById(R.id.ivBack);
         ivColour = findViewById(R.id.ivColour);
         ivConfirm = findViewById(R.id.ivConfirm);
+        ivResult = findViewById(R.id.ivResult);
         rellay1 = findViewById(R.id.rellay1);
         progressBar = findViewById(R.id.progressBar);
 
-        Bitmap bitmap = ((BitmapDrawable) ivAdjust.getDrawable()).getBitmap();
+
+
+        /*byte[] byteArr = getIntent().getByteArrayExtra("image");
+        Bitmap bmp = BitmapFactory.decodeByteArray(byteArr,0,byteArr.length);
+        ivResult.setImageBitmap(bmp);*/
 //        Utils.bitmapToMat(bitmap, imgMat);
 
         final String[] matArr = this.getResources().getStringArray(R.array.mats);
@@ -101,7 +113,7 @@ public class AdjustmentActivity extends AppCompatActivity {
             public void onClick(View v) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(AdjustmentActivity.this);
                 builder.setTitle("Select Image Mode");
-                builder.setSingleChoiceItems(R.array.mats, -1, new DialogInterface.OnClickListener() {
+                builder.setSingleChoiceItems(R.array.mats, 0, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         selection = matArr[which];
@@ -156,6 +168,20 @@ public class AdjustmentActivity extends AppCompatActivity {
         } else {
             Log.d(TAG, "OpenCV library found inside package. Using it!");
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
+        }
+    }
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case 0: {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    map.setMyLocationEnabled(true);
+                } else {
+                    Toast.makeText(MainActivity.this, "Permission not granted", Toast.LENGTH_SHORT).show();
+                }
+            }
         }
     }
 

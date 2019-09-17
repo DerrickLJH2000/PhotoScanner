@@ -18,7 +18,7 @@
         android:elevation="5dp"
         android:src="@drawable/ic_arrow_back" />
 
-    <TextureView
+    <com.example.digitalizedphotobook.AutoFitTextureView
         android:id="@+id/tvScan"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
