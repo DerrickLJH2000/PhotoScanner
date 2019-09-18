@@ -2,14 +2,20 @@ package com.example.digitalizedphotobook;
 
 import android.Manifest;
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.graphics.drawable.BitmapDrawable;
+import android.media.ExifInterface;
+import android.os.Environment;
 import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.PermissionChecker;
 import android.support.v7.app.AlertDialog;
@@ -27,19 +33,23 @@ import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 
 public class AdjustmentActivity extends AppCompatActivity {
     private static final String TAG = "AdjustmentActivity";
     ImageView ivBack, ivColour, ivConfirm, ivAdjust, ivResult;
     RelativeLayout rellay1;
     ProgressBar progressBar;
-    private int mProgressStatus = 0;
-    private Handler mHandler = new Handler();
     private String selection;
-    Mat imgMat;
-
+    File mFile;
+    Bitmap bmp , newBmp;
+    Mat mat;
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -47,7 +57,6 @@ public class AdjustmentActivity extends AppCompatActivity {
                 case LoaderCallbackInterface.SUCCESS:
                 {
                     Log.i("OpenCV", "OpenCV loaded successfully");
-                    imgMat = new Mat();
                 } break;
                 default:
                 {
@@ -56,6 +65,9 @@ public class AdjustmentActivity extends AppCompatActivity {
             }
         }
     };
+
+    public AdjustmentActivity() {
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,38 +80,39 @@ public class AdjustmentActivity extends AppCompatActivity {
         ivResult = findViewById(R.id.ivResult);
         rellay1 = findViewById(R.id.rellay1);
         progressBar = findViewById(R.id.progressBar);
+        if (!OpenCVLoader.initDebug()) {
+            return;
+        }
+        int permissionCheck = ContextCompat.checkSelfPermission(AdjustmentActivity.this,
+                Manifest.permission.READ_EXTERNAL_STORAGE);
 
+        if (permissionCheck != PermissionChecker.PERMISSION_GRANTED) {
+            Log.i(TAG,"Permission Not Granted");
+            ActivityCompat.requestPermissions(AdjustmentActivity.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},0);
+            return;
+        }
 
+        String imagePath = getIntent().getStringExtra("image");
+        int reqCode = getIntent().getIntExtra("reqCode",-1);
+        Log.i("Testing", (reqCode) + imagePath);
+        if (reqCode == 0){
+            mFile = new File(imagePath);
+            bmp = BitmapFactory.decodeFile(mFile.getAbsolutePath());
+            Matrix matrix = new Matrix();
+            matrix.postRotate(90);
+            newBmp = Bitmap.createBitmap(bmp, 0, 0,bmp.getWidth(), bmp.getHeight(), matrix, true);
+            ivResult.setImageBitmap(newBmp);
 
-        /*byte[] byteArr = getIntent().getByteArrayExtra("image");
-        Bitmap bmp = BitmapFactory.decodeByteArray(byteArr,0,byteArr.length);
-        ivResult.setImageBitmap(bmp);*/
-//        Utils.bitmapToMat(bitmap, imgMat);
+        } else if (reqCode == 1) {
+            mFile = new File(imagePath);
+            newBmp = BitmapFactory.decodeFile(mFile.getAbsolutePath());
+            ivResult.setImageBitmap(newBmp);
+        }
+
+        mat = new Mat(newBmp.getWidth(), newBmp.getHeight(), CvType.CV_8UC1);
+        Utils.bitmapToMat(newBmp,mat);
 
         final String[] matArr = this.getResources().getStringArray(R.array.mats);
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (mProgressStatus < 100) {
-                    mProgressStatus++;
-                    android.os.SystemClock.sleep(50);
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            progressBar.setProgress(mProgressStatus);
-                        }
-                    });
-
-                }
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        rellay1.setVisibility(View.GONE);
-                    }
-                });
-            }
-        }).start();
 
         ivBack.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -113,25 +126,31 @@ public class AdjustmentActivity extends AppCompatActivity {
             public void onClick(View v) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(AdjustmentActivity.this);
                 builder.setTitle("Select Image Mode");
-                builder.setSingleChoiceItems(R.array.mats, 0, new DialogInterface.OnClickListener() {
+                builder.setSingleChoiceItems(R.array.mats, -1, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         selection = matArr[which];
                     }
                 });
-
                 builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         switch (selection) {
                             case "RGBA":
-                                Imgproc.cvtColor(imgMat, imgMat, Imgproc.COLOR_GRAY2RGB,4);
+                                Utils.matToBitmap(mat, newBmp);
+                                ivResult.setImageBitmap(newBmp);
                                 break;
                             case "Grey Scale":
-                                Imgproc.cvtColor(imgMat, imgMat, Imgproc.COLOR_RGB2GRAY);
+                                Mat greymat = new Mat(newBmp.getWidth(), newBmp.getHeight(), CvType.CV_8UC1);
+                                Imgproc.cvtColor(mat, greymat, Imgproc.COLOR_RGB2GRAY,1);
+                                Utils.matToBitmap(greymat, newBmp);
+                                ivResult.setImageBitmap(newBmp);
                                 break;
-                            case "B & W":
-                                Imgproc.cvtColor(imgMat, imgMat, Imgproc.THRESH_BINARY);
+                            case "Canny":
+                                Mat cannymat = new Mat(newBmp.getWidth(), newBmp.getHeight(), CvType.CV_8UC1);
+                                Imgproc.Canny(mat, cannymat, 50,150);
+                                Utils.matToBitmap(cannymat, newBmp);
+                                ivResult.setImageBitmap(newBmp);
                                 break;
                             default:
                                 return;
@@ -177,9 +196,8 @@ public class AdjustmentActivity extends AppCompatActivity {
         switch (requestCode) {
             case 0: {
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    map.setMyLocationEnabled(true);
                 } else {
-                    Toast.makeText(MainActivity.this, "Permission not granted", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(AdjustmentActivity.this, "Permission not granted", Toast.LENGTH_SHORT).show();
                 }
             }
         }

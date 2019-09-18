@@ -3,6 +3,7 @@ package com.example.digitalizedphotobook;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -39,6 +40,7 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.design.widget.FloatingActionButton;
@@ -94,7 +96,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ScanActivity extends AppCompatActivity {
 
-    private static final String TAG = "OCVSample:Activity";
+    private static final String TAG = "ScanActivity";
     private static final int REQUEST_CAMERA_PERMISSION = 1;
     private static final String FRAGMENT_DIALOG = "dialog";
     ImageView ivBack, ivFlash, ivGrid;
@@ -102,8 +104,7 @@ public class ScanActivity extends AppCompatActivity {
     Boolean grid = false;
     String flashmode = "OFF";
     Paint paint;
-    RelativeLayout rellay1;
-
+    RelativeLayout rellay1, rellay2;
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
@@ -202,7 +203,8 @@ public class ScanActivity extends AppCompatActivity {
     private Handler mBackgroundHandler;
     private ImageReader mImageReader;
     private File mFile;
-    private byte[] byteArr;
+    private Handler mHandler;
+    private ProgressBar progressBar;
 
     private final ImageReader.OnImageAvailableListener mOnImageAvailableListener
             = new ImageReader.OnImageAvailableListener() {
@@ -224,6 +226,7 @@ public class ScanActivity extends AppCompatActivity {
     private Semaphore mCameraOpenCloseLock = new Semaphore(1);
     private boolean mFlashSupported;
     private int mSensorOrientation;
+    private int progress;
 
     private CameraCaptureSession.CaptureCallback mCaptureCallback
             = new CameraCaptureSession.CaptureCallback() {
@@ -332,6 +335,7 @@ public class ScanActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_scan);
+        Log.i(TAG, "I am in onCreate");
 
         ivBack = findViewById(R.id.ivBack);
         ivFlash = findViewById(R.id.ivFlash);
@@ -339,7 +343,9 @@ public class ScanActivity extends AppCompatActivity {
         fabCamera = findViewById(R.id.fabCamera);
         mTextureView = (AutoFitTextureView) findViewById(R.id.tvScan);
         rellay1 = findViewById(R.id.rellay1);
-        mFile = new File(getExternalFilesDir(null), "temp.jpg");
+        rellay2 = findViewById(R.id.rellay2);
+        progressBar = findViewById(R.id.progressBar);
+        mFile = new File(getExternalFilesDir("Temp"), "temp.jpg");
         assert mTextureView != null;
         ivBack.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -350,21 +356,46 @@ public class ScanActivity extends AppCompatActivity {
         mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
         mTextureView.setWillNotDraw(false);
 
+
         fabCamera.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 takePicture();
-                new Handler().postDelayed(new Runnable() {
+                rellay2.setVisibility(View.VISIBLE);
+                getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                        WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+                mHandler = new Handler();
+                progress = progressBar.getProgress();
+
+                new Thread(new Runnable() {
                     @Override
                     public void run() {
+                        while (progress < 100) {
+                            progress++;
+                            android.os.SystemClock.sleep(50);
+                            mHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    progressBar.setProgress(progress);
+                                }
+                            });
 
-                        Intent i = new Intent(ScanActivity.this, AdjustmentActivity.class);
-                        /*if (byteArr != null) {
-                            i.putExtra("image", byteArr);
-                        }*/
-                        startActivity(i);
+                        }
+                        mHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                rellay2.setVisibility(View.GONE);
+                                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+                                Intent i = new Intent(ScanActivity.this, AdjustmentActivity.class);
+                                i.putExtra("image", mFile.getAbsolutePath());
+                                i.putExtra("reqCode", 1);
+                                startActivity(i);
+
+                            }
+                        });
                     }
-                }, 3000);
+                }).start();
+
             }
         });
 
@@ -409,7 +440,7 @@ public class ScanActivity extends AppCompatActivity {
     public void onResume() {
         super.onResume();
         startBackgroundThread();
-
+        Log.i(TAG, "I am in onResume");
         // When the screen is turned off and turned back on, the SurfaceTexture is already
         // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
         // a camera and start preview from here (otherwise, we wait until the surface is ready in
@@ -419,6 +450,7 @@ public class ScanActivity extends AppCompatActivity {
         } else {
             mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
         }
+
     }
 
     @Override
@@ -862,7 +894,7 @@ public class ScanActivity extends AppCompatActivity {
                 public void onCaptureCompleted(@NonNull CameraCaptureSession session,
                                                @NonNull CaptureRequest request,
                                                @NonNull TotalCaptureResult result) {
-                    showToast("Saved: " + mFile);
+                    //showToast("Saved: " + mFile);
                     Log.d(TAG, mFile.toString());
                     unlockFocus();
                 }
