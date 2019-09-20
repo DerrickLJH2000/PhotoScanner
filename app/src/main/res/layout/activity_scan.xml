@@ -7,39 +7,6 @@
     android:layout_height="match_parent"
     android:background="@color/color_dark_grey"
     tools:context=".ScanActivity">
-    <RelativeLayout
-        android:id="@+id/rellay2"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@color/color_dark_grey"
-        android:elevation="10dp"
-        android:visibility="gone">
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:layout_centerInParent="true"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Processing . . ."
-                android:textColor="@color/colorPrimary"
-                android:textSize="18sp"
-                android:layout_marginBottom="10dp"
-                android:textStyle="bold"/>
-            <ProgressBar
-                android:id="@+id/progressBar"
-                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="50dp"
-                android:layout_marginRight="50dp" />
-
-        </LinearLayout>
-
-    </RelativeLayout>
 
     <ImageView
         android:id="@+id/ivBack"

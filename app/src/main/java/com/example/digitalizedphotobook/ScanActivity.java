@@ -203,8 +203,6 @@ public class ScanActivity extends AppCompatActivity {
     private Handler mBackgroundHandler;
     private ImageReader mImageReader;
     private File mFile;
-    private Handler mHandler;
-    private ProgressBar progressBar;
 
     private final ImageReader.OnImageAvailableListener mOnImageAvailableListener
             = new ImageReader.OnImageAvailableListener() {
@@ -343,8 +341,6 @@ public class ScanActivity extends AppCompatActivity {
         fabCamera = findViewById(R.id.fabCamera);
         mTextureView = (AutoFitTextureView) findViewById(R.id.tvScan);
         rellay1 = findViewById(R.id.rellay1);
-        rellay2 = findViewById(R.id.rellay2);
-        progressBar = findViewById(R.id.progressBar);
         mFile = new File(getExternalFilesDir("Temp"), "temp.jpg");
         assert mTextureView != null;
         ivBack.setOnClickListener(new View.OnClickListener() {
@@ -361,40 +357,6 @@ public class ScanActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 takePicture();
-                rellay2.setVisibility(View.VISIBLE);
-                getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
-                        WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
-                mHandler = new Handler();
-                progress = progressBar.getProgress();
-
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        while (progress < 100) {
-                            progress++;
-                            android.os.SystemClock.sleep(50);
-                            mHandler.post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    progressBar.setProgress(progress);
-                                }
-                            });
-
-                        }
-                        mHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                rellay2.setVisibility(View.GONE);
-                                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
-                                Intent i = new Intent(ScanActivity.this, AdjustmentActivity.class);
-                                i.putExtra("image", mFile.getAbsolutePath());
-                                i.putExtra("reqCode", 1);
-                                startActivity(i);
-
-                            }
-                        });
-                    }
-                }).start();
 
             }
         });
@@ -928,6 +890,9 @@ public class ScanActivity extends AppCompatActivity {
             mState = STATE_PREVIEW;
             mCaptureSession.setRepeatingRequest(mPreviewRequest, mCaptureCallback,
                     mBackgroundHandler);
+            Intent intent = new Intent(ScanActivity.this,AdjustmentActivity.class);
+            intent.putExtra("image", mFile.getAbsolutePath());
+            startActivity(intent);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
