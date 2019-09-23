@@ -35,6 +35,7 @@ import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.example.digitalizedphotobook.helper.Quadrilateral;
+import com.example.digitalizedphotobook.views.HUDCanvasView;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -188,7 +189,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                                 ivResult.setImageBitmap(newBmp);
                                 break;
                             case "Canny":
-                                findContours(mat);
+
                                 ivResult.setImageBitmap(newBmp);
                                 break;
                             default:
