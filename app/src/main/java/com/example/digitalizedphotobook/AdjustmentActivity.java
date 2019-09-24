@@ -9,12 +9,14 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.shapes.PathShape;
 import android.media.ExifInterface;
 import android.os.Environment;
 import android.os.Handler;
@@ -35,7 +37,6 @@ import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.example.digitalizedphotobook.helper.Quadrilateral;
-import com.example.digitalizedphotobook.views.HUDCanvasView;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -58,12 +59,14 @@ import org.opencv.utils.Converters;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
 
 import static android.media.CamcorderProfile.get;
 import static org.opencv.core.CvType.CV_8UC3;
@@ -71,14 +74,20 @@ import static org.opencv.imgcodecs.Imgcodecs.imread;
 
 public class AdjustmentActivity extends AppCompatActivity {
     private static final String TAG = "AdjustmentActivity";
-    ImageView ivBack, ivColour, ivConfirm, ivRotateLeft, ivRotateRight, ivResult;
+    ImageView ivBack, ivColour, ivConfirm, ivRotateLeft, ivRotateRight, ivResult, ivWarped;
     RelativeLayout rellay1;
     ProgressBar progressBar;
     private String selection;
     File mFile;
     Bitmap bmp, newBmp;
-    Mat mat, blurmat;
-    private Random rng = new Random(12345);
+    Mat mat, drawing;
+    Quadrilateral quad;
+    private boolean colorMode = false;
+    private boolean filterMode = true;
+    private double colorGain = 1.5;       // contrast
+    private double colorBias = 0;         // bright
+    private int colorThresh = 110;
+
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -108,6 +117,7 @@ public class AdjustmentActivity extends AppCompatActivity {
         ivColour = findViewById(R.id.ivColour);
         ivConfirm = findViewById(R.id.ivConfirm);
         ivResult = findViewById(R.id.ivResult);
+        ivWarped = findViewById(R.id.ivWarped);
         rellay1 = findViewById(R.id.rellay1);
         if (!OpenCVLoader.initDebug()) {
             return;
@@ -140,6 +150,19 @@ public class AdjustmentActivity extends AppCompatActivity {
 
         mat = new Mat(newBmp.getWidth(), newBmp.getHeight(), CvType.CV_8UC1);
         Utils.bitmapToMat(newBmp, mat);
+
+        ArrayList<MatOfPoint> contours = findContours(mat);
+
+        Mat doc = new Mat(mat.size(), CvType.CV_8UC4);
+
+        if (quad != null) {
+
+        } else {
+            mat.copyTo(doc);
+            Log.i("Points", "failed");
+        }
+        enhanceDocument(doc);
+        ivResult.setImageBitmap(newBmp);
 
         final String[] matArr = this.getResources().getStringArray(R.array.mats);
 
@@ -185,12 +208,27 @@ public class AdjustmentActivity extends AppCompatActivity {
                             case "Grey Scale":
                                 Mat greyscale = new Mat(newBmp.getWidth(), newBmp.getHeight(), CvType.CV_8UC1);
                                 Imgproc.cvtColor(mat, greyscale, Imgproc.COLOR_RGB2GRAY, 1);
+                                Imgproc.GaussianBlur(greyscale, greyscale, new Size(5, 5), 0);
+                                Imgproc.dilate(greyscale, greyscale, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
+                                Imgproc.erode(greyscale, greyscale, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3,3)));
+
+                                Imgproc.Canny(greyscale, greyscale, 50, 150);
                                 Utils.matToBitmap(greyscale, newBmp);
                                 ivResult.setImageBitmap(newBmp);
                                 break;
                             case "Canny":
-
-                                ivResult.setImageBitmap(newBmp);
+//                                ArrayList<MatOfPoint> contours = findContours(mat);
+//
+//                                Mat doc = new Mat(mat.size(), CvType.CV_8UC4);
+//
+//                                if (quad != null) {
+//
+//                                } else {
+//                                    mat.copyTo(doc);
+//                                    Log.i("Points", "failed");
+//                                }
+//                                enhanceDocument(doc);
+//                                ivResult.setImageBitmap(newBmp);
                                 break;
                             default:
                                 return;
@@ -211,7 +249,11 @@ public class AdjustmentActivity extends AppCompatActivity {
         ivConfirm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                Mat dest = new Mat();
+                Mat doc = fourPointTransform(drawing,quad.points);
+                doc.convertTo(dest,CvType.CV_8UC4);
+                Utils.matToBitmap(dest, newBmp);
+                ivResult.setImageBitmap(newBmp);
             }
         });
     }
@@ -241,8 +283,7 @@ public class AdjustmentActivity extends AppCompatActivity {
         }
     }
 
-    private Mat fourPointTransform( Mat src , Point[] pts ) {
-
+    private Mat fourPointTransform(Mat src, Point[] pts) {
         double ratio = src.size().height / 500;
         int height = Double.valueOf(src.size().height / ratio).intValue();
         int width = Double.valueOf(src.size().width / ratio).intValue();
@@ -283,13 +324,15 @@ public class AdjustmentActivity extends AppCompatActivity {
     private ArrayList<MatOfPoint> findContours(Mat src) {
 
         //Size size = new Size(newBmp.getWidth(),newBmp.getHeight());
-
-        Mat grayImage = new Mat(newBmp.getWidth(), newBmp.getHeight(), CvType.CV_8UC1);
-        Mat cannedImage = new Mat(newBmp.getWidth(), newBmp.getHeight(), CvType.CV_8UC1);
+        Size size = new Size(newBmp.getWidth(), newBmp.getHeight());
+        Mat grayImage = new Mat(size, CvType.CV_8UC1);
+        Mat cannedImage = new Mat(size, CvType.CV_8UC1);
 
         //Imgproc.resize(src,resizedImage,size);
         Imgproc.cvtColor(src, grayImage, Imgproc.COLOR_RGBA2GRAY, 1);
         Imgproc.GaussianBlur(grayImage, grayImage, new Size(5, 5), 0);
+        Imgproc.dilate(grayImage, grayImage, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2, 2)));
+     Imgproc.erode(grayImage, grayImage, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2,2)));
         Imgproc.Canny(grayImage, cannedImage, 75, 200);
 
         ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
@@ -307,46 +350,120 @@ public class AdjustmentActivity extends AppCompatActivity {
             }
         });
 
-        Utils.matToBitmap(cannedImage,newBmp);
+        MatOfPoint matOfPoint = new MatOfPoint();
+        double maxVal = -1;
+        int maxValIdx = 0;
+
+        for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
+            double contourArea = Imgproc.contourArea(contours.get(contourIdx));
+            try {
+                if (maxVal < contourArea) {
+                    maxVal = contourArea;
+                    maxValIdx = contourIdx;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        drawing = Mat.zeros(mat.size(), CvType.CV_8UC1);
+        try {
+            MatOfPoint2f c2f = new MatOfPoint2f(contours.get(maxValIdx).toArray());
+            double peri = Imgproc.arcLength(c2f, true);
+            MatOfPoint2f approx = new MatOfPoint2f();
+            Imgproc.approxPolyDP(c2f, approx, 0.02 * peri, true);
+
+            Point[] points = approx.toArray();
+            Imgproc.drawContours(drawing, contours, maxValIdx , new Scalar(255, 255, 255), 1);
+            // select biggest 4 angles polygon
+            if (points.length == 4) {
+                Point[] foundPoints = sortPoints(points);
+
+                quad = new Quadrilateral(contours.get(maxValIdx), foundPoints);
+                for (Point point : quad.points) {
+                    Imgproc.circle(drawing, point, 10, new Scalar(255, 0, 255), 4);
+                }
+                onDraw(quad.points, mat.size());
+                Log.d(TAG, quad.points[0].toString() + " , " + quad.points[1].toString() + " , " + quad.points[2].toString() + " , " + quad.points[3].toString());
+            } else {
+                Log.i("Points", Integer.toString(points.length));
+                for (Point point : points) {
+                    Imgproc.circle(drawing, point, 10, new Scalar(255, 0, 255), 4);
+                }
+            }
+            Utils.matToBitmap(drawing, newBmp);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
 
         grayImage.release();
         cannedImage.release();
         return contours;
     }
 
-    private Quadrilateral getQuadrilateral( ArrayList<MatOfPoint> contours , Size srcSize ) {
+    private void colorThresh(Mat src, int threshold) {
+        Size srcSize = src.size();
+        int size = (int) (srcSize.height * srcSize.width) * 3;
+        byte[] d = new byte[size];
+        src.get(0, 0, d);
 
-        double ratio = srcSize.height / 500;
-        int height = Double.valueOf(srcSize.height / ratio).intValue();
-        int width = Double.valueOf(srcSize.width / ratio).intValue();
-        Size size = new Size(width,height);
+        for (int i = 0; i < size; i += 3) {
 
-        for ( MatOfPoint c: contours ) {
-            MatOfPoint2f c2f = new MatOfPoint2f(c.toArray());
-            double peri = Imgproc.arcLength(c2f, true);
-            MatOfPoint2f approx = new MatOfPoint2f();
-            Imgproc.approxPolyDP(c2f, approx, 0.02 * peri, true);
+            // the "& 0xff" operations are needed to convert the signed byte to double
 
-            Point[] points = approx.toArray();
+            // avoid unneeded work
+            if ((double) (d[i] & 0xff) == 255) {
+                continue;
+            }
 
-            // select biggest 4 angles polygon
-            if (points.length == 4) {
-                Point[] foundPoints = sortPoints(points);
+            double max = Math.max(Math.max((double) (d[i] & 0xff), (double) (d[i + 1] & 0xff)),
+                    (double) (d[i + 2] & 0xff));
+            double mean = ((double) (d[i] & 0xff) + (double) (d[i + 1] & 0xff)
+                    + (double) (d[i + 2] & 0xff)) / 3;
 
-                if (insideArea(foundPoints, size)) {
-                    return new Quadrilateral( c , foundPoints );
-                }
+            if (max > threshold && mean < max * 0.8) {
+                d[i] = (byte) ((double) (d[i] & 0xff) * 255 / max);
+                d[i + 1] = (byte) ((double) (d[i + 1] & 0xff) * 255 / max);
+                d[i + 2] = (byte) ((double) (d[i + 2] & 0xff) * 255 / max);
+            } else {
+                d[i] = d[i + 1] = d[i + 2] = 0;
             }
         }
-
-        return null;
+        src.put(0, 0, d);
     }
 
-    private Point[] sortPoints( Point[] src ) {
+    private void enhanceDocument(Mat src) {
+        if (colorMode && filterMode) {
+            src.convertTo(src, -1, colorGain, colorBias);
+            Mat mask = new Mat(src.size(), CvType.CV_8UC1);
+            Imgproc.cvtColor(src, mask, Imgproc.COLOR_RGBA2GRAY);
+
+            Mat copy = new Mat(src.size(), CvType.CV_8UC3);
+            src.copyTo(copy);
+
+            Imgproc.adaptiveThreshold(mask, mask, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY_INV, 15, 15);
+
+            src.setTo(new Scalar(255, 255, 255));
+            copy.copyTo(src, mask);
+
+            copy.release();
+            mask.release();
+
+            // special color threshold algorithm
+            colorThresh(src, colorThresh);
+        } else if (!colorMode) {
+            Imgproc.cvtColor(src, src, Imgproc.COLOR_RGBA2GRAY);
+            if (filterMode) {
+                Imgproc.adaptiveThreshold(src, src, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 15, 15);
+            }
+        }
+    }
+
+    private Point[] sortPoints(Point[] src) {
 
         ArrayList<Point> srcPoints = new ArrayList<>(Arrays.asList(src));
 
-        Point[] result = { null , null , null , null };
+        Point[] result = {null, null, null, null};
 
         Comparator<Point> sumComparator = new Comparator<Point>() {
             @Override
@@ -378,149 +495,33 @@ public class AdjustmentActivity extends AppCompatActivity {
         return result;
     }
 
-    private boolean insideArea(Point[] rp, Size size) {
-
-        int width = Double.valueOf(size.width).intValue();
-        int height = Double.valueOf(size.height).intValue();
-        int baseMeasure = height/4;
-
-        int bottomPos = height-baseMeasure;
-        int topPos = baseMeasure;
-        int leftPos = width/2-baseMeasure;
-        int rightPos = width/2+baseMeasure;
-
-        return (
-                rp[0].x <= leftPos && rp[0].y <= topPos
-                        && rp[1].x >= rightPos && rp[1].y <= topPos
-                        && rp[2].x >= rightPos && rp[2].y >= bottomPos
-                        && rp[3].x <= leftPos && rp[3].y >= bottomPos
-
-        );
+    public void showToast(String msg) {
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
     }
 
-    public void identifyEdges(){
-        Mat greymat = new Mat(newBmp.getWidth(), newBmp.getHeight(), CvType.CV_8UC1);
-        Imgproc.cvtColor(mat, greymat, Imgproc.COLOR_RGB2GRAY, 1);
-        Mat cannymat = new Mat(newBmp.getWidth(), newBmp.getHeight(), CvType.CV_8UC1);
-        Imgproc.Canny(greymat, cannymat, 100, 300);
-        blurmat = new Mat();
-        Imgproc.GaussianBlur(cannymat, blurmat,new Size(5, 5),5);
-
-        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-        Imgproc.findContours(cannymat, contours, new Mat(), Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
-        Mat dest = Mat.zeros(cannymat.size(), CvType.CV_8UC3);
-
-        MatOfPoint matOfPoint = new MatOfPoint();
-        double maxVal = 0.0;
-        int maxValIdx = 0;
-        for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++)
-        {
-            double contourArea = Imgproc.contourArea(contours.get(contourIdx));
-            if (maxVal < contourArea)
-            {
-                maxVal = contourArea;
-                maxValIdx = contourIdx;
-                matOfPoint = contours.get(contourIdx);
-            }
-        }
-
-
-
-        Imgproc.drawContours(dest,contours ,maxValIdx,new Scalar(255,255,255), 1);
-        MatOfPoint pts = contours.get(maxValIdx);
-        Imgproc.fillConvexPoly(dest,matOfPoint,new Scalar(255,255,255));
-        Point[] points = pts.toArray();
-        Point lt = new Point();
-        Point lb= new Point();
-        Point rt=new Point();
-        Point rb=new Point();
-
-        double ltd=dest.cols();
-        double rtd=dest.cols();
-        double lbd=dest.rows();
-        double rbd=dest.rows();
-        for(Point pt : points){
-            double dist_from_tl = Math.sqrt(Math.pow((0 - pt.x), 2) + Math.pow((dest.rows() - pt.y), 2)); //(0,656)
-            double dist_from_tr = Math.sqrt(Math.pow((dest.cols() - pt.x), 2) + Math.pow((dest.rows() - pt.y), 2)); // (492,656)
-            double dist_from_bl = Math.sqrt(Math.pow((0 - pt.x), 2) + Math.pow((0 - pt.y), 2)); // (0,0)
-            double dist_from_br = Math.sqrt(Math.pow((dest.cols() - pt.x), 2) + Math.pow((0 - pt.y), 2)); // (492,0)
-
-            if (ltd > dist_from_tl){
-                lt = pt;
-            }
-            if (rtd > dist_from_tr){
-                rt = pt;
-            }
-            if (lbd > dist_from_bl){
-                lb = pt;
-            }
-            if (rbd > dist_from_br){
-                rb = pt;
-            }
-        }
-        Imgproc.circle(dest, lt, 5, new Scalar(0, 255, 0, 0), 4); // Green
-        Imgproc.circle(dest, rt, 5, new Scalar(255, 0, 0, 0), 4); // Red
-        Imgproc.circle(dest, lb, 5, new Scalar(255, 255, 0, 0), 4); // Yellow
-        Imgproc.circle(dest, rb, 5, new Scalar(255, 255, 255, 0), 4); // White
-//                                MatOfInt hull = new MatOfInt();*/
-//                                Imgproc.convexHull(contours.get(maxValIdx),hull);
-//
-//                                contours.get(maxValIdx).ge
-
-
-        //List<MatOfPoint> hullList = new ArrayList<>();
-                                /*for (MatOfPoint contour : contours) {
-                                    MatOfInt hull = new MatOfInt();
-                                    Imgproc.convexHull(contour, hull);
-                                    Point[] contourArray = contour.toArray();
-                                    Point[] hullPoints = new Point[hull.rows()];
-                                    List<Integer> hullContourIdxList = hull.toList();
-                                    for (int i = 0; i < hullContourIdxList.size(); i++) {
-                                        hullPoints[i] = contourArray[hullContourIdxList.get(i)];
-                                    }
-                                    hullList.add(new MatOfPoint(hullPoints));
-                                }*/
-
-
-//                                for (int i=0; i <contours.size();i++){
-//                                    //Convert contours(i) from MatOfPoint to MatOfPoint2f
-//                                    MatOfPoint2f contour2f = new MatOfPoint2f(contours.get(i).toArray());
-//
-//                                    //Processing on mMOP2f1 which is in type MatOfPoint2f
-//                                    double approxDistance = Imgproc.arcLength(contour2f, true)*0.02;
-//                                    Imgproc.approxPolyDP(contour2f, approxCurve, approxDistance, true);
-//                                    //Convert back to MatOfPoint
-//                                    MatOfPoint points = new MatOfPoint( approxCurve.toArray() );
-//                                    Imgproc.drawContours(dest, points.toList(), i, green);
-//                                    // Get bounding rect of contour
-//                                    Rect rect = Imgproc.boundingRect(points);
-//
-//                                    Imgproc.rectangle(dest, new Point(rect.x,rect.y), new Point(rect.x+rect.width,rect.y+rect.height), green, 2);
-//                                }
-        //Imgproc.polylines();
-        Utils.matToBitmap(dest, newBmp);
-
-        Bitmap resultImg = Bitmap.createBitmap(newBmp.getWidth(), newBmp.getHeight(), Bitmap.Config.ARGB_8888);
-        Bitmap maskImg = Bitmap.createBitmap(newBmp.getWidth(), newBmp.getHeight(), Bitmap.Config.ARGB_8888);
-        Canvas mCanvas = new Canvas(resultImg);
-        Canvas maskCanvas = new Canvas(maskImg);
-
-        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paint.setAntiAlias(true);
-        paint.setStyle(Paint.Style.FILL);;
-        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
+    private void onDraw(Point[] points, Size stdSize) {
 
         Path path = new Path();
-        path.lineTo(150, 0);
-        path.lineTo(230, 120);
-        path.lineTo(70, 120);
-        path.lineTo(150, 0);
+
+        // ATTENTION: axis are swapped
+
+        float previewWidth = (float) stdSize.height;
+        float previewHeight = (float) stdSize.width;
+
+        path.moveTo(previewWidth - (float) points[0].y, (float) points[0].x);
+        path.lineTo(previewWidth - (float) points[1].y, (float) points[1].x);
+        path.lineTo(previewWidth - (float) points[2].y, (float) points[2].x);
+        path.lineTo(previewWidth - (float) points[3].y, (float) points[3].x);
         path.close();
 
-        maskCanvas.drawPath(path, paint);
+        PathShape newBox = new PathShape(path, previewWidth, previewHeight);
 
-        mCanvas.drawBitmap(newBmp, 0, 0, null);
-        mCanvas.drawBitmap(maskImg, 0, 0, paint);
-        ivResult.setImageBitmap(newBmp);
+        Paint paint = new Paint();
+        paint.setColor(Color.argb(64, 0, 255, 0));
+
+        Paint border = new Paint();
+        border.setColor(Color.rgb(0, 255, 0));
+        border.setStrokeWidth(5);
     }
+
 }
