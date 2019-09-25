@@ -165,8 +165,27 @@ public class AdjustmentActivity extends AppCompatActivity {
         ivConfirm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(AdjustmentActivity.this, ResultActivity.class);
-                startActivity(intent);
+                Map<Integer, PointF> points = polygonView.getPoints();
+                Point[] pointArr = new Point[4];
+
+                for (int i = 0; i < points.size(); i++) {
+                    Log.i(TAG, "x = " + Float.toString(points.get(i).x) + ",y = " + Float.toString(points.get(i).y));
+                    pointArr[i] = new Point((double) points.get(i).x, (double) points.get(i).y);
+                }
+
+//                Mat dest = new Mat(mat.size(),mat.type());
+//                Mat src = new MatOfPoint2f(pointArr[0],pointArr[1],pointArr[2],pointArr[3]);
+//                Mat dst = new MatOfPoint2f(new Point(0, 0), new Point(dest.width() - 1, 0), new Point(dest.width() - 1, dest.height() - 1), new Point(0, dest.height() - 1));
+//                Mat transform = Imgproc.getPerspectiveTransform(src, dst);
+//                Imgproc.warpPerspective(mat, dest, transform, dest.size());
+                Mat dest = fourPointTransform(mat,pointArr);
+                Bitmap tfmBmp = Bitmap.createBitmap(newBmp.getWidth(), newBmp.getHeight(), Bitmap.Config.ARGB_8888);
+                Utils.matToBitmap(dest, tfmBmp);
+                ivResult.setImageBitmap(tfmBmp);
+//                Intent intent = new Intent(AdjustmentActivity.this, ResultActivity.class);
+//                String path = "";
+//                intent.putExtra("croppedPoints", path);
+//                startActivity(intent);
             }
         });
 
@@ -463,7 +482,6 @@ public class AdjustmentActivity extends AppCompatActivity {
         }
         return orderedPoints;
     }
-
 
 
     private class ScanButtonClickListener implements View.OnClickListener {
