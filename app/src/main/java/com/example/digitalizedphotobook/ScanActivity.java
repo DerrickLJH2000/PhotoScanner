@@ -225,7 +225,8 @@ public class ScanActivity extends AppCompatActivity {
     private boolean mFlashSupported;
     private int mSensorOrientation;
     private int progress;
-
+    private Canvas canvas;
+    private Paint mPaint;
     private CameraCaptureSession.CaptureCallback mCaptureCallback
             = new CameraCaptureSession.CaptureCallback() {
 
@@ -352,7 +353,6 @@ public class ScanActivity extends AppCompatActivity {
         mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
         mTextureView.setWillNotDraw(false);
 
-
         fabCamera.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -391,7 +391,31 @@ public class ScanActivity extends AppCompatActivity {
         ivGrid.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if(!grid) {
+                    //  Find Screen size first
+                    DisplayMetrics metrics = Resources.getSystem().getDisplayMetrics();
+                    int screenWidth = metrics.widthPixels;
+                    int screenHeight = (int) (metrics.heightPixels * 0.9);
 
+                    //  Set paint options
+                    paint.setAntiAlias(true);
+                    paint.setStrokeWidth(3);
+                    paint.setStyle(Paint.Style.STROKE);
+                    paint.setColor(Color.argb(255, 255, 255, 255));
+
+                    canvas.drawLine((screenWidth / 3) * 2, 0, (screenWidth / 3) * 2, screenHeight, paint);
+                    canvas.drawLine((screenWidth / 3), 0, (screenWidth / 3), screenHeight, paint);
+                    canvas.drawLine(0, (screenHeight / 3) * 2, screenWidth, (screenHeight / 3) * 2, paint);
+                    canvas.drawLine(0, (screenHeight / 3), screenWidth, (screenHeight / 3), paint);
+                    grid = true;
+                    ivGrid.setImageResource(R.drawable.ic_grid_on);
+                    ivFlash.setTag(R.drawable.ic_grid_on);
+                    Toast.makeText(ScanActivity.this, "Grid Lines : ON", Toast.LENGTH_SHORT).show();
+                } else {
+                    ivGrid.setImageResource(R.drawable.ic_grid_off);
+                    ivFlash.setTag(R.drawable.ic_grid_off);
+                    Toast.makeText(ScanActivity.this, "Grid Lines : OFF", Toast.LENGTH_SHORT).show();
+                }
             }
         });
 
@@ -412,6 +436,8 @@ public class ScanActivity extends AppCompatActivity {
         } else {
             mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
         }
+        flashmode = "OFF";
+        ivFlash.setImageResource(R.drawable.ic_flash_off);
 
     }
 

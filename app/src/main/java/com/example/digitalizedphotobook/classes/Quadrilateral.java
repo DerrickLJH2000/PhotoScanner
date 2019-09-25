@@ -1,4 +1,4 @@
-package com.example.digitalizedphotobook.helper;
+package com.example.digitalizedphotobook.classes;
 
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;

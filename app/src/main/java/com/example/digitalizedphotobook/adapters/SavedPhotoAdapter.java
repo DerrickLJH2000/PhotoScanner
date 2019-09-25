@@ -1,21 +1,16 @@
-package com.example.digitalizedphotobook;
+package com.example.digitalizedphotobook.adapters;
 
-import android.os.Build;
-import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.digitalizedphotobook.R;
+
 import java.util.ArrayList;
-import java.util.Calendar;
 
 
 public class SavedPhotoAdapter extends RecyclerView.Adapter<SavedPhotoAdapter.ViewHolder> {

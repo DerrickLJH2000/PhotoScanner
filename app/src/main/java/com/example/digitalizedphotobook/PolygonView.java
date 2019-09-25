@@ -1,15 +1,24 @@
 package com.example.digitalizedphotobook;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.BitmapShader;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PointF;
+import android.graphics.Shader;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+
+import org.opencv.core.Point;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,6 +38,11 @@ public class PolygonView extends FrameLayout {
     private ImageView midPointer34;
     private ImageView midPointer24;
     private PolygonView polygonView;
+    private Boolean zooming = false;
+    private PointF zoomPos = new PointF();
+    private Matrix matrix = new Matrix();
+    private BitmapShader mShader;
+    private Paint mPaint;
 
     public PolygonView(Context context) {
         super(context);
@@ -89,6 +103,25 @@ public class PolygonView extends FrameLayout {
         paint.setAntiAlias(true);
     }
 
+    private void paintZoom(){
+        mPaint = new Paint();
+        int x = (int) zoomPos.x;
+        int y = (int) zoomPos.y;
+        Bitmap bmp = convertToBitmap(getImageView(x,y).getDrawable(),300,300);
+        mShader = new BitmapShader(bmp, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+
+        mPaint.setShader(mShader);
+    }
+
+    public Bitmap convertToBitmap(Drawable drawable, int widthPixels, int heightPixels) {
+        Bitmap mutableBitmap = Bitmap.createBitmap(widthPixels, heightPixels, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(mutableBitmap);
+        drawable.setBounds(0, 0, widthPixels, heightPixels);
+        drawable.draw(canvas);
+
+        return mutableBitmap;
+    }
+
     public Map<Integer, PointF> getPoints() {
 
         List<PointF> points = new ArrayList<PointF>();
@@ -132,17 +165,17 @@ public class PolygonView extends FrameLayout {
     }
 
     private void setPointsCoordinates(Map<Integer, PointF> pointFMap) {
-        pointer1.setX(pointFMap.get(0).x);
-        pointer1.setY(pointFMap.get(0).y);
+        pointer1.setX(pointFMap.get(0).x * 2);
+        pointer1.setY(pointFMap.get(0).y * 2);
 
-        pointer2.setX(pointFMap.get(1).x);
-        pointer2.setY(pointFMap.get(1).y);
+        pointer2.setX(pointFMap.get(1).x * 2);
+        pointer2.setY(pointFMap.get(1).y * 2);
 
-        pointer3.setX(pointFMap.get(2).x);
-        pointer3.setY(pointFMap.get(2).y);
+        pointer3.setX(pointFMap.get(2).x * 2);
+        pointer3.setY(pointFMap.get(2).y * 2);
 
-        pointer4.setX(pointFMap.get(3).x);
-        pointer4.setY(pointFMap.get(3).y);
+        pointer4.setX(pointFMap.get(3).x * 2);
+        pointer4.setY(pointFMap.get(3).y * 2);
     }
 
     @Override
@@ -160,6 +193,14 @@ public class PolygonView extends FrameLayout {
         midPointer34.setY(pointer4.getY() - ((pointer4.getY() - pointer3.getY()) / 2));
         midPointer12.setX(pointer2.getX() - ((pointer2.getX() - pointer1.getX()) / 2));
         midPointer12.setY(pointer2.getY() - ((pointer2.getY() - pointer1.getY()) / 2));
+
+        if (zooming) {
+            paintZoom();
+            matrix.reset();
+            matrix.postScale(2f, 2f, 30 , 30);
+            mPaint.getShader().setLocalMatrix(matrix);
+            canvas.drawCircle(30, 30, 100, mPaint);
+        }
     }
 
     private ImageView getImageView(int x, int y) {
@@ -254,9 +295,13 @@ public class PolygonView extends FrameLayout {
         PointF DownPT = new PointF(); // Record Mouse Position When Pressed Down
         PointF StartPT = new PointF(); // Record Start Position of 'img'
 
+
         @Override
         public boolean onTouch(View v, MotionEvent event) {
             int eid = event.getAction();
+            zoomPos.x = event.getX();
+            zoomPos.y = event.getY();
+
             switch (eid) {
                 case MotionEvent.ACTION_MOVE:
                     PointF mv = new PointF(event.getX() - DownPT.x, event.getY() - DownPT.y);
@@ -265,6 +310,7 @@ public class PolygonView extends FrameLayout {
                         v.setY((int) (StartPT.y + mv.y));
                         StartPT = new PointF(v.getX(), v.getY());
                     }
+                    zooming = true;
                     break;
                 case MotionEvent.ACTION_DOWN:
                     DownPT.x = event.getX();
@@ -279,6 +325,7 @@ public class PolygonView extends FrameLayout {
                         color = getResources().getColor(R.color.orange);
                     }
                     paint.setColor(color);
+                    zooming = false;
                     break;
                 default:
                     break;
@@ -288,6 +335,5 @@ public class PolygonView extends FrameLayout {
         }
 
     }
-
 
 }

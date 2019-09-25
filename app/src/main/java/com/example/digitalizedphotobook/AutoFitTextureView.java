@@ -17,14 +17,18 @@
 package com.example.digitalizedphotobook;
 
 import android.content.Context;
+import android.content.res.Resources;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
 import android.view.TextureView;
 
 /**
  * A {@link TextureView} that can be adjusted to a specified aspect ratio.
  */
 public class AutoFitTextureView extends TextureView {
-
     private int mRatioWidth = 0;
     private int mRatioHeight = 0;
 
@@ -72,5 +76,6 @@ public class AutoFitTextureView extends TextureView {
             }
         }
     }
+
 
 }
