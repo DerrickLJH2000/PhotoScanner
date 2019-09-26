@@ -1,6 +1,7 @@
 package com.example.digitalizedphotobook;
 
 import android.Manifest;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -16,6 +17,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.PermissionChecker;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -132,20 +134,20 @@ public class AdjustmentActivity extends AppCompatActivity {
 
         findContours(mat);
 
-        Mat doc = new Mat(mat.size(), CvType.CV_8UC4);
+//        Mat doc = new Mat(mat.size(), CvType.CV_8UC4);
 
-        if (quad != null) {
-            setBitmap(newBmp);
-        } else {
-            mat.copyTo(doc);
-            Log.i("Points", "failed");
-        }
-        enhanceDocument(doc);
+//        if (quad != null) {
+        setBitmap(newBmp);
+//        } else {
+//            mat.copyTo(doc);
+//            Log.i("Points", "failed");
+//        }
+//        enhanceDocument(doc);
 
         ivBack.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                finish();
+                alertDialog();
             }
         });
 
@@ -195,12 +197,11 @@ public class AdjustmentActivity extends AppCompatActivity {
                     FileOutputStream fileOutputStream = new FileOutputStream(mFile);
                     fileOutputStream.write(bytes);
                     fileOutputStream.close();
-                } catch (Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
                 Intent intent = new Intent(AdjustmentActivity.this, ResultActivity.class);
-                String path = "";
-                intent.putExtra("croppedPoints", path);
+                intent.putExtra("croppedPoints", mFile.getAbsolutePath());
                 startActivity(intent);
             }
         });
@@ -262,47 +263,38 @@ public class AdjustmentActivity extends AppCompatActivity {
         return destImage;
     }
 
-    private Mat fourPointTransform(Mat src, Point[] pts) {
-        double ratio = src.size().height / 500;
-        int height = Double.valueOf(src.size().height / ratio).intValue();
-        int width = Double.valueOf(src.size().width / ratio).intValue();
+    private void alertDialog() {
+        AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
+        builder1.setMessage("Are you sure you want to discard this image?");
+        builder1.setCancelable(true);
 
-        Point tl = pts[0];
-        Point tr = pts[1];
-        Point br = pts[2];
-        Point bl = pts[3];
+        builder1.setPositiveButton(
+                "Discard",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                        finish();
+                    }
+                });
 
-        double widthA = Math.sqrt(Math.pow(br.x - bl.x, 2) + Math.pow(br.y - bl.y, 2));
-        double widthB = Math.sqrt(Math.pow(tr.x - tl.x, 2) + Math.pow(tr.y - tl.y, 2));
+        builder1.setNegativeButton(
+                "No",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                    }
+                });
 
-        double dw = Math.max(widthA, widthB) * ratio;
-        int maxWidth = Double.valueOf(dw).intValue();
-
-
-        double heightA = Math.sqrt(Math.pow(tr.x - br.x, 2) + Math.pow(tr.y - br.y, 2));
-        double heightB = Math.sqrt(Math.pow(tl.x - bl.x, 2) + Math.pow(tl.y - bl.y, 2));
-
-        double dh = Math.max(heightA, heightB) * ratio;
-        int maxHeight = Double.valueOf(dh).intValue();
-
-        Mat doc = new Mat(maxHeight, maxWidth, CvType.CV_8UC4);
-
-        Mat src_mat = new Mat(4, 1, CvType.CV_32FC2);
-        Mat dst_mat = new Mat(4, 1, CvType.CV_32FC2);
-
-
-        src_mat.put(0, 0, tl.x * ratio, tl.y * ratio, tr.x * ratio, tr.y * ratio, br.x * ratio, br.y * ratio, bl.x * ratio, bl.y * ratio);
-        dst_mat.put(0, 0, 0.0, 0.0, dw, 0.0, dw, dh, 0.0, dh);
-        Mat srcMat = new Mat();
-        Mat dstMat = new Mat();
-        src_mat.convertTo(srcMat, CvType.CV_8UC4);
-        dst_mat.convertTo(dstMat, CvType.CV_8UC4);
-        Mat m = Imgproc.getPerspectiveTransform(srcMat, dstMat);
-        Log.d(TAG, "m:" + (m.cols()) + ", " + (m.rows()));
-        Imgproc.warpPerspective(src, doc, m, doc.size());
-        Log.d(TAG, "doc:" + (doc.cols()) + ", " + (doc.rows()));
-        return doc;
+        AlertDialog alert11 = builder1.create();
+        alert11.show();
     }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        alertDialog();
+    }
+
 
     private ArrayList<MatOfPoint> findContours(Mat src) {
 
@@ -493,15 +485,22 @@ public class AdjustmentActivity extends AppCompatActivity {
     }
 
     private List<PointF> getContourEdgePoints() {
-        Point[] quadPoints = quad.points;
         List<PointF> pointList = new ArrayList<>();
-        for (int i = 0; i < quadPoints.length; i++) {
-
-            float x = Float.parseFloat(Double.toString(quadPoints[i].x));
-            float y = Float.parseFloat(Double.toString(quadPoints[i].y));
-            pointList.add(new PointF(x, y));
+        if (quad != null) {
+            Point[] quadPoints = quad.points;
+            for (int i = 0; i < quadPoints.length; i++) {
+                float x = Float.parseFloat(Double.toString(quadPoints[i].x));
+                float y = Float.parseFloat(Double.toString(quadPoints[i].y));
+                pointList.add(new PointF(x, y));
+            }
+        } else {
+            pointList.add(new PointF(0, 0));
+            pointList.add(new PointF(newBmp.getWidth(), 0));
+            pointList.add(new PointF(newBmp.getWidth(), newBmp.getHeight()));
+            pointList.add(new PointF(0, newBmp.getHeight()));
         }
         return pointList;
+
     }
 
     private Map<Integer, PointF> getOutlinePoints(Bitmap tempBitmap) {
