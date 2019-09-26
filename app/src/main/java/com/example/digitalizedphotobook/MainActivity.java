@@ -17,6 +17,7 @@ import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.example.digitalizedphotobook.adapters.SavedPhotoAdapter;
@@ -31,7 +32,7 @@ public class MainActivity extends AppCompatActivity {
     final int IMAGE_PICKER_SELECT = 2001;
     final int reqPermissionId = 200;
     private ImageView ivLoadGallery;
-    private ImageView ivCameraIntent;
+    private LinearLayout ivCameraIntent;
     private RecyclerView rvSavedPhotos;
     private RecyclerView.LayoutManager layManager;
     ArrayList<String> photoArr = new ArrayList<String>();
@@ -42,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ivLoadGallery = findViewById(R.id.ivLoad);
-        ivCameraIntent = findViewById(R.id.ivCamera);
+        ivCameraIntent = findViewById(R.id.linlayCamera);
         rvSavedPhotos = findViewById(R.id.rvSavedPhotos);
 
         if (checkPermission()) {
@@ -71,47 +72,9 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        ivLoadGallery.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent i = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                startActivityForResult(i, IMAGE_PICKER_SELECT);
-            }
-        });
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        if (requestCode == IMAGE_PICKER_SELECT && resultCode == RESULT_OK && data != null && data.getData() != null) {
-            Uri uri = data.getData();
 
-            Bitmap bitmap = null;
-            try {
-                bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            // Log.d(TAG, String.valueOf(bitmap));
-            ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
-            byte[] bytes = stream.toByteArray();
-            File mFile = new File(getExternalFilesDir("Temp"), "temp.jpg");
-            try {
-                mFile.createNewFile();
-                FileOutputStream fileOutputStream = new FileOutputStream(mFile);
-                fileOutputStream.write(bytes);
-                fileOutputStream.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            Intent intent = new Intent(MainActivity.this, AdjustmentActivity.class);
-            intent.putExtra("image", mFile.getAbsolutePath());
-            intent.putExtra("reqCode", 0);
-
-            startActivity(intent);
-
-        }
-    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {

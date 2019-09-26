@@ -36,12 +36,15 @@ import android.hardware.camera2.params.MeteringRectangle;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
@@ -97,9 +100,10 @@ import java.util.concurrent.TimeUnit;
 public class ScanActivity extends AppCompatActivity {
 
     private static final String TAG = "ScanActivity";
+    final int IMAGE_PICKER_SELECT = 2001;
     private static final int REQUEST_CAMERA_PERMISSION = 1;
     private static final String FRAGMENT_DIALOG = "dialog";
-    ImageView ivBack, ivFlash, ivGrid;
+    ImageView ivBack, ivFlash, ivLoadGallery;
     FloatingActionButton fabCamera;
     Boolean grid = false;
     String flashmode = "OFF";
@@ -338,7 +342,7 @@ public class ScanActivity extends AppCompatActivity {
 
         ivBack = findViewById(R.id.ivBack);
         ivFlash = findViewById(R.id.ivFlash);
-        ivGrid = findViewById(R.id.ivGrid);
+        ivLoadGallery = findViewById(R.id.ivLoad);
         fabCamera = findViewById(R.id.fabCamera);
         mTextureView = (AutoFitTextureView) findViewById(R.id.tvScan);
         rellay1 = findViewById(R.id.rellay1);
@@ -388,38 +392,79 @@ public class ScanActivity extends AppCompatActivity {
             }
         });
 
-        ivGrid.setOnClickListener(new View.OnClickListener() {
+        ivLoadGallery.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(!grid) {
-                    //  Find Screen size first
-                    DisplayMetrics metrics = Resources.getSystem().getDisplayMetrics();
-                    int screenWidth = metrics.widthPixels;
-                    int screenHeight = (int) (metrics.heightPixels * 0.9);
-
-                    //  Set paint options
-                    paint.setAntiAlias(true);
-                    paint.setStrokeWidth(3);
-                    paint.setStyle(Paint.Style.STROKE);
-                    paint.setColor(Color.argb(255, 255, 255, 255));
-
-                    canvas.drawLine((screenWidth / 3) * 2, 0, (screenWidth / 3) * 2, screenHeight, paint);
-                    canvas.drawLine((screenWidth / 3), 0, (screenWidth / 3), screenHeight, paint);
-                    canvas.drawLine(0, (screenHeight / 3) * 2, screenWidth, (screenHeight / 3) * 2, paint);
-                    canvas.drawLine(0, (screenHeight / 3), screenWidth, (screenHeight / 3), paint);
-                    grid = true;
-                    ivGrid.setImageResource(R.drawable.ic_grid_on);
-                    ivFlash.setTag(R.drawable.ic_grid_on);
-                    Toast.makeText(ScanActivity.this, "Grid Lines : ON", Toast.LENGTH_SHORT).show();
-                } else {
-                    ivGrid.setImageResource(R.drawable.ic_grid_off);
-                    ivFlash.setTag(R.drawable.ic_grid_off);
-                    Toast.makeText(ScanActivity.this, "Grid Lines : OFF", Toast.LENGTH_SHORT).show();
-                }
+                Intent i = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                startActivityForResult(i, IMAGE_PICKER_SELECT);
             }
         });
 
+//        ivGrid.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                if(!grid) {
+//                    //  Find Screen size first
+//                    DisplayMetrics metrics = Resources.getSystem().getDisplayMetrics();
+//                    int screenWidth = metrics.widthPixels;
+//                    int screenHeight = (int) (metrics.heightPixels * 0.9);
+//
+//                    //  Set paint options
+//                    paint.setAntiAlias(true);
+//                    paint.setStrokeWidth(3);
+//                    paint.setStyle(Paint.Style.STROKE);
+//                    paint.setColor(Color.argb(255, 255, 255, 255));
+//
+//                    canvas.drawLine((screenWidth / 3) * 2, 0, (screenWidth / 3) * 2, screenHeight, paint);
+//                    canvas.drawLine((screenWidth / 3), 0, (screenWidth / 3), screenHeight, paint);
+//                    canvas.drawLine(0, (screenHeight / 3) * 2, screenWidth, (screenHeight / 3) * 2, paint);
+//                    canvas.drawLine(0, (screenHeight / 3), screenWidth, (screenHeight / 3), paint);
+//                    grid = true;
+//                    ivGrid.setImageResource(R.drawable.ic_grid_on);
+//                    ivFlash.setTag(R.drawable.ic_grid_on);
+//                    Toast.makeText(ScanActivity.this, "Grid Lines : ON", Toast.LENGTH_SHORT).show();
+//                } else {
+//                    ivGrid.setImageResource(R.drawable.ic_grid_off);
+//                    ivFlash.setTag(R.drawable.ic_grid_off);
+//                    Toast.makeText(ScanActivity.this, "Grid Lines : OFF", Toast.LENGTH_SHORT).show();
+//                }
+//            }
+//        });
 
+
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        if (requestCode == IMAGE_PICKER_SELECT && resultCode == RESULT_OK && data != null && data.getData() != null) {
+            Uri uri = data.getData();
+
+            Bitmap bitmap = null;
+            try {
+                bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            // Log.d(TAG, String.valueOf(bitmap));
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+            byte[] bytes = stream.toByteArray();
+            File mFile = new File(getExternalFilesDir("Temp"), "temp.jpg");
+            try {
+                mFile.createNewFile();
+                FileOutputStream fileOutputStream = new FileOutputStream(mFile);
+                fileOutputStream.write(bytes);
+                fileOutputStream.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            Intent intent = new Intent(ScanActivity.this, AdjustmentActivity.class);
+            intent.putExtra("image", mFile.getAbsolutePath());
+            intent.putExtra("reqCode", 0);
+
+            startActivity(intent);
+
+        }
     }
 
     @Override
@@ -599,7 +644,7 @@ public class ScanActivity extends AppCompatActivity {
                 int orientation = getResources().getConfiguration().orientation;
                 if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
                     mTextureView.setAspectRatio(
-                            mPreviewSize.getWidth(), mPreviewSize.getHeight());
+                            mTextureView.getWidth(), mPreviewSize.getHeight());
                 } else {
                     mTextureView.setAspectRatio(
                             mPreviewSize.getHeight(), mPreviewSize.getWidth());

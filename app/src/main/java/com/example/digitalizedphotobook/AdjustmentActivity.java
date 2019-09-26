@@ -39,7 +39,9 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -109,7 +111,7 @@ public class AdjustmentActivity extends AppCompatActivity {
         }
 
         final String imagePath = getIntent().getStringExtra("image");
-        int reqCode = getIntent().getIntExtra("reqCode", -1);
+        final int reqCode = getIntent().getIntExtra("reqCode", -1);
         Log.i(TAG, (reqCode) + imagePath);
         mFile = new File(imagePath);
         BitmapFactory.Options options = new BitmapFactory.Options();
@@ -163,7 +165,6 @@ public class AdjustmentActivity extends AppCompatActivity {
             }
         });
 
-
         ivConfirm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -172,18 +173,35 @@ public class AdjustmentActivity extends AppCompatActivity {
 
                 for (int i = 0; i < points.size(); i++) {
                     Log.i(TAG, "x = " + Float.toString(points.get(i).x) + ",y = " + Float.toString(points.get(i).y));
-                    pointArr[i] = new Point((double) points.get(i).x, (double) points.get(i).y);
+                    if (reqCode != 0) {
+                        pointArr[i] = new Point((double) points.get(i).x / 2, (double) points.get(i).y / 2);
+                    } else {
+                        pointArr[i] = new Point((double) points.get(i).x / 4, (double) points.get(i).y / 4);
+                    }
                 }
+                Log.d(TAG, "Quad Points: " + quad.points[0].toString() + " , " + quad.points[1].toString() + " , " + quad.points[2].toString() + " , " + quad.points[3].toString());
 
+                Log.d(TAG, "Crop Points: " + pointArr[0].toString() + " , " + pointArr[1].toString() + " , " + pointArr[2].toString() + " , " + pointArr[3].toString());
 //                Mat dest = fourPointTransform(mat,pointArr);
-                Mat dest = perspectiveChange(mat,pointArr);
+                Mat dest = perspectiveChange(mat, pointArr);
                 Bitmap tfmBmp = Bitmap.createBitmap(dest.width(), dest.height(), Bitmap.Config.ARGB_8888);
                 Utils.matToBitmap(dest, tfmBmp);
-                ivResult.setImageBitmap(tfmBmp);
-//                Intent intent = new Intent(AdjustmentActivity.this, ResultActivity.class);
-//                String path = "";
-//                intent.putExtra("croppedPoints", path);
-//                startActivity(intent);
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                tfmBmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+                byte[] bytes = stream.toByteArray();
+                File mFile = new File(getExternalFilesDir("Temp"), "temp2.jpg");
+                try {
+                    mFile.createNewFile();
+                    FileOutputStream fileOutputStream = new FileOutputStream(mFile);
+                    fileOutputStream.write(bytes);
+                    fileOutputStream.close();
+                } catch (Exception e){
+                    e.printStackTrace();
+                }
+                Intent intent = new Intent(AdjustmentActivity.this, ResultActivity.class);
+                String path = "";
+                intent.putExtra("croppedPoints", path);
+                startActivity(intent);
             }
         });
 
@@ -206,7 +224,7 @@ public class AdjustmentActivity extends AppCompatActivity {
         }
     }
 
-    private Mat perspectiveChange(Mat src, Point[] points){
+    private Mat perspectiveChange(Mat src, Point[] points) {
         Point bl = points[0];
         Point br = points[1];
         Point tl = points[2];
@@ -215,32 +233,32 @@ public class AdjustmentActivity extends AppCompatActivity {
         double widthA = Math.sqrt(Math.pow(br.x - bl.x, 2) + Math.pow(br.y - bl.y, 2));
         double widthB = Math.sqrt(Math.pow(tr.x - tl.x, 2) + Math.pow(tr.y - tl.y, 2));
 
-        Log.d(TAG, "widthA:" +(widthA) + ", width B:" +  Double.toString(widthB));
+        Log.d(TAG, "widthA:" + (widthA) + ", width B:" + Double.toString(widthB));
 
         double dw = Math.max(widthA, widthB);
         int maxWidth = Double.valueOf(dw).intValue();
-        Log.d(TAG, "maxWidth:" +(maxWidth));
+        Log.d(TAG, "maxWidth:" + (maxWidth));
 
         double heightA = Math.sqrt(Math.pow(tr.x - br.x, 2) + Math.pow(tr.y - br.y, 2));
         double heightB = Math.sqrt(Math.pow(tl.x - bl.x, 2) + Math.pow(tl.y - bl.y, 2));
 
-        Log.d(TAG, "heightA:" +(heightA) + ", height B:" +  Double.toString(heightB));
+        Log.d(TAG, "heightA:" + (heightA) + ", height B:" + Double.toString(heightB));
 
         double dh = Math.max(heightA, heightB);
         int maxHeight = Double.valueOf(dh).intValue();
-        Log.d(TAG, "maxHeight:" +(maxHeight));
+        Log.d(TAG, "maxHeight:" + (maxHeight));
 
-        Mat destImage = new Mat(maxHeight,maxWidth, src.type());
-        Log.d(TAG, "destImage:" +(destImage.cols()) + ", " + (destImage.rows()));
+        Mat destImage = new Mat(maxWidth, maxHeight, src.type());
+        Log.d(TAG, "destImage:" + (destImage.cols()) + ", " + (destImage.rows()));
 
-        Mat src_mat = new MatOfPoint2f(new Point(points[0].x,points[0].y), new Point(points[1].x,points[1].y), new Point(points[3].x,points[3].y), new Point(points[2].x,points[2].y));
-        Mat dst_mat = new MatOfPoint2f(new Point(0, 0), new Point(destImage.width() , 0), new Point(destImage.width(), destImage.height()), new Point(0, destImage.height()));
-        Log.d(TAG, "src_mat:" +(src_mat.cols()) + ", " + (src_mat.rows()));
-        Log.d(TAG, "dst_mat:" +(dst_mat.cols()) + ", " + (dst_mat.rows()));
+        Mat src_mat = new MatOfPoint2f(new Point(points[0].x, points[0].y), new Point(points[1].x, points[1].y), new Point(points[3].x, points[3].y), new Point(points[2].x, points[2].y));
+        Mat dst_mat = new MatOfPoint2f(new Point(0, 0), new Point(destImage.width(), 0), new Point(destImage.width(), destImage.height()), new Point(0, destImage.height()));
+        Log.d(TAG, "src_mat:" + (src_mat.cols()) + ", " + (src_mat.rows()));
+        Log.d(TAG, "dst_mat:" + (dst_mat.cols()) + ", " + (dst_mat.rows()));
         Mat transform = Imgproc.getPerspectiveTransform(src_mat, dst_mat);
-        Log.d(TAG, "transform:" +(transform.cols()) + ", " + (transform.rows()));
+        Log.d(TAG, "transform:" + (transform.cols()) + ", " + (transform.rows()));
         Imgproc.warpPerspective(src, destImage, transform, destImage.size());
-        Log.d(TAG, "destImage:" +(destImage.cols()) + ", " + (destImage.rows()));
+        Log.d(TAG, "destImage:" + (destImage.cols()) + ", " + (destImage.rows()));
         return destImage;
     }
 
@@ -280,9 +298,9 @@ public class AdjustmentActivity extends AppCompatActivity {
         src_mat.convertTo(srcMat, CvType.CV_8UC4);
         dst_mat.convertTo(dstMat, CvType.CV_8UC4);
         Mat m = Imgproc.getPerspectiveTransform(srcMat, dstMat);
-        Log.d(TAG, "m:" +(m.cols()) + ", " + (m.rows()));
+        Log.d(TAG, "m:" + (m.cols()) + ", " + (m.rows()));
         Imgproc.warpPerspective(src, doc, m, doc.size());
-        Log.d(TAG, "doc:" +(doc.cols()) + ", " + (doc.rows()));
+        Log.d(TAG, "doc:" + (doc.cols()) + ", " + (doc.rows()));
         return doc;
     }
 
@@ -344,10 +362,9 @@ public class AdjustmentActivity extends AppCompatActivity {
                 Point[] foundPoints = sortPoints(points);
 
                 quad = new Quadrilateral(contours.get(maxValIdx), foundPoints);
-                for (Point point : quad.points) {
-                    Imgproc.circle(mat, point, 10, new Scalar(255, 0, 255), 4);
-                }
-                Log.d(TAG, quad.points[0].toString() + " , " + quad.points[1].toString() + " , " + quad.points[2].toString() + " , " + quad.points[3].toString());
+//                for (Point point : quad.points) {
+//                    Imgproc.circle(mat, point, 10, new Scalar(255, 0, 255), 4);
+//                }
             } else {
                 Toast.makeText(this, "Please Retake Photo!", Toast.LENGTH_SHORT).show();
                 finish();
@@ -450,10 +467,10 @@ public class AdjustmentActivity extends AppCompatActivity {
         // bottom-right corner = maximal sum
         result[2] = Collections.max(srcPoints, sumComparator);
 
-        // top-right corner = minimal diference
+        // top-right corner = minimal difference
         result[1] = Collections.min(srcPoints, diffComparator);
 
-        // bottom-left corner = maximal diference
+        // bottom-left corner = maximal difference
         result[3] = Collections.max(srcPoints, diffComparator);
 
         return result;
