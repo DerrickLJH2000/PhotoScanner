@@ -15,7 +15,8 @@
     <FrameLayout
         android:id="@+id/sourceFrame"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_height="match_parent"
+        android:layout_marginTop="10dp"
         android:layout_weight="1">
 
         <ImageView
@@ -23,7 +24,8 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_gravity="center"
-            android:scaleType="fitCenter" />
+            android:adjustViewBounds="true"
+            android:scaleType="fitCenter"/>
         <com.example.digitalizedphotobook.PolygonView
             android:id="@+id/polygonView"
             android:layout_width="match_parent"
@@ -35,8 +37,8 @@
         android:id="@+id/linlay1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:layout_marginBottom="20dp"
+        android:layout_marginTop="15dp"
+        android:layout_marginBottom="15dp"
         android:gravity="center"
         android:orientation="horizontal">
 

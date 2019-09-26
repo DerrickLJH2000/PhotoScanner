@@ -43,6 +43,7 @@ public class PolygonView extends FrameLayout {
     private Matrix matrix = new Matrix();
     private BitmapShader mShader;
     private Paint mPaint;
+    private Drawable sourceZoom;
 
     public PolygonView(Context context) {
         super(context);
@@ -103,11 +104,12 @@ public class PolygonView extends FrameLayout {
         paint.setAntiAlias(true);
     }
 
-    private void paintZoom(){
+    public void paintZoom(Drawable src){
         mPaint = new Paint();
         int x = (int) zoomPos.x;
         int y = (int) zoomPos.y;
-        Bitmap bmp = convertToBitmap(getImageView(x,y).getDrawable(),300,300);
+        sourceZoom = src;
+        Bitmap bmp = convertToBitmap(src,300,300);
         mShader = new BitmapShader(bmp, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
 
         mPaint.setShader(mShader);
@@ -178,6 +180,7 @@ public class PolygonView extends FrameLayout {
         pointer4.setY(pointFMap.get(3).y * 2);
     }
 
+
     @Override
     protected void dispatchDraw(Canvas canvas) {
         super.dispatchDraw(canvas);
@@ -195,7 +198,7 @@ public class PolygonView extends FrameLayout {
         midPointer12.setY(pointer2.getY() - ((pointer2.getY() - pointer1.getY()) / 2));
 
         if (zooming) {
-            paintZoom();
+            paintZoom(sourceZoom);
             matrix.reset();
             matrix.postScale(2f, 2f, 30 , 30);
             mPaint.getShader().setLocalMatrix(matrix);
@@ -309,6 +312,13 @@ public class PolygonView extends FrameLayout {
                         v.setX((int) (StartPT.x + mv.x));
                         v.setY((int) (StartPT.y + mv.y));
                         StartPT = new PointF(v.getX(), v.getY());
+                        int color = 0;
+                        if (isValidShape(getPoints())) {
+                            color = getResources().getColor(R.color.blue);
+                        } else {
+                            color = getResources().getColor(R.color.orange);
+                        }
+                        paint.setColor(color);
                     }
                     zooming = true;
                     break;

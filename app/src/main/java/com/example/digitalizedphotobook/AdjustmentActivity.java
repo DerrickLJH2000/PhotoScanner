@@ -50,7 +50,7 @@ import java.util.Map;
 
 
 public class AdjustmentActivity extends AppCompatActivity {
-    private static final String TAG = "AdjustmentActivity";
+    private static final String TAG = "AdjustmentActivity123";
     private static final int REQUEST_CODE = 99;
     private ImageView ivBack, ivCrop, ivConfirm, ivRotateLeft, ivRotateRight, ivResult;
     private PolygonView polygonView;
@@ -121,9 +121,9 @@ public class AdjustmentActivity extends AppCompatActivity {
         }
         newBmp = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
 
-        Log.i(TAG, "Invalid request Code");
 
         ivResult.setImageBitmap(newBmp);
+        polygonView.paintZoom(ivResult.getDrawable());
 
         mat = new Mat(newBmp.getWidth(), newBmp.getHeight(), CvType.CV_8UC1);
         Utils.bitmapToMat(newBmp, mat);
@@ -151,6 +151,7 @@ public class AdjustmentActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 ivResult.setRotation(ivResult.getRotation() - 90);
+                polygonView.setRotation(polygonView.getRotation() - 90);
             }
         });
 
@@ -158,6 +159,7 @@ public class AdjustmentActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 ivResult.setRotation(ivResult.getRotation() + 90);
+                polygonView.setRotation(polygonView.getRotation() + 90);
             }
         });
 
@@ -173,13 +175,9 @@ public class AdjustmentActivity extends AppCompatActivity {
                     pointArr[i] = new Point((double) points.get(i).x, (double) points.get(i).y);
                 }
 
-//                Mat dest = new Mat(mat.size(),mat.type());
-//                Mat src = new MatOfPoint2f(pointArr[0],pointArr[1],pointArr[2],pointArr[3]);
-//                Mat dst = new MatOfPoint2f(new Point(0, 0), new Point(dest.width() - 1, 0), new Point(dest.width() - 1, dest.height() - 1), new Point(0, dest.height() - 1));
-//                Mat transform = Imgproc.getPerspectiveTransform(src, dst);
-//                Imgproc.warpPerspective(mat, dest, transform, dest.size());
-                Mat dest = fourPointTransform(mat,pointArr);
-                Bitmap tfmBmp = Bitmap.createBitmap(newBmp.getWidth(), newBmp.getHeight(), Bitmap.Config.ARGB_8888);
+//                Mat dest = fourPointTransform(mat,pointArr);
+                Mat dest = perspectiveChange(mat,pointArr);
+                Bitmap tfmBmp = Bitmap.createBitmap(dest.width(), dest.height(), Bitmap.Config.ARGB_8888);
                 Utils.matToBitmap(dest, tfmBmp);
                 ivResult.setImageBitmap(tfmBmp);
 //                Intent intent = new Intent(AdjustmentActivity.this, ResultActivity.class);
@@ -196,7 +194,6 @@ public class AdjustmentActivity extends AppCompatActivity {
 
     }
 
-
     @Override
     public void onResume() {
         super.onResume();
@@ -209,17 +206,42 @@ public class AdjustmentActivity extends AppCompatActivity {
         }
     }
 
+    private Mat perspectiveChange(Mat src, Point[] points){
+        Point bl = points[0];
+        Point br = points[1];
+        Point tl = points[2];
+        Point tr = points[3];
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case 0: {
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                } else {
-                    Toast.makeText(AdjustmentActivity.this, "Permission not granted", Toast.LENGTH_SHORT).show();
-                }
-            }
-        }
+        double widthA = Math.sqrt(Math.pow(br.x - bl.x, 2) + Math.pow(br.y - bl.y, 2));
+        double widthB = Math.sqrt(Math.pow(tr.x - tl.x, 2) + Math.pow(tr.y - tl.y, 2));
+
+        Log.d(TAG, "widthA:" +(widthA) + ", width B:" +  Double.toString(widthB));
+
+        double dw = Math.max(widthA, widthB);
+        int maxWidth = Double.valueOf(dw).intValue();
+        Log.d(TAG, "maxWidth:" +(maxWidth));
+
+        double heightA = Math.sqrt(Math.pow(tr.x - br.x, 2) + Math.pow(tr.y - br.y, 2));
+        double heightB = Math.sqrt(Math.pow(tl.x - bl.x, 2) + Math.pow(tl.y - bl.y, 2));
+
+        Log.d(TAG, "heightA:" +(heightA) + ", height B:" +  Double.toString(heightB));
+
+        double dh = Math.max(heightA, heightB);
+        int maxHeight = Double.valueOf(dh).intValue();
+        Log.d(TAG, "maxHeight:" +(maxHeight));
+
+        Mat destImage = new Mat(maxHeight,maxWidth, src.type());
+        Log.d(TAG, "destImage:" +(destImage.cols()) + ", " + (destImage.rows()));
+
+        Mat src_mat = new MatOfPoint2f(new Point(points[0].x,points[0].y), new Point(points[1].x,points[1].y), new Point(points[3].x,points[3].y), new Point(points[2].x,points[2].y));
+        Mat dst_mat = new MatOfPoint2f(new Point(0, 0), new Point(destImage.width() , 0), new Point(destImage.width(), destImage.height()), new Point(0, destImage.height()));
+        Log.d(TAG, "src_mat:" +(src_mat.cols()) + ", " + (src_mat.rows()));
+        Log.d(TAG, "dst_mat:" +(dst_mat.cols()) + ", " + (dst_mat.rows()));
+        Mat transform = Imgproc.getPerspectiveTransform(src_mat, dst_mat);
+        Log.d(TAG, "transform:" +(transform.cols()) + ", " + (transform.rows()));
+        Imgproc.warpPerspective(src, destImage, transform, destImage.size());
+        Log.d(TAG, "destImage:" +(destImage.cols()) + ", " + (destImage.rows()));
+        return destImage;
     }
 
     private Mat fourPointTransform(Mat src, Point[] pts) {
@@ -250,12 +272,17 @@ public class AdjustmentActivity extends AppCompatActivity {
         Mat src_mat = new Mat(4, 1, CvType.CV_32FC2);
         Mat dst_mat = new Mat(4, 1, CvType.CV_32FC2);
 
+
         src_mat.put(0, 0, tl.x * ratio, tl.y * ratio, tr.x * ratio, tr.y * ratio, br.x * ratio, br.y * ratio, bl.x * ratio, bl.y * ratio);
         dst_mat.put(0, 0, 0.0, 0.0, dw, 0.0, dw, dh, 0.0, dh);
-        Mat m = Imgproc.getPerspectiveTransform(src_mat, dst_mat);
-
+        Mat srcMat = new Mat();
+        Mat dstMat = new Mat();
+        src_mat.convertTo(srcMat, CvType.CV_8UC4);
+        dst_mat.convertTo(dstMat, CvType.CV_8UC4);
+        Mat m = Imgproc.getPerspectiveTransform(srcMat, dstMat);
+        Log.d(TAG, "m:" +(m.cols()) + ", " + (m.rows()));
         Imgproc.warpPerspective(src, doc, m, doc.size());
-
+        Log.d(TAG, "doc:" +(doc.cols()) + ", " + (doc.rows()));
         return doc;
     }
 
@@ -311,7 +338,7 @@ public class AdjustmentActivity extends AppCompatActivity {
             Imgproc.approxPolyDP(c2f, approx, 0.02 * peri, true);
 
             Point[] points = approx.toArray();
-            Imgproc.drawContours(mat, contours, maxValIdx, new Scalar(0, 255, 0), 1);
+//            Imgproc.drawContours(mat, contours, maxValIdx, new Scalar(0, 255, 0), 1);
             // select biggest 4 angles polygon
             if (points.length == 4) {
                 Point[] foundPoints = sortPoints(points);
@@ -322,10 +349,8 @@ public class AdjustmentActivity extends AppCompatActivity {
                 }
                 Log.d(TAG, quad.points[0].toString() + " , " + quad.points[1].toString() + " , " + quad.points[2].toString() + " , " + quad.points[3].toString());
             } else {
-                Log.i("Points", Integer.toString(points.length));
-                for (Point point : points) {
-                    Imgproc.circle(mat, point, 10, new Scalar(255, 0, 255), 4);
-                }
+                Toast.makeText(this, "Please Retake Photo!", Toast.LENGTH_SHORT).show();
+                finish();
             }
 
             Utils.matToBitmap(mat, newBmp);
@@ -434,11 +459,6 @@ public class AdjustmentActivity extends AppCompatActivity {
         return result;
     }
 
-//    public void showToast(String msg) {
-//        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
-//    }
-
-
     private void setBitmap(Bitmap original) {
 
         ivResult.setImageBitmap(original);
@@ -459,8 +479,9 @@ public class AdjustmentActivity extends AppCompatActivity {
         Point[] quadPoints = quad.points;
         List<PointF> pointList = new ArrayList<>();
         for (int i = 0; i < quadPoints.length; i++) {
-            float x = Math.round(quadPoints[i].x);
-            float y = Math.round(quadPoints[i].y);
+
+            float x = Float.parseFloat(Double.toString(quadPoints[i].x));
+            float y = Float.parseFloat(Double.toString(quadPoints[i].y));
             pointList.add(new PointF(x, y));
         }
         return pointList;
@@ -483,59 +504,15 @@ public class AdjustmentActivity extends AppCompatActivity {
         return orderedPoints;
     }
 
-
-    private class ScanButtonClickListener implements View.OnClickListener {
-        @Override
-        public void onClick(View v) {
-            Map<Integer, PointF> points = polygonView.getPoints();
-            if (isScanPointsValid(points)) {
-                new ScanAsyncTask(points).execute();
-            } else {
-                Log.e("Error", "Error");
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case 0: {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                } else {
+                    Toast.makeText(AdjustmentActivity.this, "Permission not granted", Toast.LENGTH_SHORT).show();
+                }
             }
         }
     }
-
-    private boolean isScanPointsValid(Map<Integer, PointF> points) {
-        return points.size() == 4;
-    }
-
-
-    private Bitmap getScannedBitmap(Bitmap original, Map<Integer, PointF> points) {
-        int width = original.getWidth();
-        int height = original.getHeight();
-        float xRatio = (float) original.getWidth() / ivResult.getWidth();
-        float yRatio = (float) original.getHeight() / ivResult.getHeight();
-
-        float x1 = (points.get(0).x) * xRatio;
-        float x2 = (points.get(1).x) * xRatio;
-        float x3 = (points.get(2).x) * xRatio;
-        float x4 = (points.get(3).x) * xRatio;
-        float y1 = (points.get(0).y) * yRatio;
-        float y2 = (points.get(1).y) * yRatio;
-        float y3 = (points.get(2).y) * yRatio;
-        float y4 = (points.get(3).y) * yRatio;
-        Log.d("", "Points(" + x1 + "," + y1 + ")(" + x2 + "," + y2 + ")(" + x3 + "," + y3 + ")(" + x4 + "," + y4 + ")");
-        Bitmap _bitmap = getScannedBitmap(original, x1, y1, x2, y2, x3, y3, x4, y4);
-        return _bitmap;
-    }
-
-    private class ScanAsyncTask extends AsyncTask<Void, Void, Bitmap> {
-
-        private Map<Integer, PointF> points;
-
-        public ScanAsyncTask(Map<Integer, PointF> points) {
-            this.points = points;
-        }
-
-
-        @Override
-        protected Bitmap doInBackground(Void... params) {
-            Bitmap bitmap = getScannedBitmap(newBmp, points);
-            return bitmap;
-        }
-    }
-
-    public native Bitmap getScannedBitmap(Bitmap bitmap, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4);
-
 }
