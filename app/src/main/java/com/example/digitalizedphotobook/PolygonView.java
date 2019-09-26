@@ -43,6 +43,7 @@ public class PolygonView extends FrameLayout {
     private Matrix matrix = new Matrix();
     private BitmapShader mShader;
     private Paint mPaint;
+
     private Drawable sourceZoom;
 
     public PolygonView(Context context) {

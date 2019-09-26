@@ -181,7 +181,6 @@ public class AdjustmentActivity extends AppCompatActivity {
                         pointArr[i] = new Point((double) points.get(i).x / 4, (double) points.get(i).y / 4);
                     }
                 }
-                Log.d(TAG, "Quad Points: " + quad.points[0].toString() + " , " + quad.points[1].toString() + " , " + quad.points[2].toString() + " , " + quad.points[3].toString());
 
                 Log.d(TAG, "Crop Points: " + pointArr[0].toString() + " , " + pointArr[1].toString() + " , " + pointArr[2].toString() + " , " + pointArr[3].toString());
 //                Mat dest = fourPointTransform(mat,pointArr);
@@ -249,17 +248,26 @@ public class AdjustmentActivity extends AppCompatActivity {
         int maxHeight = Double.valueOf(dh).intValue();
         Log.d(TAG, "maxHeight:" + (maxHeight));
 
-        Mat destImage = new Mat(maxWidth, maxHeight, src.type());
+        Mat destImage = new Mat(maxHeight,maxWidth, src.type());
         Log.d(TAG, "destImage:" + (destImage.cols()) + ", " + (destImage.rows()));
-
+//        Mat src_mat = new Mat(destImage.rows(),destImage.cols(),CvType.CV_32FC2);
+//        Mat dst_mat = new Mat(destImage.rows(),destImage.cols(),CvType.CV_32FC2);
+//        Log.d(TAG, "src_mat:" + (src_mat.cols()) + ", " + (src_mat.rows()));
+//        Log.d(TAG, "dst_mat:" + (dst_mat.cols()) + ", " + (dst_mat.rows()));
+//        src_mat.put(0,0, points[0].y, points[0].x, points[1].y,points[1].x, points[2].y,points[2].x, points[3].y,points[3].x);
+//        dst_mat.put(0,0, 0,0,0,destImage.width(), destImage.height(),destImage.width(), destImage.height(),0);
+//
+//        Mat srcMat = new Mat(src_mat.rows(),src_mat.cols(),CvType.CV_8UC4);
+//        Mat dstMat = new Mat(dst_mat.rows(),dst_mat.cols(),CvType.CV_8UC4);
+//        src_mat.convertTo(srcMat, CvType.CV_8UC4);
+//        dst_mat.convertTo(dstMat, CvType.CV_8UC4);
         Mat src_mat = new MatOfPoint2f(new Point(points[0].x, points[0].y), new Point(points[1].x, points[1].y), new Point(points[3].x, points[3].y), new Point(points[2].x, points[2].y));
         Mat dst_mat = new MatOfPoint2f(new Point(0, 0), new Point(destImage.width(), 0), new Point(destImage.width(), destImage.height()), new Point(0, destImage.height()));
-        Log.d(TAG, "src_mat:" + (src_mat.cols()) + ", " + (src_mat.rows()));
-        Log.d(TAG, "dst_mat:" + (dst_mat.cols()) + ", " + (dst_mat.rows()));
+
         Mat transform = Imgproc.getPerspectiveTransform(src_mat, dst_mat);
         Log.d(TAG, "transform:" + (transform.cols()) + ", " + (transform.rows()));
         Imgproc.warpPerspective(src, destImage, transform, destImage.size());
-        Log.d(TAG, "destImage:" + (destImage.cols()) + ", " + (destImage.rows()));
+        Log.d(TAG, "destImage:" + (destImage.size()));
         return destImage;
     }
 
@@ -357,9 +365,9 @@ public class AdjustmentActivity extends AppCompatActivity {
 //                for (Point point : quad.points) {
 //                    Imgproc.circle(mat, point, 10, new Scalar(255, 0, 255), 4);
 //                }
+                Log.d(TAG, "Quad Points: " + quad.points[0].toString() + " , " + quad.points[1].toString() + " , " + quad.points[2].toString() + " , " + quad.points[3].toString());
             } else {
-                Toast.makeText(this, "Please Retake Photo!", Toast.LENGTH_SHORT).show();
-                finish();
+                Toast.makeText(this, "Couldn't Detect Object!", Toast.LENGTH_SHORT).show();
             }
 
             Utils.matToBitmap(mat, newBmp);
