@@ -15,6 +15,9 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_marginTop="10dp"
         android:layout_weight="1">
 
         <ImageView
@@ -23,10 +26,8 @@
             android:layout_height="match_parent"
             android:layout_alignParentTop="true"
             android:layout_alignParentBottom="true"
-            android:layout_marginLeft="5dp"
-            android:layout_marginTop="5dp"
-            android:layout_marginRight="5dp"
-            android:scaleType="fitStart"/>
+            android:layout_margin="10dp"
+            android:scaleType="fitCenter"/>
     </RelativeLayout>
 
     <LinearLayout

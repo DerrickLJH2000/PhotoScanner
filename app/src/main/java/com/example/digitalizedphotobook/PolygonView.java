@@ -8,6 +8,8 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PointF;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -107,8 +109,6 @@ public class PolygonView extends FrameLayout {
 
     public void paintZoom(Drawable src){
         mPaint = new Paint();
-        int x = (int) zoomPos.x;
-        int y = (int) zoomPos.y;
         sourceZoom = src;
         Bitmap bmp = convertToBitmap(src,300,300);
         mShader = new BitmapShader(bmp, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
@@ -189,6 +189,9 @@ public class PolygonView extends FrameLayout {
         canvas.drawLine(pointer1.getX() + (pointer1.getWidth() / 2), pointer1.getY() + (pointer1.getHeight() / 2), pointer2.getX() + (pointer2.getWidth() / 2), pointer2.getY() + (pointer2.getHeight() / 2), paint);
         canvas.drawLine(pointer2.getX() + (pointer2.getWidth() / 2), pointer2.getY() + (pointer2.getHeight() / 2), pointer4.getX() + (pointer4.getWidth() / 2), pointer4.getY() + (pointer4.getHeight() / 2), paint);
         canvas.drawLine(pointer3.getX() + (pointer3.getWidth() / 2), pointer3.getY() + (pointer3.getHeight() / 2), pointer4.getX() + (pointer4.getWidth() / 2), pointer4.getY() + (pointer4.getHeight() / 2), paint);
+//        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+//        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
+//        paint.setXfermode(null);
         midPointer13.setX(pointer3.getX() - ((pointer3.getX() - pointer1.getX()) / 2));
         midPointer13.setY(pointer3.getY() - ((pointer3.getY() - pointer1.getY()) / 2));
         midPointer24.setX(pointer4.getX() - ((pointer4.getX() - pointer2.getX()) / 2));
@@ -198,13 +201,13 @@ public class PolygonView extends FrameLayout {
         midPointer12.setX(pointer2.getX() - ((pointer2.getX() - pointer1.getX()) / 2));
         midPointer12.setY(pointer2.getY() - ((pointer2.getY() - pointer1.getY()) / 2));
 
-        if (zooming) {
-            paintZoom(sourceZoom);
-            matrix.reset();
-            matrix.postScale(2f, 2f, 30 , 30);
-            mPaint.getShader().setLocalMatrix(matrix);
-            canvas.drawCircle(30, 30, 100, mPaint);
-        }
+//        if (zooming) {
+//            paintZoom(sourceZoom);
+//            matrix.reset();
+//            matrix.postScale(2f, 2f, 30 , 30);
+//            mPaint.getShader().setLocalMatrix(matrix);
+//            canvas.drawCircle(300, 300, 150, mPaint);
+//        }
     }
 
     private ImageView getImageView(int x, int y) {

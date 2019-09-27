@@ -76,13 +76,7 @@ public class ResultActivity extends AppCompatActivity {
         }
         final String imagePath = getIntent().getStringExtra("croppedPoints");
         mFile = new File(imagePath);
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inSampleSize = 8;
-        bmp = BitmapFactory.decodeFile(mFile.getAbsolutePath(), options);
-
-        newBmp = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight());
-
-        ivResult.setImageBitmap(newBmp);
+        setPic(mFile.getAbsolutePath());
 
         ivBack.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -151,6 +145,29 @@ public class ResultActivity extends AppCompatActivity {
                 alert.show();
             }
         });
+    }
+
+    private void setPic(String photoPath) {
+        // Get the dimensions of the View
+        int targetW = ivResult.getWidth();
+        int targetH = ivResult.getHeight();
+
+        Log.i(TAG, "targetW: " + targetW + "targetW: " + targetH);
+
+        // Get the dimensions of the bitmap
+        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
+        bmOptions.inJustDecodeBounds = true;
+
+        int photoW = bmOptions.outWidth;
+        int photoH = bmOptions.outHeight;
+
+        // Decode the image file into a Bitmap sized to fill the View
+        bmOptions.inJustDecodeBounds = false;
+        bmOptions.inSampleSize = 1;
+        bmOptions.inPurgeable = true;
+
+        Bitmap bitmap = BitmapFactory.decodeFile(photoPath, bmOptions);
+        ivResult.setImageBitmap(bitmap);
     }
 
     @Override

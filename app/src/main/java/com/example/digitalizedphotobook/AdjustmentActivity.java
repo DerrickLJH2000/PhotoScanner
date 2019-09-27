@@ -60,6 +60,7 @@ public class AdjustmentActivity extends AppCompatActivity {
     private PolygonView polygonView;
     private FrameLayout frmSource;
     private File mFile;
+    private String imagePath;
     private Bitmap bmp, newBmp;
     private Mat mat, drawing;
     private Quadrilateral quad;
@@ -112,7 +113,7 @@ public class AdjustmentActivity extends AppCompatActivity {
             return;
         }
 
-        final String imagePath = getIntent().getStringExtra("image");
+        imagePath = getIntent().getStringExtra("image");
         final int reqCode = getIntent().getIntExtra("reqCode", -1);
         Log.i(TAG, (reqCode) + imagePath);
         mFile = new File(imagePath);
@@ -127,9 +128,10 @@ public class AdjustmentActivity extends AppCompatActivity {
 
 
         ivResult.setImageBitmap(newBmp);
+        Log.i(TAG,"Height: " + newBmp.getHeight() + "Width: " + newBmp.getWidth());
         polygonView.paintZoom(ivResult.getDrawable());
 
-        mat = new Mat(newBmp.getWidth(), newBmp.getHeight(), CvType.CV_8UC1);
+        mat = new Mat(newBmp.getWidth(), newBmp.getHeight(), CvType.CV_8UC4);
         Utils.bitmapToMat(newBmp, mat);
 
         findContours(mat);
@@ -177,8 +179,10 @@ public class AdjustmentActivity extends AppCompatActivity {
                     Log.i(TAG, "x = " + Float.toString(points.get(i).x) + ",y = " + Float.toString(points.get(i).y));
                     if (reqCode != 0) {
                         pointArr[i] = new Point((double) points.get(i).x / 2, (double) points.get(i).y / 2);
+//                        pointArr[i] = new Point((double) points.get(i).x, (double) points.get(i).y);
                     } else {
                         pointArr[i] = new Point((double) points.get(i).x / 4, (double) points.get(i).y / 4);
+//                        pointArr[i] = new Point((double) points.get(i).x, (double) points.get(i).y);
                     }
                 }
 
@@ -225,17 +229,20 @@ public class AdjustmentActivity extends AppCompatActivity {
     }
 
     private Mat perspectiveChange(Mat src, Point[] points) {
+        double ratio = src.size().height / 500;
+        int height = Double.valueOf(src.size().height / ratio).intValue();
+        int width = Double.valueOf(src.size().width / ratio).intValue();
         Point bl = points[0];
         Point br = points[1];
         Point tl = points[2];
         Point tr = points[3];
-
+        Log.i(TAG, "Src size:" +src.size());
         double widthA = Math.sqrt(Math.pow(br.x - bl.x, 2) + Math.pow(br.y - bl.y, 2));
         double widthB = Math.sqrt(Math.pow(tr.x - tl.x, 2) + Math.pow(tr.y - tl.y, 2));
 
         Log.d(TAG, "widthA:" + (widthA) + ", width B:" + Double.toString(widthB));
 
-        double dw = Math.max(widthA, widthB);
+        double dw = Math.max(widthA, widthB) * ratio;
         int maxWidth = Double.valueOf(dw).intValue();
         Log.d(TAG, "maxWidth:" + (maxWidth));
 
@@ -244,27 +251,26 @@ public class AdjustmentActivity extends AppCompatActivity {
 
         Log.d(TAG, "heightA:" + (heightA) + ", height B:" + Double.toString(heightB));
 
-        double dh = Math.max(heightA, heightB);
+        double dh = Math.max(heightA, heightB) * ratio;
         int maxHeight = Double.valueOf(dh).intValue();
         Log.d(TAG, "maxHeight:" + (maxHeight));
 
-        Mat destImage = new Mat(maxHeight,maxWidth, src.type());
+        Mat destImage = new Mat(maxHeight,maxWidth, CvType.CV_8UC4);
         Log.d(TAG, "destImage:" + (destImage.cols()) + ", " + (destImage.rows()));
-//        Mat src_mat = new Mat(destImage.rows(),destImage.cols(),CvType.CV_32FC2);
-//        Mat dst_mat = new Mat(destImage.rows(),destImage.cols(),CvType.CV_32FC2);
-//        Log.d(TAG, "src_mat:" + (src_mat.cols()) + ", " + (src_mat.rows()));
-//        Log.d(TAG, "dst_mat:" + (dst_mat.cols()) + ", " + (dst_mat.rows()));
-//        src_mat.put(0,0, points[0].y, points[0].x, points[1].y,points[1].x, points[2].y,points[2].x, points[3].y,points[3].x);
-//        dst_mat.put(0,0, 0,0,0,destImage.width(), destImage.height(),destImage.width(), destImage.height(),0);
-//
-//        Mat srcMat = new Mat(src_mat.rows(),src_mat.cols(),CvType.CV_8UC4);
-//        Mat dstMat = new Mat(dst_mat.rows(),dst_mat.cols(),CvType.CV_8UC4);
-//        src_mat.convertTo(srcMat, CvType.CV_8UC4);
-//        dst_mat.convertTo(dstMat, CvType.CV_8UC4);
-        Mat src_mat = new MatOfPoint2f(new Point(points[0].x, points[0].y), new Point(points[1].x, points[1].y), new Point(points[3].x, points[3].y), new Point(points[2].x, points[2].y));
-        Mat dst_mat = new MatOfPoint2f(new Point(0, 0), new Point(destImage.width(), 0), new Point(destImage.width(), destImage.height()), new Point(0, destImage.height()));
+        Mat srcMat = new Mat(4, 1, CvType.CV_32FC2);
+        Mat dstMat = new Mat(4, 1, CvType.CV_32FC2);
 
-        Mat transform = Imgproc.getPerspectiveTransform(src_mat, dst_mat);
+
+        srcMat.put(0, 0, bl.x, bl.y, br.x, br.y, tr.x, tr.y, tl.x, tl.y);
+        dstMat.put(0, 0, 0.0, 0.0, dw, 0.0, dw, dh, 0.0, dh);
+//        Mat src_mat = new Mat();
+//        Mat dst_mat = new Mat();
+//        srcMat.convertTo(src_mat, CvType.CV_8UC4);
+//        dstMat.convertTo(dst_mat, CvType.CV_8UC4);
+//        Mat src_mat = new MatOfPoint2f(new Point(points[0].x, points[0].y), new Point(points[1].x, points[1].y), new Point(points[3].x, points[3].y), new Point(points[2].x, points[2].y));
+//        Mat dst_mat = new MatOfPoint2f(new Point(0, 0), new Point(destImage.width(), 0), new Point(destImage.width(), destImage.height()), new Point(0, destImage.height()));
+
+        Mat transform = Imgproc.getPerspectiveTransform(srcMat, dstMat);
         Log.d(TAG, "transform:" + (transform.cols()) + ", " + (transform.rows()));
         Imgproc.warpPerspective(src, destImage, transform, destImage.size());
         Log.d(TAG, "destImage:" + (destImage.size()));
@@ -280,6 +286,11 @@ public class AdjustmentActivity extends AppCompatActivity {
                 "Discard",
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
+                        File file = new File(imagePath);
+                        boolean deleted = file.delete();
+                        if (!deleted) {
+                            Toast.makeText(AdjustmentActivity.this, "Error discarding image.", Toast.LENGTH_SHORT).show();
+                        }
                         dialog.cancel();
                         finish();
                     }
@@ -312,11 +323,12 @@ public class AdjustmentActivity extends AppCompatActivity {
         Mat cannedImage = new Mat(size, CvType.CV_8UC1);
 
         //Imgproc.resize(src,resizedImage,size);
-        Imgproc.cvtColor(src, grayImage, Imgproc.COLOR_RGBA2GRAY, 1);
+        Imgproc.cvtColor(src, cannedImage, Imgproc.COLOR_RGBA2GRAY, 1);
         Imgproc.GaussianBlur(grayImage, grayImage, new Size(5, 5), 0);
         Imgproc.dilate(grayImage, grayImage, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2, 2)));
         Imgproc.erode(grayImage, grayImage, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2, 2)));
         Imgproc.Canny(grayImage, cannedImage, 75, 200);
+
 
         ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
         Mat hierarchy = new Mat();
@@ -333,7 +345,6 @@ public class AdjustmentActivity extends AppCompatActivity {
             }
         });
 
-        MatOfPoint matOfPoint = new MatOfPoint();
         double maxVal = -1;
         int maxValIdx = 0;
 
@@ -503,9 +514,9 @@ public class AdjustmentActivity extends AppCompatActivity {
             }
         } else {
             pointList.add(new PointF(0, 0));
-            pointList.add(new PointF(newBmp.getWidth(), 0));
-            pointList.add(new PointF(newBmp.getWidth(), newBmp.getHeight()));
-            pointList.add(new PointF(0, newBmp.getHeight()));
+            pointList.add(new PointF(ivResult.getWidth(), 0));
+            pointList.add(new PointF(ivResult.getWidth(), ivResult.getHeight()));
+            pointList.add(new PointF(0, ivResult.getHeight()));
         }
         return pointList;
 

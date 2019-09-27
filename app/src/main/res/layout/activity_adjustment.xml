@@ -16,20 +16,22 @@
         android:id="@+id/sourceFrame"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
         android:layout_marginTop="10dp"
         android:layout_weight="1">
-
         <ImageView
             android:id="@+id/ivResult"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_gravity="center"
-            android:adjustViewBounds="true"
+            android:padding="10dp"
             android:scaleType="fitCenter"/>
         <com.example.digitalizedphotobook.PolygonView
             android:id="@+id/polygonView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:clipToPadding="true"
             android:layout_gravity="center"/>
     </FrameLayout>
 
