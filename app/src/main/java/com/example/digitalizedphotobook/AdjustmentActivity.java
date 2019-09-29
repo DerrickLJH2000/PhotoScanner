@@ -136,15 +136,15 @@ public class AdjustmentActivity extends AppCompatActivity {
 
         findContours(mat);
 
-//        Mat doc = new Mat(mat.size(), CvType.CV_8UC4);
+        Mat doc = new Mat(mat.size(), CvType.CV_8UC4);
 
-//        if (quad != null) {
+       if (quad != null) {
         setBitmap(newBmp);
-//        } else {
-//            mat.copyTo(doc);
-//            Log.i("Points", "failed");
-//        }
-//        enhanceDocument(doc);
+       } else {
+           mat.copyTo(doc);
+           Log.i("Points", "failed");
+       }
+        enhanceDocument(doc);
 
         ivBack.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -187,7 +187,6 @@ public class AdjustmentActivity extends AppCompatActivity {
                 }
 
                 Log.d(TAG, "Crop Points: " + pointArr[0].toString() + " , " + pointArr[1].toString() + " , " + pointArr[2].toString() + " , " + pointArr[3].toString());
-//                Mat dest = fourPointTransform(mat,pointArr);
                 Mat dest = perspectiveChange(mat, pointArr);
                 Bitmap tfmBmp = Bitmap.createBitmap(dest.width(), dest.height(), Bitmap.Config.ARGB_8888);
                 Utils.matToBitmap(dest, tfmBmp);
@@ -323,7 +322,7 @@ public class AdjustmentActivity extends AppCompatActivity {
         Mat cannedImage = new Mat(size, CvType.CV_8UC1);
 
         //Imgproc.resize(src,resizedImage,size);
-        Imgproc.cvtColor(src, cannedImage, Imgproc.COLOR_RGBA2GRAY, 1);
+        Imgproc.cvtColor(src, grayImage, Imgproc.COLOR_RGBA2GRAY, 1);
         Imgproc.GaussianBlur(grayImage, grayImage, new Size(5, 5), 0);
         Imgproc.dilate(grayImage, grayImage, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2, 2)));
         Imgproc.erode(grayImage, grayImage, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2, 2)));
@@ -367,18 +366,19 @@ public class AdjustmentActivity extends AppCompatActivity {
             Imgproc.approxPolyDP(c2f, approx, 0.02 * peri, true);
 
             Point[] points = approx.toArray();
-//            Imgproc.drawContours(mat, contours, maxValIdx, new Scalar(0, 255, 0), 1);
+            //Imgproc.drawContours(mat, contours, maxValIdx, new Scalar(0, 255, 0), 1);
             // select biggest 4 angles polygon
             if (points.length == 4) {
                 Point[] foundPoints = sortPoints(points);
 
                 quad = new Quadrilateral(contours.get(maxValIdx), foundPoints);
-//                for (Point point : quad.points) {
-//                    Imgproc.circle(mat, point, 10, new Scalar(255, 0, 255), 4);
-//                }
+                for (Point point : quad.points) {
+                    //Imgproc.circle(mat, point, 10, new Scalar(255, 0, 255), 4);
+                }
                 Log.d(TAG, "Quad Points: " + quad.points[0].toString() + " , " + quad.points[1].toString() + " , " + quad.points[2].toString() + " , " + quad.points[3].toString());
-            } else {
-                Toast.makeText(this, "Couldn't Detect Object!", Toast.LENGTH_SHORT).show();
+            }
+            else {
+                quad = null;
             }
 
             Utils.matToBitmap(mat, newBmp);
@@ -510,6 +510,14 @@ public class AdjustmentActivity extends AppCompatActivity {
             for (int i = 0; i < quadPoints.length; i++) {
                 float x = Float.parseFloat(Double.toString(quadPoints[i].x));
                 float y = Float.parseFloat(Double.toString(quadPoints[i].y));
+                if (quadPoints[i] == quadPoints[1]){
+                    x -= 7.0;
+                } else if (quadPoints[i] == quadPoints[3]){
+                    x -= 7.0;
+                    y -= 12.0;
+                } else if (quadPoints[i] == quadPoints[2]){
+                    y -= 12.0;
+                }
                 pointList.add(new PointF(x, y));
             }
         } else {

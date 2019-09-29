@@ -62,7 +62,8 @@
                 android:layout_margin="2dp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:src="@drawable/ic_photo_camera" />
+                android:src="@drawable/ic_photo_camera"
+                android:backgroundTint="@color/blue"/>
         </LinearLayout>
 
         <LinearLayout

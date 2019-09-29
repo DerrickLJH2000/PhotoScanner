@@ -148,18 +148,11 @@ public class ResultActivity extends AppCompatActivity {
     }
 
     private void setPic(String photoPath) {
-        // Get the dimensions of the View
-        int targetW = ivResult.getWidth();
-        int targetH = ivResult.getHeight();
-
-        Log.i(TAG, "targetW: " + targetW + "targetW: " + targetH);
 
         // Get the dimensions of the bitmap
         BitmapFactory.Options bmOptions = new BitmapFactory.Options();
         bmOptions.inJustDecodeBounds = true;
 
-        int photoW = bmOptions.outWidth;
-        int photoH = bmOptions.outHeight;
 
         // Decode the image file into a Bitmap sized to fill the View
         bmOptions.inJustDecodeBounds = false;
