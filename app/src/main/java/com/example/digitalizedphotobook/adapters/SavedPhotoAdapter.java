@@ -79,8 +79,6 @@ public class SavedPhotoAdapter extends RecyclerView.Adapter<SavedPhotoAdapter.Vi
         public ViewHolder(View itemView) {
             super(itemView);
             this.imageView = (ImageView) itemView.findViewById(R.id.ivSavedPhotos);
-            this.ivDelete = (ImageView) itemView.findViewById(R.id.ivDelete);
-
         }
     }
 }

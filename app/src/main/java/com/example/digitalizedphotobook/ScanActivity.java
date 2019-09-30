@@ -57,6 +57,7 @@ import android.util.Log;
 import android.util.Size;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
+import android.view.Gravity;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.Surface;
@@ -297,7 +298,9 @@ public class ScanActivity extends AppCompatActivity {
     };
 
     private void showToast(final String text) {
-        Toast.makeText(ScanActivity.this, text, Toast.LENGTH_SHORT).show();
+        Toast toast = Toast.makeText(ScanActivity.this, text, Toast.LENGTH_SHORT);
+        toast.setGravity(Gravity.TOP,0,30);
+        toast.show();
     }
 
     private static Size chooseOptimalSize(Size[] choices, int textureViewWidth,
@@ -373,21 +376,21 @@ public class ScanActivity extends AppCompatActivity {
                     if (flashmode == "OFF") {
                         ivFlash.setImageResource(R.drawable.ic_flash_on);
                         ivFlash.setTag(R.drawable.ic_flash_on);
-                        Toast.makeText(ScanActivity.this, "Flash Mode : ON", Toast.LENGTH_SHORT).show();
+                        showToast("Flash Mode : ON");
                         flashmode = "ON";
                     } else if (flashmode == "ON") {
                         ivFlash.setImageResource(R.drawable.ic_flash_auto);
                         ivFlash.setTag(R.drawable.ic_flash_auto);
-                        Toast.makeText(ScanActivity.this, "Flash Mode : AUTO", Toast.LENGTH_SHORT).show();
+                        showToast("Flash Mode : AUTO");
                         flashmode = "AUTO";
                     } else if (flashmode == "AUTO") {
                         ivFlash.setImageResource(R.drawable.ic_flash_off);
                         ivFlash.setTag(R.drawable.ic_flash_off);
-                        Toast.makeText(ScanActivity.this, "Flash Mode : OFF", Toast.LENGTH_SHORT).show();
+                        showToast("Flash Mode : OFF");
                         flashmode = "OFF";
                     }
                 } else {
-                    Toast.makeText(ScanActivity.this, "You do not have Flash feature on your device!", Toast.LENGTH_SHORT).show();
+                    showToast("You do not have Flash feature on your device!");
                 }
             }
         });
@@ -558,7 +561,7 @@ public class ScanActivity extends AppCompatActivity {
                                            @NonNull int[] grantResults) {
         if (requestCode == REQUEST_CAMERA_PERMISSION) {
             if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "You can't use camera without permission", Toast.LENGTH_SHORT).show();
+                showToast("You can't use camera without permission!");
                 finish();
             }
         }
@@ -963,6 +966,7 @@ public class ScanActivity extends AppCompatActivity {
                     mBackgroundHandler);
             Intent intent = new Intent(ScanActivity.this,AdjustmentActivity.class);
             intent.putExtra("image", mFile.getAbsolutePath());
+            intent.putExtra("reqCode", 1);
             startActivity(intent);
         } catch (CameraAccessException e) {
             e.printStackTrace();

@@ -168,17 +168,17 @@ public class PolygonView extends FrameLayout {
     }
 
     private void setPointsCoordinates(Map<Integer, PointF> pointFMap) {
-        pointer1.setX(pointFMap.get(0).x * 2);
-        pointer1.setY(pointFMap.get(0).y * 2);
+        pointer1.setX(pointFMap.get(0).x);
+        pointer1.setY(pointFMap.get(0).y);
 
-        pointer2.setX(pointFMap.get(1).x * 2);
-        pointer2.setY(pointFMap.get(1).y * 2);
+        pointer2.setX(pointFMap.get(1).x);
+        pointer2.setY(pointFMap.get(1).y);
 
-        pointer3.setX(pointFMap.get(2).x * 2);
-        pointer3.setY(pointFMap.get(2).y * 2);
+        pointer3.setX(pointFMap.get(2).x);
+        pointer3.setY(pointFMap.get(2).y);
 
-        pointer4.setX(pointFMap.get(3).x * 2);
-        pointer4.setY(pointFMap.get(3).y * 2);
+        pointer4.setX(pointFMap.get(3).x);
+        pointer4.setY(pointFMap.get(3).y);
     }
 
 

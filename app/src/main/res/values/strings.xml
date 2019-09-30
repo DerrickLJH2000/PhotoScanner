@@ -4,6 +4,6 @@
     <string-array name="mats">
         <item>RGBA</item>
         <item>Grey Scale</item>
-        <item>Canny</item>
+        <item>B &amp; W</item>
     </string-array>
 </resources>

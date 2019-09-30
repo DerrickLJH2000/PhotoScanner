@@ -7,23 +7,33 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PointF;
+import android.graphics.PorterDuff;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.PermissionChecker;
+import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.content.res.AppCompatResources;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.example.digitalizedphotobook.classes.Quadrilateral;
@@ -46,11 +56,15 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
+import static java.security.AccessController.getContext;
 
 
 public class AdjustmentActivity extends AppCompatActivity {
@@ -58,6 +72,7 @@ public class AdjustmentActivity extends AppCompatActivity {
     private static final int REQUEST_CODE = 99;
     private ImageView ivBack, ivCrop, ivConfirm, ivRotateLeft, ivRotateRight, ivResult;
     private PolygonView polygonView;
+    private RelativeLayout rellay;
     private FrameLayout frmSource;
     private File mFile;
     private String imagePath;
@@ -69,6 +84,9 @@ public class AdjustmentActivity extends AppCompatActivity {
     private double colorGain = 1.5;       // contrast
     private double colorBias = 0;         // bright
     private int colorThresh = 110;
+    private boolean isFourPointed = false;
+    private boolean isCropped = false;
+    private int reqCode;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -89,6 +107,13 @@ public class AdjustmentActivity extends AppCompatActivity {
     public AdjustmentActivity() {
     }
 
+    private void showToast(final String text) {
+        Toast toast = Toast.makeText(AdjustmentActivity.this, text, Toast.LENGTH_SHORT);
+        toast.setGravity(Gravity.TOP,0,30);
+        toast.show();
+    }
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -101,6 +126,7 @@ public class AdjustmentActivity extends AppCompatActivity {
         ivResult = findViewById(R.id.ivResult);
         frmSource = findViewById(R.id.sourceFrame);
         polygonView = findViewById(R.id.polygonView);
+        rellay = findViewById(R.id.rellay2);
         if (!OpenCVLoader.initDebug()) {
             return;
         }
@@ -114,84 +140,229 @@ public class AdjustmentActivity extends AppCompatActivity {
         }
 
         imagePath = getIntent().getStringExtra("image");
-        final int reqCode = getIntent().getIntExtra("reqCode", -1);
+        reqCode = getIntent().getIntExtra("reqCode", -1);
         Log.i(TAG, (reqCode) + imagePath);
         mFile = new File(imagePath);
         BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inSampleSize = 8;
+        options.inSampleSize = 4;
         bmp = BitmapFactory.decodeFile(mFile.getAbsolutePath(), options);
         Matrix matrix = new Matrix();
-        if (reqCode != 0) {
-            matrix.postRotate(90);
-        }
+//        if (reqCode != 0) {
+        matrix.postRotate(90);
+//        }
         newBmp = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
 
 
         ivResult.setImageBitmap(newBmp);
-        Log.i(TAG,"Height: " + newBmp.getHeight() + "Width: " + newBmp.getWidth());
+        Log.i(TAG, "Height: " + newBmp.getHeight() + "Width: " + newBmp.getWidth());
         polygonView.paintZoom(ivResult.getDrawable());
 
         mat = new Mat(newBmp.getWidth(), newBmp.getHeight(), CvType.CV_8UC4);
         Utils.bitmapToMat(newBmp, mat);
 
         findContours(mat);
-
+        ivResult.setImageBitmap(newBmp);
         Mat doc = new Mat(mat.size(), CvType.CV_8UC4);
 
-       if (quad != null) {
-        setBitmap(newBmp);
-       } else {
-           mat.copyTo(doc);
-           Log.i("Points", "failed");
-       }
-        enhanceDocument(doc);
+//       if (quad != null) {
+//        setBitmap(newBmp);
+//       } else {
+//           mat.copyTo(doc);
+//           Log.i("Points", "failed");
+//       }
+//        enhanceDocument(doc);
 
-        ivBack.setOnClickListener(new View.OnClickListener() {
+        ivBack.setOnTouchListener(new View.OnTouchListener() {
             @Override
-            public void onClick(View v) {
-                alertDialog();
+            public boolean onTouch(View v, MotionEvent event) {
+                int eid = event.getAction();
+                switch (eid) {
+                    case MotionEvent.ACTION_DOWN:
+                        ivBack.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
+                        alertDialog();
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        ivBack.setColorFilter(Color.argb(255, 255, 255, 255));
+                        break;
+                }
+                return true;
+            }
+        });
+        ivRotateLeft.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                int eid = event.getAction();
+                switch (eid) {
+                    case MotionEvent.ACTION_DOWN:
+                        ivRotateLeft.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
+                        ivResult.setRotation(ivResult.getRotation() - 90);
+                        polygonView.setRotation(polygonView.getRotation() - 90);
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        ivRotateLeft.setColorFilter(Color.argb(255, 255, 255, 255));
+                        break;
+                }
+                return true;
             }
         });
 
-        ivRotateLeft.setOnClickListener(new View.OnClickListener() {
+        ivRotateRight.setOnTouchListener(new View.OnTouchListener() {
             @Override
-            public void onClick(View v) {
-                ivResult.setRotation(ivResult.getRotation() - 90);
-                polygonView.setRotation(polygonView.getRotation() - 90);
+            public boolean onTouch(View v, MotionEvent event) {
+                int eid = event.getAction();
+                switch (eid) {
+                    case MotionEvent.ACTION_DOWN:
+                        ivRotateRight.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
+                        ivResult.setRotation(ivResult.getRotation() + 90);
+                        polygonView.setRotation(polygonView.getRotation() + 90);
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        ivRotateRight.setColorFilter(Color.argb(255, 255, 255, 255));
+                        break;
+                }
+                return true;
             }
         });
-
-        ivRotateRight.setOnClickListener(new View.OnClickListener() {
+        ivCrop.setTag("white");
+        ivCrop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ivResult.setRotation(ivResult.getRotation() + 90);
-                polygonView.setRotation(polygonView.getRotation() + 90);
+                Map<Integer, PointF> points = new Map<Integer, PointF>() {
+                    @Override
+                    public int size() {
+                        return 0;
+                    }
+
+                    @Override
+                    public boolean isEmpty() {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean containsKey(@Nullable Object key) {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean containsValue(@Nullable Object value) {
+                        return false;
+                    }
+
+                    @Nullable
+                    @Override
+                    public PointF get(@Nullable Object key) {
+                        return null;
+                    }
+
+                    @Nullable
+                    @Override
+                    public PointF put(@NonNull Integer key, @NonNull PointF value) {
+                        return null;
+                    }
+
+                    @Nullable
+                    @Override
+                    public PointF remove(@Nullable Object key) {
+                        return null;
+                    }
+
+                    @Override
+                    public void putAll(@NonNull Map<? extends Integer, ? extends PointF> m) {
+
+                    }
+
+                    @Override
+                    public void clear() {
+
+                    }
+
+                    @NonNull
+                    @Override
+                    public Set<Integer> keySet() {
+                        return null;
+                    }
+
+                    @NonNull
+                    @Override
+                    public Collection<PointF> values() {
+                        return null;
+                    }
+
+                    @NonNull
+                    @Override
+                    public Set<Entry<Integer, PointF>> entrySet() {
+                        return null;
+                    }
+                };
+                if (!isFourPointed) {
+                    showToast("Couldn't Detect Object!");
+                } else {
+                    if (ivCrop.getTag() == "white") {
+                        // Undo Crop Here
+                        Log.i(TAG, "isCropped:MaxCrop " + isCropped);
+                        ivCrop.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
+                        ivCrop.setTag("blue");
+                        PointF bl = new PointF(0.0f, 0.0f);
+                        PointF br = new PointF(Float.parseFloat(Integer.toString(newBmp.getWidth())), 0.0f);
+                        PointF tr = new PointF(Float.parseFloat(Integer.toString(newBmp.getWidth())),Float.parseFloat(Integer.toString(newBmp.getHeight())));
+                        PointF tl = new PointF(0.0f, Float.parseFloat(Integer.toString(newBmp.getHeight())));
+                        points.put(0, bl);
+                        points.put(1, br);
+                        points.put(2, tl);
+                        points.put(3, tr);
+                        Log.i(TAG, "isCropped newBmp Size: " + tr.x + ", " + tr.y);
+
+                        Map<Integer, PointF> pointFs = getEdgePoints(newBmp);
+                        polygonView.setPoints(pointFs);
+                        polygonView.setVisibility(View.VISIBLE);
+                        isCropped = false;
+                    } else {
+                        // Auto Crop Here
+                        Log.i(TAG, "isCropped: Autocrop " + isCropped);
+                        ivCrop.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.color_white), PorterDuff.Mode.SRC_IN);
+                        ivCrop.setTag("white");
+                        for (int i = 0; i < quad.points.length; i++) {
+                            float x = Float.parseFloat(Double.toString(quad.points[i].x));
+                            float y = Float.parseFloat(Double.toString(quad.points[i].y));
+                            PointF pointF = new PointF(x, y);
+                            points.put(i, pointF);
+                        }
+                        polygonView.setPoints(points);
+                        polygonView.setVisibility(View.VISIBLE);
+                        isCropped = true;
+                    }
+                }
             }
         });
 
         ivConfirm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                ivConfirm.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
                 Map<Integer, PointF> points = polygonView.getPoints();
                 Point[] pointArr = new Point[4];
 
                 for (int i = 0; i < points.size(); i++) {
                     Log.i(TAG, "x = " + Float.toString(points.get(i).x) + ",y = " + Float.toString(points.get(i).y));
                     if (reqCode != 0) {
-                        pointArr[i] = new Point((double) points.get(i).x / 2, (double) points.get(i).y / 2);
+                        pointArr[i] = new Point((double) points.get(i).x, (double) points.get(i).y);
 //                        pointArr[i] = new Point((double) points.get(i).x, (double) points.get(i).y);
                     } else {
-                        pointArr[i] = new Point((double) points.get(i).x / 4, (double) points.get(i).y / 4);
+                        pointArr[i] = new Point((double) points.get(i).x, (double) points.get(i).y);
 //                        pointArr[i] = new Point((double) points.get(i).x, (double) points.get(i).y);
                     }
                 }
 
                 Log.d(TAG, "Crop Points: " + pointArr[0].toString() + " , " + pointArr[1].toString() + " , " + pointArr[2].toString() + " , " + pointArr[3].toString());
                 Mat dest = perspectiveChange(mat, pointArr);
-                Bitmap tfmBmp = Bitmap.createBitmap(dest.width(), dest.height(), Bitmap.Config.ARGB_8888);
+                Matrix matrix = new Matrix();
+                Log.i(TAG, "getRotation: " + ivResult.getRotation());
+                matrix.postRotate(ivResult.getRotation());
+                Bitmap tfmBmp = Bitmap.createBitmap(dest.width(),dest.height(), Bitmap.Config.ARGB_8888);
                 Utils.matToBitmap(dest, tfmBmp);
+                Bitmap rotatedBmp = Bitmap.createBitmap(tfmBmp,0,0,tfmBmp.getWidth(),tfmBmp.getHeight(),matrix,true);
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                tfmBmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+                rotatedBmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
                 byte[] bytes = stream.toByteArray();
                 File mFile = new File(getExternalFilesDir("Temp"), "temp2.jpg");
                 try {
@@ -225,6 +396,7 @@ public class AdjustmentActivity extends AppCompatActivity {
             Log.d(TAG, "OpenCV library found inside package. Using it!");
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
+        ivConfirm.setColorFilter(Color.argb(255,255,255,255));
     }
 
     private Mat perspectiveChange(Mat src, Point[] points) {
@@ -235,7 +407,7 @@ public class AdjustmentActivity extends AppCompatActivity {
         Point br = points[1];
         Point tl = points[2];
         Point tr = points[3];
-        Log.i(TAG, "Src size:" +src.size());
+        Log.i(TAG, "Src size:" + src.size());
         double widthA = Math.sqrt(Math.pow(br.x - bl.x, 2) + Math.pow(br.y - bl.y, 2));
         double widthB = Math.sqrt(Math.pow(tr.x - tl.x, 2) + Math.pow(tr.y - tl.y, 2));
 
@@ -254,7 +426,7 @@ public class AdjustmentActivity extends AppCompatActivity {
         int maxHeight = Double.valueOf(dh).intValue();
         Log.d(TAG, "maxHeight:" + (maxHeight));
 
-        Mat destImage = new Mat(maxHeight,maxWidth, CvType.CV_8UC4);
+        Mat destImage = new Mat(maxHeight, maxWidth, CvType.CV_8UC4);
         Log.d(TAG, "destImage:" + (destImage.cols()) + ", " + (destImage.rows()));
         Mat srcMat = new Mat(4, 1, CvType.CV_32FC2);
         Mat dstMat = new Mat(4, 1, CvType.CV_32FC2);
@@ -288,7 +460,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                         File file = new File(imagePath);
                         boolean deleted = file.delete();
                         if (!deleted) {
-                            Toast.makeText(AdjustmentActivity.this, "Error discarding image.", Toast.LENGTH_SHORT).show();
+                            showToast("Error Discarding Image!");
                         }
                         dialog.cancel();
                         finish();
@@ -296,7 +468,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                 });
 
         builder1.setNegativeButton(
-                "No",
+                "Cancel",
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         dialog.cancel();
@@ -324,18 +496,16 @@ public class AdjustmentActivity extends AppCompatActivity {
         //Imgproc.resize(src,resizedImage,size);
         Imgproc.cvtColor(src, grayImage, Imgproc.COLOR_RGBA2GRAY, 1);
         Imgproc.GaussianBlur(grayImage, grayImage, new Size(5, 5), 0);
-        Imgproc.dilate(grayImage, grayImage, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2, 2)));
-        Imgproc.erode(grayImage, grayImage, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2, 2)));
-        Imgproc.Canny(grayImage, cannedImage, 75, 200);
-
+        Imgproc.dilate(grayImage, grayImage, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
+        Imgproc.erode(grayImage, grayImage, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
+        Imgproc.Canny(grayImage, cannedImage, 0, 240);
 
         ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
         Mat hierarchy = new Mat();
 
-        Imgproc.findContours(cannedImage, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+        Imgproc.findContours(cannedImage, contours, hierarchy, Imgproc.RETR_LIST , Imgproc.CHAIN_APPROX_SIMPLE);
 
         hierarchy.release();
-
         Collections.sort(contours, new Comparator<MatOfPoint>() {
 
             @Override
@@ -366,22 +536,21 @@ public class AdjustmentActivity extends AppCompatActivity {
             Imgproc.approxPolyDP(c2f, approx, 0.02 * peri, true);
 
             Point[] points = approx.toArray();
-            //Imgproc.drawContours(mat, contours, maxValIdx, new Scalar(0, 255, 0), 1);
+            Imgproc.drawContours(drawing, contours, -1, new Scalar(255, 255, 255), 2);
             // select biggest 4 angles polygon
             if (points.length == 4) {
                 Point[] foundPoints = sortPoints(points);
-
+                isFourPointed = true;
+                isCropped = true;
                 quad = new Quadrilateral(contours.get(maxValIdx), foundPoints);
                 for (Point point : quad.points) {
-                    //Imgproc.circle(mat, point, 10, new Scalar(255, 0, 255), 4);
+                    Imgproc.circle(drawing, point, 10, new Scalar(255, 0, 255), 4);
                 }
                 Log.d(TAG, "Quad Points: " + quad.points[0].toString() + " , " + quad.points[1].toString() + " , " + quad.points[2].toString() + " , " + quad.points[3].toString());
-            }
-            else {
+            } else {
                 quad = null;
             }
-
-            Utils.matToBitmap(mat, newBmp);
+            Utils.matToBitmap(drawing, newBmp);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -488,7 +657,6 @@ public class AdjustmentActivity extends AppCompatActivity {
     }
 
     private void setBitmap(Bitmap original) {
-
         ivResult.setImageBitmap(original);
         Bitmap tempBitmap = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
         Map<Integer, PointF> pointFs = getEdgePoints(tempBitmap);
@@ -510,21 +678,25 @@ public class AdjustmentActivity extends AppCompatActivity {
             for (int i = 0; i < quadPoints.length; i++) {
                 float x = Float.parseFloat(Double.toString(quadPoints[i].x));
                 float y = Float.parseFloat(Double.toString(quadPoints[i].y));
-                if (quadPoints[i] == quadPoints[1]){
+                if (quadPoints[i] == quadPoints[1]) {
                     x -= 7.0;
-                } else if (quadPoints[i] == quadPoints[3]){
+                } else if (quadPoints[i] == quadPoints[3]) {
                     x -= 7.0;
                     y -= 12.0;
-                } else if (quadPoints[i] == quadPoints[2]){
+                } else if (quadPoints[i] == quadPoints[2]) {
                     y -= 12.0;
                 }
+                if (reqCode == 0) {
+                    y = y * 4;
+                }
+                Log.i(TAG, "reqCode: " + reqCode);
                 pointList.add(new PointF(x, y));
             }
         } else {
             pointList.add(new PointF(0, 0));
-            pointList.add(new PointF(ivResult.getWidth(), 0));
-            pointList.add(new PointF(ivResult.getWidth(), ivResult.getHeight()));
-            pointList.add(new PointF(0, ivResult.getHeight()));
+            pointList.add(new PointF(newBmp.getWidth(), 0));
+            pointList.add(new PointF(newBmp.getWidth(), newBmp.getHeight()));
+            pointList.add(new PointF(0, newBmp.getHeight()));
         }
         return pointList;
 
@@ -553,7 +725,7 @@ public class AdjustmentActivity extends AppCompatActivity {
             case 0: {
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 } else {
-                    Toast.makeText(AdjustmentActivity.this, "Permission not granted", Toast.LENGTH_SHORT).show();
+                    showToast("Permission not Granted!");
                 }
             }
         }

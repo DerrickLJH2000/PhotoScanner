@@ -27,12 +27,19 @@
             android:layout_gravity="center"
             android:padding="10dp"
             android:scaleType="fitCenter"/>
-        <com.example.digitalizedphotobook.PolygonView
-            android:id="@+id/polygonView"
+        <RelativeLayout
+            android:id="@+id/rellay2"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:clipToPadding="true"
-            android:layout_gravity="center"/>
+            android:layout_gravity="center">
+            <com.example.digitalizedphotobook.PolygonView
+                android:id="@+id/polygonView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="true"
+                android:layout_gravity="center"/>
+        </RelativeLayout>
+
     </FrameLayout>
 
     <LinearLayout
