@@ -7,39 +7,39 @@
     android:background="@color/color_dark_grey"
     android:orientation="vertical"
     tools:context=".AdjustmentActivity">
-
     <include
         android:id="@+id/include"
         layout="@layout/app_bar_adjustment" />
-
     <FrameLayout
         android:id="@+id/sourceFrame"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:layout_marginLeft="10dp"
-        android:layout_marginRight="10dp"
         android:layout_marginTop="10dp"
+        android:layout_marginRight="10dp"
         android:layout_weight="1">
-        <ImageView
-            android:id="@+id/ivResult"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_gravity="center"
-            android:padding="10dp"
-            android:scaleType="fitCenter"/>
+
         <RelativeLayout
             android:id="@+id/rellay2"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_gravity="center">
+
+            <ImageView
+                android:id="@+id/ivResult"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:padding="10dp"
+                android:scaleType="fitCenter" />
+
             <com.example.digitalizedphotobook.PolygonView
                 android:id="@+id/polygonView"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:clipToPadding="true"
-                android:layout_gravity="center"/>
+                android:layout_gravity="center"
+                android:clipToPadding="true" />
         </RelativeLayout>
-
     </FrameLayout>
 
     <LinearLayout
@@ -64,6 +64,7 @@
                 android:layout_height="match_parent"
                 android:src="@drawable/ic_clear" />
         </LinearLayout>
+
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="30dp"
@@ -91,6 +92,7 @@
                 android:layout_height="match_parent"
                 android:src="@drawable/ic_crop" />
         </LinearLayout>
+
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="30dp"
@@ -121,4 +123,6 @@
 
 
     </LinearLayout>
+
+
 </LinearLayout>
