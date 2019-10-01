@@ -15,9 +15,7 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginLeft="10dp"
-        android:layout_marginRight="10dp"
-        android:layout_marginTop="10dp"
+        android:layout_margin="10dp"
         android:layout_weight="1">
 
         <ImageView
@@ -29,26 +27,29 @@
             android:layout_margin="10dp"
             android:scaleType="fitCenter"/>
     </RelativeLayout>
-
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:background="@color/color_dark_grey2"/>
     <LinearLayout
         android:id="@+id/linlay1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:layout_marginBottom="20dp"
+        android:paddingTop="15dp"
+        android:paddingBottom="15dp"
         android:gravity="center"
         android:orientation="horizontal">
 
         <LinearLayout
             android:layout_width="0dp"
-            android:layout_height="30dp"
+            android:layout_height="25dp"
             android:layout_weight="1"
             android:gravity="center"
             android:orientation="vertical">
 
             <ImageView
                 android:id="@+id/ivBack"
-                android:layout_width="30dp"
+                android:layout_width="25dp"
                 android:layout_height="match_parent"
                 android:src="@drawable/ic_clear" />
         </LinearLayout>
@@ -56,28 +57,28 @@
 
         <LinearLayout
             android:layout_width="0dp"
-            android:layout_height="30dp"
+            android:layout_height="25dp"
             android:layout_weight="1"
             android:gravity="center"
             android:orientation="vertical">
 
             <ImageView
                 android:id="@+id/ivColour"
-                android:layout_width="30dp"
+                android:layout_width="25dp"
                 android:layout_height="match_parent"
                 android:src="@drawable/ic_color_lens" />
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="0dp"
-            android:layout_height="30dp"
+            android:layout_height="25dp"
             android:layout_weight="1"
             android:gravity="center"
             android:orientation="vertical">
 
             <ImageView
                 android:id="@+id/ivConfirm"
-                android:layout_width="30dp"
+                android:layout_width="25dp"
                 android:layout_height="match_parent"
                 android:src="@drawable/ic_check" />
         </LinearLayout>

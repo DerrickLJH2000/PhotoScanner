@@ -26,11 +26,13 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.content.res.AppCompatResources;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -76,7 +78,7 @@ public class AdjustmentActivity extends AppCompatActivity {
     private FrameLayout frmSource;
     private File mFile;
     private String imagePath;
-    private Bitmap bmp, newBmp;
+    private Bitmap bmp, newBmp, resizedBmp;
     private Mat mat, drawing;
     private Quadrilateral quad;
     private boolean colorMode = false;
@@ -109,7 +111,7 @@ public class AdjustmentActivity extends AppCompatActivity {
 
     private void showToast(final String text) {
         Toast toast = Toast.makeText(AdjustmentActivity.this, text, Toast.LENGTH_SHORT);
-        toast.setGravity(Gravity.TOP,0,30);
+        toast.setGravity(Gravity.TOP, 0, 30);
         toast.show();
     }
 
@@ -147,9 +149,9 @@ public class AdjustmentActivity extends AppCompatActivity {
         options.inSampleSize = 4;
         bmp = BitmapFactory.decodeFile(mFile.getAbsolutePath(), options);
         Matrix matrix = new Matrix();
-//        if (reqCode != 0) {
-        matrix.postRotate(90);
-//        }
+        if (reqCode != 0) {
+            matrix.postRotate(90);
+        }
         newBmp = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
 
 
@@ -165,7 +167,7 @@ public class AdjustmentActivity extends AppCompatActivity {
         Mat doc = new Mat(mat.size(), CvType.CV_8UC4);
 
 //       if (quad != null) {
-//        setBitmap(newBmp);
+        setBitmap(newBmp);
 //       } else {
 //           mat.copyTo(doc);
 //           Log.i("Points", "failed");
@@ -223,111 +225,32 @@ public class AdjustmentActivity extends AppCompatActivity {
                 return true;
             }
         });
-        ivCrop.setTag("white");
         ivCrop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Map<Integer, PointF> points = new Map<Integer, PointF>() {
-                    @Override
-                    public int size() {
-                        return 0;
-                    }
-
-                    @Override
-                    public boolean isEmpty() {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean containsKey(@Nullable Object key) {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean containsValue(@Nullable Object value) {
-                        return false;
-                    }
-
-                    @Nullable
-                    @Override
-                    public PointF get(@Nullable Object key) {
-                        return null;
-                    }
-
-                    @Nullable
-                    @Override
-                    public PointF put(@NonNull Integer key, @NonNull PointF value) {
-                        return null;
-                    }
-
-                    @Nullable
-                    @Override
-                    public PointF remove(@Nullable Object key) {
-                        return null;
-                    }
-
-                    @Override
-                    public void putAll(@NonNull Map<? extends Integer, ? extends PointF> m) {
-
-                    }
-
-                    @Override
-                    public void clear() {
-
-                    }
-
-                    @NonNull
-                    @Override
-                    public Set<Integer> keySet() {
-                        return null;
-                    }
-
-                    @NonNull
-                    @Override
-                    public Collection<PointF> values() {
-                        return null;
-                    }
-
-                    @NonNull
-                    @Override
-                    public Set<Entry<Integer, PointF>> entrySet() {
-                        return null;
-                    }
-                };
                 if (!isFourPointed) {
                     showToast("Couldn't Detect Object!");
                 } else {
-                    if (ivCrop.getTag() == "white") {
+                    if (isCropped) {
                         // Undo Crop Here
-                        Log.i(TAG, "isCropped:MaxCrop " + isCropped);
                         ivCrop.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
-                        ivCrop.setTag("blue");
-                        PointF bl = new PointF(0.0f, 0.0f);
-                        PointF br = new PointF(Float.parseFloat(Integer.toString(newBmp.getWidth())), 0.0f);
-                        PointF tr = new PointF(Float.parseFloat(Integer.toString(newBmp.getWidth())),Float.parseFloat(Integer.toString(newBmp.getHeight())));
-                        PointF tl = new PointF(0.0f, Float.parseFloat(Integer.toString(newBmp.getHeight())));
-                        points.put(0, bl);
-                        points.put(1, br);
-                        points.put(2, tl);
-                        points.put(3, tr);
-                        Log.i(TAG, "isCropped newBmp Size: " + tr.x + ", " + tr.y);
-
-                        Map<Integer, PointF> pointFs = getEdgePoints(newBmp);
+                        Map<Integer, PointF> pointFs = getOutlinePoints(newBmp);
                         polygonView.setPoints(pointFs);
+                        polygonView.invalidate();
                         polygonView.setVisibility(View.VISIBLE);
                         isCropped = false;
                     } else {
                         // Auto Crop Here
-                        Log.i(TAG, "isCropped: Autocrop " + isCropped);
                         ivCrop.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.color_white), PorterDuff.Mode.SRC_IN);
-                        ivCrop.setTag("white");
-                        for (int i = 0; i < quad.points.length; i++) {
-                            float x = Float.parseFloat(Double.toString(quad.points[i].x));
-                            float y = Float.parseFloat(Double.toString(quad.points[i].y));
-                            PointF pointF = new PointF(x, y);
-                            points.put(i, pointF);
-                        }
-                        polygonView.setPoints(points);
+//                        for (int i = 0; i < quad.points.length; i++) {
+//                            float x = Float.parseFloat(Double.toString(quad.points[i].x));
+//                            float y = Float.parseFloat(Double.toString(quad.points[i].y));
+//                            PointF pointF = new PointF(x, y);
+//                            points.put(i, pointF);
+//                        }
+                        Map<Integer, PointF> pointFs = getEdgePoints(newBmp);
+                        polygonView.setPoints(pointFs);
+                        polygonView.invalidate();
                         polygonView.setVisibility(View.VISIBLE);
                         isCropped = true;
                     }
@@ -358,13 +281,13 @@ public class AdjustmentActivity extends AppCompatActivity {
                 Matrix matrix = new Matrix();
                 Log.i(TAG, "getRotation: " + ivResult.getRotation());
                 matrix.postRotate(ivResult.getRotation());
-                Bitmap tfmBmp = Bitmap.createBitmap(dest.width(),dest.height(), Bitmap.Config.ARGB_8888);
+                Bitmap tfmBmp = Bitmap.createBitmap(dest.width(), dest.height(), Bitmap.Config.ARGB_8888);
                 Utils.matToBitmap(dest, tfmBmp);
-                Bitmap rotatedBmp = Bitmap.createBitmap(tfmBmp,0,0,tfmBmp.getWidth(),tfmBmp.getHeight(),matrix,true);
+                Bitmap rotatedBmp = Bitmap.createBitmap(tfmBmp, 0, 0, tfmBmp.getWidth(), tfmBmp.getHeight(), matrix, true);
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                rotatedBmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+                rotatedBmp.compress(Bitmap.CompressFormat.PNG, 100, stream);
                 byte[] bytes = stream.toByteArray();
-                File mFile = new File(getExternalFilesDir("Temp"), "temp2.jpg");
+                File mFile = new File(getExternalFilesDir("Temp"), "temp2.png");
                 try {
                     mFile.createNewFile();
                     FileOutputStream fileOutputStream = new FileOutputStream(mFile);
@@ -396,13 +319,15 @@ public class AdjustmentActivity extends AppCompatActivity {
             Log.d(TAG, "OpenCV library found inside package. Using it!");
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
-        ivConfirm.setColorFilter(Color.argb(255,255,255,255));
+        ivConfirm.setColorFilter(Color.argb(255, 255, 255, 255));
     }
 
     private Mat perspectiveChange(Mat src, Point[] points) {
-        double ratio = src.size().height / 500;
-        int height = Double.valueOf(src.size().height / ratio).intValue();
-        int width = Double.valueOf(src.size().width / ratio).intValue();
+//        double ratio = src.size().height / 500;
+        for (int i = 0; i < points.length; i++) {
+            points[i].x += 15;
+            points[i].y += 15;
+        }
         Point bl = points[0];
         Point br = points[1];
         Point tl = points[2];
@@ -413,7 +338,7 @@ public class AdjustmentActivity extends AppCompatActivity {
 
         Log.d(TAG, "widthA:" + (widthA) + ", width B:" + Double.toString(widthB));
 
-        double dw = Math.max(widthA, widthB) * ratio;
+        double dw = Math.max(widthA, widthB) ;
         int maxWidth = Double.valueOf(dw).intValue();
         Log.d(TAG, "maxWidth:" + (maxWidth));
 
@@ -422,7 +347,7 @@ public class AdjustmentActivity extends AppCompatActivity {
 
         Log.d(TAG, "heightA:" + (heightA) + ", height B:" + Double.toString(heightB));
 
-        double dh = Math.max(heightA, heightB) * ratio;
+        double dh = Math.max(heightA, heightB);
         int maxHeight = Double.valueOf(dh).intValue();
         Log.d(TAG, "maxHeight:" + (maxHeight));
 
@@ -481,14 +406,12 @@ public class AdjustmentActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        super.onBackPressed();
         alertDialog();
     }
 
 
     private ArrayList<MatOfPoint> findContours(Mat src) {
 
-        //Size size = new Size(newBmp.getWidth(),newBmp.getHeight());
         Size size = new Size(newBmp.getWidth(), newBmp.getHeight());
         Mat grayImage = new Mat(size, CvType.CV_8UC1);
         Mat cannedImage = new Mat(size, CvType.CV_8UC1);
@@ -496,14 +419,14 @@ public class AdjustmentActivity extends AppCompatActivity {
         //Imgproc.resize(src,resizedImage,size);
         Imgproc.cvtColor(src, grayImage, Imgproc.COLOR_RGBA2GRAY, 1);
         Imgproc.GaussianBlur(grayImage, grayImage, new Size(5, 5), 0);
-        Imgproc.dilate(grayImage, grayImage, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
-        Imgproc.erode(grayImage, grayImage, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
+        Imgproc.dilate(grayImage, grayImage, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2, 2)));
+//        Imgproc.erode(grayImage, grayImage, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2, 2)));
         Imgproc.Canny(grayImage, cannedImage, 0, 240);
 
         ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
         Mat hierarchy = new Mat();
 
-        Imgproc.findContours(cannedImage, contours, hierarchy, Imgproc.RETR_LIST , Imgproc.CHAIN_APPROX_SIMPLE);
+        Imgproc.findContours(cannedImage, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
 
         hierarchy.release();
         Collections.sort(contours, new Comparator<MatOfPoint>() {
@@ -533,24 +456,24 @@ public class AdjustmentActivity extends AppCompatActivity {
             MatOfPoint2f c2f = new MatOfPoint2f(contours.get(maxValIdx).toArray());
             double peri = Imgproc.arcLength(c2f, true);
             MatOfPoint2f approx = new MatOfPoint2f();
-            Imgproc.approxPolyDP(c2f, approx, 0.02 * peri, true);
+            Imgproc.approxPolyDP(c2f, approx, 0.01 * peri, true);
 
             Point[] points = approx.toArray();
-            Imgproc.drawContours(drawing, contours, -1, new Scalar(255, 255, 255), 2);
+//            Imgproc.drawContours(mat, contours, -1       , new Scalar(255, 255, 255), 4);
             // select biggest 4 angles polygon
-            if (points.length == 4) {
+            if (points.length >= 4) {
                 Point[] foundPoints = sortPoints(points);
                 isFourPointed = true;
                 isCropped = true;
                 quad = new Quadrilateral(contours.get(maxValIdx), foundPoints);
-                for (Point point : quad.points) {
-                    Imgproc.circle(drawing, point, 10, new Scalar(255, 0, 255), 4);
-                }
+//                for (Point point : quad.points) {
+//                    Imgproc.circle(mat, point, 10, new Scalar(255, 0, 255), 4);
+//                }
                 Log.d(TAG, "Quad Points: " + quad.points[0].toString() + " , " + quad.points[1].toString() + " , " + quad.points[2].toString() + " , " + quad.points[3].toString());
             } else {
                 quad = null;
             }
-            Utils.matToBitmap(drawing, newBmp);
+            Utils.matToBitmap(mat, newBmp);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -661,6 +584,7 @@ public class AdjustmentActivity extends AppCompatActivity {
         Bitmap tempBitmap = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
         Map<Integer, PointF> pointFs = getEdgePoints(tempBitmap);
         polygonView.setPoints(pointFs);
+        Log.i(TAG, "setBitmap Crop Points: " + pointFs.toString());
         polygonView.setVisibility(View.VISIBLE);
         //int padding = (int) getResources().getDimension(R.dimen.scanPadding);
     }
@@ -676,27 +600,23 @@ public class AdjustmentActivity extends AppCompatActivity {
         if (quad != null) {
             Point[] quadPoints = quad.points;
             for (int i = 0; i < quadPoints.length; i++) {
-                float x = Float.parseFloat(Double.toString(quadPoints[i].x));
-                float y = Float.parseFloat(Double.toString(quadPoints[i].y));
-                if (quadPoints[i] == quadPoints[1]) {
-                    x -= 7.0;
-                } else if (quadPoints[i] == quadPoints[3]) {
-                    x -= 7.0;
-                    y -= 12.0;
-                } else if (quadPoints[i] == quadPoints[2]) {
-                    y -= 12.0;
-                }
-                if (reqCode == 0) {
-                    y = y * 4;
-                }
-                Log.i(TAG, "reqCode: " + reqCode);
+                float x = Float.parseFloat(Double.toString(quadPoints[i].x - 15.0));
+                float y = Float.parseFloat(Double.toString(quadPoints[i].y - 15.0));
+                Log.i(TAG, "original x: " + x + ", y = " + y + ", reqCode =" + reqCode);
+//                if (quadPoints[i] == quadPoints[1]) {
+//                    x -= 25.0;
+//                } else if (quadPoints[i] == quadPoints[3]) {
+//                    x -= 25.0;
+//                    y -= 23.0;
+//                } else if (quadPoints[i] == quadPoints[2]) {
+//                    y -= 23.0;
+//                }
+//                if (reqCode == 0) {
+//                    y = y * 4;
+//                }
+//                Log.i(TAG, "x: " + x + ", y = " + y + ", reqCode =" + reqCode);
                 pointList.add(new PointF(x, y));
             }
-        } else {
-            pointList.add(new PointF(0, 0));
-            pointList.add(new PointF(newBmp.getWidth(), 0));
-            pointList.add(new PointF(newBmp.getWidth(), newBmp.getHeight()));
-            pointList.add(new PointF(0, newBmp.getHeight()));
         }
         return pointList;
 
@@ -705,9 +625,9 @@ public class AdjustmentActivity extends AppCompatActivity {
     private Map<Integer, PointF> getOutlinePoints(Bitmap tempBitmap) {
         Map<Integer, PointF> outlinePoints = new HashMap<>();
         outlinePoints.put(0, new PointF(0, 0));
-        outlinePoints.put(1, new PointF(tempBitmap.getWidth(), 0));
-        outlinePoints.put(2, new PointF(0, tempBitmap.getHeight()));
-        outlinePoints.put(3, new PointF(tempBitmap.getWidth(), tempBitmap.getHeight()));
+        outlinePoints.put(1, new PointF(tempBitmap.getWidth() * 0.9746f, 0));
+        outlinePoints.put(2, new PointF(0, tempBitmap.getHeight() * 0.9695f));
+        outlinePoints.put(3, new PointF(tempBitmap.getWidth() * 0.9746f, tempBitmap.getHeight() * 0.9695f));
         return outlinePoints;
     }
 
