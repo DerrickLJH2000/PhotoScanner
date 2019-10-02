@@ -107,14 +107,14 @@ public class PolygonView extends FrameLayout {
         paint.setAntiAlias(true);
     }
 
-    public void paintZoom(Drawable src){
-        mPaint = new Paint();
-        sourceZoom = src;
-        Bitmap bmp = convertToBitmap(src,300,300);
-        mShader = new BitmapShader(bmp, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-
-        mPaint.setShader(mShader);
-    }
+//    public void paintZoom(Drawable src){
+//        mPaint = new Paint();
+//        sourceZoom = src;
+//        Bitmap bmp = convertToBitmap(src,300,300);
+//        mShader = new BitmapShader(bmp, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+//
+//        mPaint.setShader(mShader);
+//    }
 
     public Bitmap convertToBitmap(Drawable drawable, int widthPixels, int heightPixels) {
         Bitmap mutableBitmap = Bitmap.createBitmap(widthPixels, heightPixels, Bitmap.Config.ARGB_8888);
@@ -165,9 +165,13 @@ public class PolygonView extends FrameLayout {
         if (pointFMap.size() == 4) {
             setPointsCoordinates(pointFMap);
         }
+        else {
+
+        }
     }
 
     private void setPointsCoordinates(Map<Integer, PointF> pointFMap) {
+        int color = 0;
         pointer1.setX(pointFMap.get(0).x);
         pointer1.setY(pointFMap.get(0).y);
 
@@ -179,6 +183,14 @@ public class PolygonView extends FrameLayout {
 
         pointer4.setX(pointFMap.get(3).x);
         pointer4.setY(pointFMap.get(3).y);
+
+        if (isValidShape(getPoints())) {
+            color = getResources().getColor(R.color.blue);
+        } else {
+            color = getResources().getColor(R.color.orange);
+        }
+        paint.setColor(color);
+        invalidate();
     }
 
 

@@ -24,6 +24,8 @@
             android:layout_height="match_parent"
             android:layout_alignParentTop="true"
             android:layout_alignParentBottom="true"
+            android:maxHeight="640dp"
+            android:maxWidth="360dp"
             android:layout_margin="10dp"
             android:scaleType="fitCenter"/>
     </RelativeLayout>

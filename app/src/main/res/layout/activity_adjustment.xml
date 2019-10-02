@@ -24,13 +24,15 @@
             android:id="@+id/rellay2"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_gravity="center">
+            android:layout_gravity="center"
+            android:gravity="center">
 
             <ImageView
                 android:id="@+id/ivResult"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_gravity="center"
+                android:adjustViewBounds="true"
+                android:layout_centerInParent="true"
                 android:padding="10dp"
                 android:scaleType="fitCenter" />
 
@@ -38,7 +40,7 @@
                 android:id="@+id/polygonView"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_gravity="center"
+                android:layout_centerInParent="true"
                 android:clipToPadding="true" />
         </RelativeLayout>
     </FrameLayout>
@@ -49,7 +51,7 @@
     <LinearLayout
         android:id="@+id/linlay1"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="50dp"
         android:paddingTop="15dp"
         android:paddingBottom="15dp"
         android:elevation="5dp"
