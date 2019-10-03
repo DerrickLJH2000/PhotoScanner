@@ -25,9 +25,10 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="55dp"
+        android:layout_height="wrap_content"
         android:background="@drawable/gradient_bg"
         android:elevation="5dp"
+        android:gravity="center"
         android:orientation="horizontal">
 
         <!--<View
@@ -37,9 +38,8 @@
 
         <LinearLayout
             android:id="@+id/linlayCamera"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:gravity="center"
             android:orientation="vertical"
             android:padding="7dp">
@@ -55,8 +55,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:textColor="@color/color_white"
-                android:text="Capture"
-                android:textStyle="bold" />
+                android:text="Capture"/>
         </LinearLayout>
 
 

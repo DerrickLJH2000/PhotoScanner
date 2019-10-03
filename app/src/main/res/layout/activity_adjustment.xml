@@ -1,62 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/color_dark_grey"
-    android:orientation="vertical"
     tools:context=".AdjustmentActivity">
+
     <include
         android:id="@+id/include"
         layout="@layout/app_bar_adjustment" />
+
     <FrameLayout
         android:id="@+id/sourceFrame"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="10dp"
-        android:layout_marginTop="10dp"
-        android:layout_marginBottom="10dp"
-        android:layout_marginRight="10dp"
-        android:layout_weight="1">
+        android:layout_height="0dp"
+        android:layout_margin="10dp"
+        app:layout_constraintBottom_toTopOf="@id/line"
+        app:layout_constraintTop_toBottomOf="@id/include">
 
         <RelativeLayout
             android:id="@+id/rellay2"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_gravity="center"
-            android:gravity="center">
+            android:layout_width="wrap_content"
+            android:layout_height="450dp"
+            android:layout_gravity="center">
 
-            <ImageView
-                android:id="@+id/ivResult"
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:adjustViewBounds="true"
-                android:layout_centerInParent="true"
-                android:padding="10dp"
-                android:scaleType="fitCenter" />
+                android:layout_margin="8dp" >
+
+                <ImageView
+                    android:id="@+id/ivResult"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:adjustViewBounds="true" />
+            </RelativeLayout>
 
             <com.example.digitalizedphotobook.PolygonView
                 android:id="@+id/polygonView"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_centerInParent="true"
-                android:clipToPadding="true" />
+                android:layout_height="fill_parent" />
         </RelativeLayout>
     </FrameLayout>
+
     <View
+        android:id="@+id/line"
         android:layout_width="match_parent"
         android:layout_height="0.5dp"
-        android:background="@color/color_dark_grey2"/>
+        android:background="@color/color_dark_grey2"
+        app:layout_constraintBottom_toTopOf="@id/linlay1" />
+
     <LinearLayout
         android:id="@+id/linlay1"
         android:layout_width="match_parent"
         android:layout_height="50dp"
-        android:paddingTop="15dp"
-        android:paddingBottom="15dp"
         android:elevation="5dp"
         android:gravity="center"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:paddingTop="15dp"
+        android:paddingBottom="15dp"
+        app:layout_constraintBottom_toBottomOf="parent">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -132,4 +136,4 @@
     </LinearLayout>
 
 
-</LinearLayout>
+</android.support.constraint.ConstraintLayout>
