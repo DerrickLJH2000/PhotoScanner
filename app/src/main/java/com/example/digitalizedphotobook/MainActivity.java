@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.PermissionChecker;
@@ -31,8 +32,8 @@ import java.util.ArrayList;
 public class MainActivity extends AppCompatActivity {
     final int IMAGE_PICKER_SELECT = 2001;
     final int reqPermissionId = 200;
-    private ImageView ivLoadGallery;
-    private LinearLayout ivCameraIntent;
+
+    private FloatingActionButton fabAdd;
     private RecyclerView rvSavedPhotos;
     private RecyclerView.LayoutManager layManager;
     ArrayList<String> photoArr = new ArrayList<String>();
@@ -42,8 +43,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        ivLoadGallery = findViewById(R.id.ivLoad);
-        ivCameraIntent = findViewById(R.id.linlayCamera);
+        fabAdd = findViewById(R.id.fabAdd);
         rvSavedPhotos = findViewById(R.id.rvSavedPhotos);
 
         if (checkPermission()) {
@@ -63,8 +63,21 @@ public class MainActivity extends AppCompatActivity {
         photoArr.add("Sample 2");
         photoArr.add("Sample 3");
         photoArr.add("Sample 4");
+        photoArr.add("Sample 5");
+        photoArr.add("Sample 6");
+        photoArr.add("Sample 7");
+        photoArr.add("Sample 8");
+        photoArr.add("Sample 9");
+        photoArr.add("Sample 10");
+        photoArr.add("Sample 11");
+        photoArr.add("Sample 12");
+        photoArr.add("Sample 13");
+        photoArr.add("Sample 14");
+        photoArr.add("Sample 15");
+        photoArr.add("Sample 16");
 
-        ivCameraIntent.setOnClickListener(new View.OnClickListener() {
+
+        fabAdd.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent i = new Intent(MainActivity.this, ScanActivity.class);
@@ -73,7 +86,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
-
 
 
     @Override

@@ -12,53 +12,41 @@
     <include
         android:id="@+id/include"
         layout="@layout/app_bar_saved_photos" />
-
-
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/rvSavedPhotos"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:padding="10dp"
-        android:layout_weight="1"
-        android:clipToPadding="false"
-        android:scrollbars="none" />
-
-    <LinearLayout
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/gradient_bg"
-        android:elevation="5dp"
-        android:gravity="center"
-        android:orientation="horizontal">
+        android:paddingLeft="10dp"
+        android:paddingTop="15dp"
+        android:paddingBottom="10dp"
+        android:text="Recently Saved"
+        android:textSize="16sp">
+    </TextView>
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
-        <!--<View
-            android:layout_width="1dp"
-            android:layout_height="match_parent"
-            android:background="@color/colorPrimaryDark" /> -->
-
-        <LinearLayout
-            android:id="@+id/linlayCamera"
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/rvSavedPhotos"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:padding="7dp">
-
-            <ImageView
-                android:id="@+id/ivCamera"
-                android:layout_width="30dp"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_photo_camera" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:textColor="@color/color_white"
-                android:text="Capture"/>
-        </LinearLayout>
+            android:layout_alignParentTop="true"
+            android:layout_alignParentBottom="true"
+            android:clipToPadding="false"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            android:paddingBottom="10dp"
+            android:overScrollMode="never"
+            android:scrollbars="none" />
 
 
-    </LinearLayout>
-
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/fabAdd"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:background="@drawable/gradient_bg"
+            android:src="@drawable/ic_add"
+            android:layout_alignParentRight="true"
+            android:layout_margin="20dp"
+            android:layout_alignParentBottom="true"/>
+    </RelativeLayout>
 </LinearLayout>

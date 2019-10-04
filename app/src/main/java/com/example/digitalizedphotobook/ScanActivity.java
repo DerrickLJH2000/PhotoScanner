@@ -1,6 +1,7 @@
 package com.example.digitalizedphotobook;
 
 import android.Manifest;
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -299,7 +300,7 @@ public class ScanActivity extends AppCompatActivity {
 
     private void showToast(final String text) {
         Toast toast = Toast.makeText(ScanActivity.this, text, Toast.LENGTH_SHORT);
-        toast.setGravity(Gravity.TOP,0,30);
+        toast.setGravity(Gravity.TOP, 0, 30);
         toast.show();
     }
 
@@ -340,9 +341,13 @@ public class ScanActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+
         setContentView(R.layout.activity_scan);
         Log.i(TAG, "I am in onCreate");
-
         ivBack = findViewById(R.id.ivBack);
         ivFlash = findViewById(R.id.ivFlash);
         ivLoadGallery = findViewById(R.id.ivLoad);
@@ -964,7 +969,7 @@ public class ScanActivity extends AppCompatActivity {
             mState = STATE_PREVIEW;
             mCaptureSession.setRepeatingRequest(mPreviewRequest, mCaptureCallback,
                     mBackgroundHandler);
-            Intent intent = new Intent(ScanActivity.this,AdjustmentActivity.class);
+            Intent intent = new Intent(ScanActivity.this, AdjustmentActivity.class);
             intent.putExtra("image", mFile.getAbsolutePath());
             intent.putExtra("reqCode", 1);
             startActivity(intent);
