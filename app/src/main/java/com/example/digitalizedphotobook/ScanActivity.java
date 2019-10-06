@@ -108,6 +108,7 @@ public class ScanActivity extends AppCompatActivity {
     ImageView ivBack, ivFlash, ivLoadGallery;
     FloatingActionButton fabCamera;
     Boolean grid = false;
+    Boolean mAutoFocusSupported = false;
     String flashmode = "OFF";
     Paint paint;
     RelativeLayout rellay1, rellay2;
@@ -662,7 +663,18 @@ public class ScanActivity extends AppCompatActivity {
                 Boolean available = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
                 mFlashSupported = available == null ? false : available;
 
+                // Check if auto focus is supported
+                int[] afAvailableModes = characteristics.get(CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES);
+                if (afAvailableModes.length == 0 || (afAvailableModes.length == 1
+                        && afAvailableModes[0] == CameraMetadata.CONTROL_AF_MODE_OFF)) {
+                    mAutoFocusSupported = false;
+                } else {
+                    mAutoFocusSupported = true;
+                }
+
+
                 mCameraId = cameraId;
+
                 return;
             }
         } catch (CameraAccessException e) {
@@ -814,7 +826,11 @@ public class ScanActivity extends AppCompatActivity {
     }
 
     private void takePicture() {
-        lockFocus();
+        if (mAutoFocusSupported) {
+            lockFocus();
+        } else {
+            captureStillPicture();
+        }
     }
 
     private void lockFocus() {
