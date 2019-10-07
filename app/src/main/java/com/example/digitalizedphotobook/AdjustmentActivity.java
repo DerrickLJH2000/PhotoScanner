@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
@@ -29,6 +30,7 @@ import android.os.Bundle;
 import android.support.v7.content.res.AppCompatResources;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -87,6 +89,7 @@ public class AdjustmentActivity extends AppCompatActivity {
     private boolean isFourPointed = false;
     private boolean isCropped = false;
     private int reqCode;
+    private double gammaValue = 1.0;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -161,11 +164,15 @@ public class AdjustmentActivity extends AppCompatActivity {
         Utils.bitmapToMat(newBmp, mat);
 //        Imgproc.resize(mat, mat, new Size(984, 1312));
         resizedBmp = Bitmap.createBitmap(mat.width(), mat.height(), Bitmap.Config.ARGB_8888);
+        performGammaCorrection(mat);
         Utils.matToBitmap(mat, resizedBmp);
         findContours(mat);
-        ivResult.setImageBitmap(newBmp);
-        setBitmap(newBmp);
+        setBitmap(resizedBmp);
 
+        if (!isFourPointed) {
+            Map<Integer, PointF> pointFs = getOutlinePoints(newBmp);
+            polygonView.setPoints(pointFs);
+        }
 
         ivBack.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -260,7 +267,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                         for (int i = 0; i < points.size(); i++) {
                             Log.i(TAG, "x = " + Float.toString(points.get(i).x) + ",y = " + Float.toString(points.get(i).y));
                             if (reqCode != 0) {
-                                pointArr[i] = new Point((double) points.get(i).x, (double) points.get(i).y);
+                                pointArr[i] = new Point((double) points.get(i).x / 1.295, (double) points.get(i).y / 1.27);
 //                        pointArr[i] = new Point((double) points.get(i).x, (double) points.get(i).y);
                             }
                         }
@@ -299,22 +306,34 @@ public class AdjustmentActivity extends AppCompatActivity {
                 return true;
             }
         });
+    }
 
-//        BitmapShader mShader = new BitmapShader(newBmp, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-//
-//        Paint mPaint = new Paint();
-//        mPaint.setShader(mShader);
+    private byte saturate(double val) {
+        int iVal = (int) Math.round(val);
+        iVal = iVal > 255 ? 255 : (iVal < 0 ? 0 : iVal);
+        return (byte) iVal;
+    }
 
+    private void performGammaCorrection(Mat src) {
+        //! [changing-contrast-brightness-gamma-correction]
+        Mat lookUpTable = new Mat(1, 256, CvType.CV_8U);
+        byte[] lookUpTableData = new byte[(int) (lookUpTable.total()*lookUpTable.channels())];
+        for (int i = 0; i < lookUpTable.cols(); i++) {
+            lookUpTableData[i] = saturate(Math.pow(i / 255.0, gammaValue) * 255.0);
+        }
+        lookUpTable.put(0, 0, lookUpTableData);
+        Mat img = new Mat();
+        Core.LUT(src, lookUpTable, img);
     }
 
     @Override
     public void onResume() {
         super.onResume();
         if (!OpenCVLoader.initDebug()) {
-            Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
+//            Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
             OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, this, mLoaderCallback);
         } else {
-            Log.d(TAG, "OpenCV library found inside package. Using it!");
+//            Log.d(TAG, "OpenCV library found inside package. Using it!");
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
     }
@@ -323,8 +342,8 @@ public class AdjustmentActivity extends AppCompatActivity {
 
 //        double ratio = src.size().height / 500;
 //        for (int i = 0; i < points.length; i++) {
-//            points[i].x /= ratio;
-//            points[i].y /= ratio;
+//            points[i].x /= 1.29;
+//            points[i].y /= 1.29;
 //        }
         Point bl = points[0];
         Point br = points[1];
@@ -334,40 +353,25 @@ public class AdjustmentActivity extends AppCompatActivity {
         double widthA = Math.sqrt(Math.pow(br.x - bl.x, 2) + Math.pow(br.y - bl.y, 2));
         double widthB = Math.sqrt(Math.pow(tr.x - tl.x, 2) + Math.pow(tr.y - tl.y, 2));
 
-        Log.d(TAG, "widthA:" + (widthA) + ", width B:" + Double.toString(widthB));
-
         double dw = Math.max(widthA, widthB);
         int maxWidth = Double.valueOf(dw).intValue();
-        Log.d(TAG, "maxWidth:" + (maxWidth));
 
         double heightA = Math.sqrt(Math.pow(tr.x - br.x, 2) + Math.pow(tr.y - br.y, 2));
         double heightB = Math.sqrt(Math.pow(tl.x - bl.x, 2) + Math.pow(tl.y - bl.y, 2));
 
-        Log.d(TAG, "heightA:" + (heightA) + ", height B:" + Double.toString(heightB));
-
         double dh = Math.max(heightA, heightB);
         int maxHeight = Double.valueOf(dh).intValue();
-        Log.d(TAG, "maxHeight:" + (maxHeight));
 
         Mat destImage = new Mat(maxHeight, maxWidth, CvType.CV_8UC4);
-        Log.d(TAG, "destImage:" + (destImage.cols()) + ", " + (destImage.rows()));
         Mat srcMat = new Mat(4, 1, CvType.CV_32FC2);
         Mat dstMat = new Mat(4, 1, CvType.CV_32FC2);
 
 
         srcMat.put(0, 0, bl.x, bl.y, br.x, br.y, tr.x, tr.y, tl.x, tl.y);
         dstMat.put(0, 0, 0.0, 0.0, dw, 0.0, dw, dh, 0.0, dh);
-//        Mat src_mat = new Mat();
-//        Mat dst_mat = new Mat();
-//        srcMat.convertTo(src_mat, CvType.CV_8UC4);
-//        dstMat.convertTo(dst_mat, CvType.CV_8UC4);
-//        Mat src_mat = new MatOfPoint2f(new Point(points[0].x, points[0].y), new Point(points[1].x, points[1].y), new Point(points[3].x, points[3].y), new Point(points[2].x, points[2].y));
-//        Mat dst_mat = new MatOfPoint2f(new Point(0, 0), new Point(destImage.width(), 0), new Point(destImage.width(), destImage.height()), new Point(0, destImage.height()));
 
         Mat transform = Imgproc.getPerspectiveTransform(srcMat, dstMat);
-        Log.d(TAG, "transform:" + (transform.cols()) + ", " + (transform.rows()));
         Imgproc.warpPerspective(src, destImage, transform, destImage.size());
-        Log.d(TAG, "destImage:" + (destImage.size()));
         return destImage;
     }
 
@@ -459,17 +463,17 @@ public class AdjustmentActivity extends AppCompatActivity {
 
                 MatOfPoint matOfPoint = new MatOfPoint(approx.toArray());
                 Point[] points = approx.toArray();
-                Imgproc.drawContours(mat, contours, -1, new Scalar(0, 255, 0), 2);
+//                Imgproc.drawContours(mat, contours, -1, new Scalar(0, 255, 0), 2);
                 // select biggest 4 angles polygon
                 if (matOfPoint.total() >= 4 & Math.abs(Imgproc.contourArea(matOfPoint)) > 1000) {
                     Point[] foundPoints = sortPoints(points);
                     isFourPointed = true;
                     isCropped = true;
                     quad = new Quadrilateral(contours.get(maxValIdx), foundPoints);
-                    for (Point point : quad.points) {
+//                    for (Point point : quad.points) {
 //                        Imgproc.floodFill(grayImage, grayImage, point, new Scalar(0, 255, 0));
-                        Imgproc.circle(mat, point, 10, new Scalar(255, 0, 255), 4);
-                    }
+//                        Imgproc.circle(mat, point, 10, new Scalar(255, 0, 255), 4);
+//                    }
                     Log.d(TAG, "Quad Points: " + quad.points[0].toString() + " , " + quad.points[1].toString() + " , " + quad.points[2].toString() + " , " + quad.points[3].toString());
                 } else {
                     quad = null;
@@ -527,25 +531,23 @@ public class AdjustmentActivity extends AppCompatActivity {
         Bitmap tempBitmap = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
         Map<Integer, PointF> pointFs = getEdgePoints(tempBitmap);
         polygonView.setPoints(pointFs);
-        Log.i(TAG, "setBitmap Crop Points: " + pointFs.toString());
         polygonView.setVisibility(View.VISIBLE);
         //int padding = (int) getResources().getDimension(R.dimen.scanPadding);
     }
 
     private Map<Integer, PointF> getEdgePoints(Bitmap tempBitmap) {
-        List<PointF> pointFs = getContourEdgePoints();
+        List<PointF> pointFs = getContourEdgePoints(tempBitmap);
         Map<Integer, PointF> orderedPoints = orderedValidEdgePoints(tempBitmap, pointFs);
         return orderedPoints;
     }
 
-    private List<PointF> getContourEdgePoints() {
+    private List<PointF> getContourEdgePoints(Bitmap tempBitmap) {
         List<PointF> pointList = new ArrayList<>();
         if (quad != null) {
             Point[] quadPoints = quad.points;
             for (int i = 0; i < quadPoints.length; i++) {
                 float x = Float.parseFloat(Double.toString(quadPoints[i].x * 1.27));
                 float y = Float.parseFloat(Double.toString(quadPoints[i].y * 1.27));
-
                 pointList.add(new PointF(x, y));
             }
         }
@@ -555,17 +557,11 @@ public class AdjustmentActivity extends AppCompatActivity {
 
     private Map<Integer, PointF> getOutlinePoints(Bitmap tempBitmap) {
         Map<Integer, PointF> outlinePoints = new HashMap<>();
-        if (ivResult.getHeight() != 0 && ivResult.getWidth() != 0) {
-            outlinePoints.put(0, new PointF(0, 0));
-            outlinePoints.put(1, new PointF(ivResult.getWidth(), 0));
-            outlinePoints.put(2, new PointF(0, ivResult.getHeight()));
-            outlinePoints.put(3, new PointF(ivResult.getWidth(), ivResult.getHeight()));
-        } else {
-            outlinePoints.put(0, new PointF(0, 0));
-            outlinePoints.put(1, new PointF(newBmp.getWidth() * 1.29f, 0));
-            outlinePoints.put(2, new PointF(0, newBmp.getHeight() * 1.29f));
-            outlinePoints.put(3, new PointF(newBmp.getWidth() * 1.29f, newBmp.getHeight() * 1.29f));
-        }
+        outlinePoints.put(0, new PointF(0, 0));
+        outlinePoints.put(1, new PointF(ivResult.getWidth(), 0));
+        outlinePoints.put(2, new PointF(0, ivResult.getHeight()));
+        outlinePoints.put(3, new PointF(ivResult.getWidth(), ivResult.getHeight()));
+
         return outlinePoints;
 
     }
