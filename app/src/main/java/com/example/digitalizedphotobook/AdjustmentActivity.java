@@ -81,10 +81,10 @@ public class AdjustmentActivity extends AppCompatActivity {
     private PolygonView polygonView;
     private RelativeLayout rellay;
     private FrameLayout frmSource;
-    private File mFile;
+    private File mFile , mFile2;
     private String imagePath;
     private Bitmap bmp, newBmp, resizedBmp;
-    private Mat mat, drawing;
+    private Mat mat;
     private Quadrilateral quad;
     private boolean isFourPointed = false;
     private boolean isCropped = false;
@@ -152,9 +152,10 @@ public class AdjustmentActivity extends AppCompatActivity {
         options.inSampleSize = 4;
         bmp = BitmapFactory.decodeFile(mFile.getAbsolutePath(), options);
         Matrix matrix = new Matrix();
-        if (reqCode != 0) {
-            matrix.postRotate(90);
-        }
+//        if (reqCode != 0) {
+        matrix.postRotate(90);
+
+//        }
         newBmp = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
 
 
@@ -164,15 +165,15 @@ public class AdjustmentActivity extends AppCompatActivity {
         Utils.bitmapToMat(newBmp, mat);
 //        Imgproc.resize(mat, mat, new Size(984, 1312));
         resizedBmp = Bitmap.createBitmap(mat.width(), mat.height(), Bitmap.Config.ARGB_8888);
+
         performGammaCorrection(mat);
         Utils.matToBitmap(mat, resizedBmp);
         findContours(mat);
-        setBitmap(resizedBmp);
-
         if (!isFourPointed) {
             Map<Integer, PointF> pointFs = getOutlinePoints(newBmp);
             polygonView.setPoints(pointFs);
         }
+        setBitmap(resizedBmp);
 
         ivBack.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -200,6 +201,26 @@ public class AdjustmentActivity extends AppCompatActivity {
                         ivRotateLeft.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
                         ivResult.setRotation(ivResult.getRotation() - 90);
                         polygonView.setRotation(polygonView.getRotation() - 90);
+                        if (ivResult.getRotation() == -360 || polygonView.getRotation() == -360) {
+                            ivResult.setRotation(0);
+                            polygonView.setRotation(0);
+                        }
+                        if (ivResult.getRotation() == 90 || ivResult.getRotation() == -90 || ivResult.getRotation() == 270 || ivResult.getRotation() == -270) {
+
+                        }
+                        if (ivResult.getRotation() == 90 || ivResult.getRotation() == -90 || ivResult.getRotation() == 270 || ivResult.getRotation() == -270) {
+                            float scaledRatio = Float.parseFloat(Integer.toString(ivResult.getWidth()))
+                                    / Float.parseFloat(Integer.toString(ivResult.getHeight()));
+                            ivResult.setScaleX(scaledRatio);
+                            ivResult.setScaleY(scaledRatio);
+                            polygonView.setScaleX(scaledRatio);
+                            polygonView.setScaleY(scaledRatio);
+                        } else {
+                            ivResult.setScaleX(1.0f);
+                            ivResult.setScaleY(1.0f);
+                            polygonView.setScaleX(1.0f);
+                            polygonView.setScaleY(1.0f);
+                        }
                         break;
                     case MotionEvent.ACTION_UP:
                         ivRotateLeft.setColorFilter(Color.argb(255, 255, 255, 255));
@@ -218,6 +239,23 @@ public class AdjustmentActivity extends AppCompatActivity {
                         ivRotateRight.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
                         ivResult.setRotation(ivResult.getRotation() + 90);
                         polygonView.setRotation(polygonView.getRotation() + 90);
+                        if (ivResult.getRotation() == 360 || polygonView.getRotation() == 360) {
+                            ivResult.setRotation(0);
+                            polygonView.setRotation(0);
+                        }
+                        if (ivResult.getRotation() == 90 || ivResult.getRotation() == -90 || ivResult.getRotation() == 270 || ivResult.getRotation() == -270) {
+                            float scaledRatio = Float.parseFloat(Integer.toString(ivResult.getWidth()))
+                                    / Float.parseFloat(Integer.toString(ivResult.getHeight()));
+                            ivResult.setScaleX(scaledRatio);
+                            ivResult.setScaleY(scaledRatio);
+                            polygonView.setScaleX(scaledRatio);
+                            polygonView.setScaleY(scaledRatio);
+                        } else {
+                            ivResult.setScaleX(1.0f);
+                            ivResult.setScaleY(1.0f);
+                            polygonView.setScaleX(1.0f);
+                            polygonView.setScaleY(1.0f);
+                        }
                         break;
                     case MotionEvent.ACTION_UP:
                         ivRotateRight.setColorFilter(Color.argb(255, 255, 255, 255));
@@ -226,6 +264,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                 return true;
             }
         });
+
         ivCrop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -265,42 +304,45 @@ public class AdjustmentActivity extends AppCompatActivity {
                         Point[] pointArr = new Point[4];
 
                         for (int i = 0; i < points.size(); i++) {
-                            Log.i(TAG, "x = " + Float.toString(points.get(i).x) + ",y = " + Float.toString(points.get(i).y));
-                            if (reqCode != 0) {
+//                            if (reqCode != 0) {
                                 pointArr[i] = new Point((double) points.get(i).x / 1.295, (double) points.get(i).y / 1.27);
-//                        pointArr[i] = new Point((double) points.get(i).x, (double) points.get(i).y);
-                            }
+
+//                            }
                         }
                         if (polygonView.isValidShape(points)) {
-                            Log.d(TAG, "Crop Points: " + pointArr[0].toString() + " , " + pointArr[1].toString() + " , " + pointArr[2].toString() + " , " + pointArr[3].toString());
+//                            Log.d(TAG, "Crop Points: " + pointArr[0].toString() + " , " + pointArr[1].toString() + " , " + pointArr[2].toString() + " , " + pointArr[3].toString());
                             Mat dest = perspectiveChange(mat, pointArr);
                             Matrix matrix = new Matrix();
-                            Log.i(TAG, "getRotation: " + ivResult.getRotation());
                             matrix.postRotate(ivResult.getRotation());
-                            Imgproc.resize(dest, dest, new Size(984, 1312));
+//                            Imgproc.resize(dest, dest, new Size(984, 1312));
                             Bitmap tfmBmp = Bitmap.createBitmap(dest.width(), dest.height(), Bitmap.Config.ARGB_8888);
                             Utils.matToBitmap(dest, tfmBmp);
                             Bitmap rotatedBmp = Bitmap.createBitmap(tfmBmp, 0, 0, tfmBmp.getWidth(), tfmBmp.getHeight(), matrix, true);
                             ByteArrayOutputStream stream = new ByteArrayOutputStream();
                             rotatedBmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
                             byte[] bytes = stream.toByteArray();
-                            File mFile = new File(getExternalFilesDir("Temp"), "temp2.jpg");
+                            mFile2 = new File(getExternalFilesDir("Temp"), "temp2.jpg");
                             try {
-                                mFile.createNewFile();
-                                FileOutputStream fileOutputStream = new FileOutputStream(mFile);
+                                mFile2.createNewFile();
+                                FileOutputStream fileOutputStream = new FileOutputStream(mFile2);
                                 fileOutputStream.write(bytes);
                                 fileOutputStream.close();
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
-                            Intent intent = new Intent(AdjustmentActivity.this, ResultActivity.class);
-                            intent.putExtra("croppedPoints", mFile.getAbsolutePath());
-                            startActivity(intent);
+
                         } else {
                             showToast("Invalid Shape!");
                         }
                         break;
                     case (MotionEvent.ACTION_UP):
+                        ivConfirm.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.color_white), PorterDuff.Mode.SRC_IN);
+                        Intent intent = new Intent(AdjustmentActivity.this, ResultActivity.class);
+                        intent.putExtra("croppedPoints", mFile2.getAbsolutePath());
+                        if (ivResult.getRotation() == 90 || ivResult.getRotation() == -90 || ivResult.getRotation() == 270 || ivResult.getRotation() == -270){
+                            intent.putExtra("isRotated", true);
+                        }
+                        startActivity(intent);
                         break;
                 }
                 return true;
@@ -317,7 +359,7 @@ public class AdjustmentActivity extends AppCompatActivity {
     private void performGammaCorrection(Mat src) {
         //! [changing-contrast-brightness-gamma-correction]
         Mat lookUpTable = new Mat(1, 256, CvType.CV_8U);
-        byte[] lookUpTableData = new byte[(int) (lookUpTable.total()*lookUpTable.channels())];
+        byte[] lookUpTableData = new byte[(int) (lookUpTable.total() * lookUpTable.channels())];
         for (int i = 0; i < lookUpTable.cols(); i++) {
             lookUpTableData[i] = saturate(Math.pow(i / 255.0, gammaValue) * 255.0);
         }
@@ -349,7 +391,6 @@ public class AdjustmentActivity extends AppCompatActivity {
         Point br = points[1];
         Point tl = points[2];
         Point tr = points[3];
-        Log.i(TAG, "Src size:" + src.size());
         double widthA = Math.sqrt(Math.pow(br.x - bl.x, 2) + Math.pow(br.y - bl.y, 2));
         double widthB = Math.sqrt(Math.pow(tr.x - tl.x, 2) + Math.pow(tr.y - tl.y, 2));
 
@@ -428,7 +469,7 @@ public class AdjustmentActivity extends AppCompatActivity {
         ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
         Mat hierarchy = new Mat();
 
-        Imgproc.findContours(cannedImage, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_NONE);
+        Imgproc.findContours(cannedImage, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_NONE);
 
         hierarchy.release();
         Collections.sort(contours, new Comparator<MatOfPoint>() {
@@ -453,7 +494,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
-        drawing = Mat.zeros(mat.size(), CvType.CV_8UC1);
+
         try {
             MatOfPoint2f c2f = new MatOfPoint2f(contours.get(maxValIdx).toArray());
             double peri = Imgproc.arcLength(c2f, true) * 0.02;
@@ -463,7 +504,7 @@ public class AdjustmentActivity extends AppCompatActivity {
 
                 MatOfPoint matOfPoint = new MatOfPoint(approx.toArray());
                 Point[] points = approx.toArray();
-//                Imgproc.drawContours(mat, contours, -1, new Scalar(0, 255, 0), 2);
+//                Imgproc.drawContours(mat, contours, maxValIdx, new Scalar(0, 255, 0), 2);
                 // select biggest 4 angles polygon
                 if (matOfPoint.total() >= 4 & Math.abs(Imgproc.contourArea(matOfPoint)) > 1000) {
                     Point[] foundPoints = sortPoints(points);
@@ -471,14 +512,12 @@ public class AdjustmentActivity extends AppCompatActivity {
                     isCropped = true;
                     quad = new Quadrilateral(contours.get(maxValIdx), foundPoints);
 //                    for (Point point : quad.points) {
-//                        Imgproc.floodFill(grayImage, grayImage, point, new Scalar(0, 255, 0));
 //                        Imgproc.circle(mat, point, 10, new Scalar(255, 0, 255), 4);
 //                    }
-                    Log.d(TAG, "Quad Points: " + quad.points[0].toString() + " , " + quad.points[1].toString() + " , " + quad.points[2].toString() + " , " + quad.points[3].toString());
                 } else {
                     quad = null;
                 }
-                Utils.matToBitmap(mat, newBmp);
+                Utils.matToBitmap(mat, resizedBmp);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -557,11 +596,17 @@ public class AdjustmentActivity extends AppCompatActivity {
 
     private Map<Integer, PointF> getOutlinePoints(Bitmap tempBitmap) {
         Map<Integer, PointF> outlinePoints = new HashMap<>();
-        outlinePoints.put(0, new PointF(0, 0));
-        outlinePoints.put(1, new PointF(ivResult.getWidth(), 0));
-        outlinePoints.put(2, new PointF(0, ivResult.getHeight()));
-        outlinePoints.put(3, new PointF(ivResult.getWidth(), ivResult.getHeight()));
-
+        if (ivResult.getWidth() == 0 && ivResult.getHeight() == 0){
+            outlinePoints.put(0, new PointF(0, 0));
+            outlinePoints.put(1, new PointF(tempBitmap.getWidth()* 1.293f, 0));
+            outlinePoints.put(2, new PointF(0, tempBitmap.getHeight()* 1.268f));
+            outlinePoints.put(3, new PointF(tempBitmap.getWidth() * 1.293f, tempBitmap.getHeight()* 1.268f));
+        } else {
+            outlinePoints.put(0, new PointF(0, 0));
+            outlinePoints.put(1, new PointF(ivResult.getWidth(), 0));
+            outlinePoints.put(2, new PointF(0, ivResult.getHeight()));
+            outlinePoints.put(3, new PointF(ivResult.getWidth(), ivResult.getHeight()));
+        }
         return outlinePoints;
 
     }

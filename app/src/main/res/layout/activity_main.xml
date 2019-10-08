@@ -12,19 +12,10 @@
     <include
         android:id="@+id/include"
         layout="@layout/app_bar_saved_photos" />
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingLeft="10dp"
-        android:paddingTop="15dp"
-        android:paddingBottom="10dp"
-        android:text="Recently Saved"
-        android:textSize="16sp">
-    </TextView>
+
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-
         <android.support.v7.widget.RecyclerView
             android:id="@+id/rvSavedPhotos"
             android:layout_width="match_parent"
@@ -32,6 +23,7 @@
             android:layout_alignParentTop="true"
             android:layout_alignParentBottom="true"
             android:clipToPadding="false"
+            android:paddingTop="50dp"
             android:paddingLeft="10dp"
             android:paddingRight="10dp"
             android:paddingBottom="10dp"
@@ -48,5 +40,16 @@
             android:layout_alignParentRight="true"
             android:layout_margin="20dp"
             android:layout_alignParentBottom="true"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/allerta"
+            android:paddingLeft="10dp"
+            android:paddingTop="15dp"
+            android:background="@color/color_white_trans"
+            android:paddingBottom="10dp"
+            android:text="Recently Saved"
+            android:textColor="@color/color_dark_grey2"
+            android:textSize="14sp"></TextView>
     </RelativeLayout>
 </LinearLayout>

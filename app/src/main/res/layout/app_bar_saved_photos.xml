@@ -11,9 +11,9 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:text="Saved Photos"
-            android:textSize="18sp"
-            android:textStyle="bold"
+            android:text="PhotoScanner"
+            android:textSize="16sp"
+            android:fontFamily="@font/allerta"
             android:textColor="@color/color_white"
             android:gravity="center"/>
 
