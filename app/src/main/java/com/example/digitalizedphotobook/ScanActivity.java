@@ -30,6 +30,7 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
+import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
@@ -38,6 +39,7 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.net.Uri;
+import android.nfc.Tag;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
@@ -107,11 +109,9 @@ public class ScanActivity extends AppCompatActivity {
     private static final String FRAGMENT_DIALOG = "dialog";
     ImageView ivBack, ivFlash, ivLoadGallery;
     FloatingActionButton fabCamera;
-    Boolean grid = false;
     Boolean mAutoFocusSupported = false;
     String flashmode = "OFF";
-    Paint paint;
-    RelativeLayout rellay1, rellay2;
+    RelativeLayout rellay1;
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
@@ -231,9 +231,7 @@ public class ScanActivity extends AppCompatActivity {
     private Semaphore mCameraOpenCloseLock = new Semaphore(1);
     private boolean mFlashSupported;
     private int mSensorOrientation;
-    private int progress;
-    private Canvas canvas;
-    private Paint mPaint;
+    private boolean mManualFocusEngaged = false;
     private CameraCaptureSession.CaptureCallback mCaptureCallback
             = new CameraCaptureSession.CaptureCallback() {
 
@@ -337,7 +335,8 @@ public class ScanActivity extends AppCompatActivity {
             return choices[0];
         }
     }
-
+    CameraCharacteristics characteristics;
+    Rect rect;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -370,7 +369,6 @@ public class ScanActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 takePicture();
-
             }
         });
 
@@ -409,37 +407,106 @@ public class ScanActivity extends AppCompatActivity {
             }
         });
 
-//        ivGrid.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                if(!grid) {
-//                    //  Find Screen size first
-//                    DisplayMetrics metrics = Resources.getSystem().getDisplayMetrics();
-//                    int screenWidth = metrics.widthPixels;
-//                    int screenHeight = (int) (metrics.heightPixels * 0.9);
-//
-//                    //  Set paint options
-//                    paint.setAntiAlias(true);
-//                    paint.setStrokeWidth(3);
-//                    paint.setStyle(Paint.Style.STROKE);
-//                    paint.setColor(Color.argb(255, 255, 255, 255));
-//
-//                    canvas.drawLine((screenWidth / 3) * 2, 0, (screenWidth / 3) * 2, screenHeight, paint);
-//                    canvas.drawLine((screenWidth / 3), 0, (screenWidth / 3), screenHeight, paint);
-//                    canvas.drawLine(0, (screenHeight / 3) * 2, screenWidth, (screenHeight / 3) * 2, paint);
-//                    canvas.drawLine(0, (screenHeight / 3), screenWidth, (screenHeight / 3), paint);
-//                    grid = true;
-//                    ivGrid.setImageResource(R.drawable.ic_grid_on);
-//                    ivFlash.setTag(R.drawable.ic_grid_on);
-//                    Toast.makeText(ScanActivity.this, "Grid Lines : ON", Toast.LENGTH_SHORT).show();
-//                } else {
-//                    ivGrid.setImageResource(R.drawable.ic_grid_off);
-//                    ivFlash.setTag(R.drawable.ic_grid_off);
-//                    Toast.makeText(ScanActivity.this, "Grid Lines : OFF", Toast.LENGTH_SHORT).show();
-//                }
-//            }
-//        });
+        mTextureView.setOnTouchListener(new View.OnTouchListener() {
+            //Override in your touch-enabled view (this can be differen than the view you use for displaying the cam preview)
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                final int actionMasked = motionEvent.getActionMasked();
+                if (actionMasked != MotionEvent.ACTION_DOWN) {
+                    return false;
+                }
+                if (mManualFocusEngaged) {
+                    Log.d(TAG, "Manual focus already engaged");
+                    return true;
+                }
+                CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+                try {
+                    characteristics
+                            = manager.getCameraCharacteristics(mCameraDevice.getId());
+                } catch (CameraAccessException e) {
+                    e.printStackTrace();
+                }
+                final Rect sensorArraySize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
 
+                //TODO: here I just flip x,y, but this needs to correspond with the sensor orientation (via SENSOR_ORIENTATION)
+                final int y = (int)((motionEvent.getX() / (float)view.getWidth())  * (float)sensorArraySize.height());
+                final int x = (int)((motionEvent.getY() / (float)view.getHeight()) * (float)sensorArraySize.width());
+                final int halfTouchWidth  = 150; //(int)motionEvent.getTouchMajor(); //TODO: this doesn't represent actual touch size in pixel. Values range in [3, 10]...
+                final int halfTouchHeight = 150; //(int)motionEvent.getTouchMinor();
+                MeteringRectangle focusAreaTouch = new MeteringRectangle(Math.max(x - halfTouchWidth,  0),
+                        Math.max(y - halfTouchHeight, 0),
+                        halfTouchWidth  * 2,
+                        halfTouchHeight * 2,
+                        MeteringRectangle.METERING_WEIGHT_MAX - 1);
+                rect = focusAreaTouch.getRect();
+                Log.i(TAG, "Rect : " + rect.bottom + ", " + rect.left + ", " + rect.right + ", " + rect.top);
+                mTextureView.setRect(rect);
+                CameraCaptureSession.CaptureCallback captureCallbackHandler = new CameraCaptureSession.CaptureCallback() {
+                    @Override
+                    public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
+                        super.onCaptureCompleted(session, request, result);
+                        mManualFocusEngaged = false;
+
+                        if (request.getTag() == "FOCUS_TAG") {
+                            //the focus trigger is complete -
+                            //resume repeating (preview surface will get frames), clear AF trigger
+                            mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, null);
+                            try {
+                                mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(), null, null);
+                            } catch (CameraAccessException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCaptureFailed(CameraCaptureSession session, CaptureRequest request, CaptureFailure failure) {
+                        super.onCaptureFailed(session, request, failure);
+                        Log.e(TAG, "Manual AF failure: " + failure);
+                        mManualFocusEngaged = false;
+                    }
+                };
+
+                //first stop the existing repeating request
+                try {
+                    mCaptureSession.stopRepeating();
+                } catch (CameraAccessException e) {
+                    e.printStackTrace();
+                }
+
+                //cancel any existing AF trigger (repeated touches, etc.)
+                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
+                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
+                try {
+                    mCaptureSession.capture(mPreviewRequestBuilder.build(), captureCallbackHandler, mBackgroundHandler);
+                } catch (CameraAccessException e) {
+                    e.printStackTrace();
+                }
+
+                //Now add a new AF trigger with focus region
+                if (isMeteringAreaAFSupported()) {
+                    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_REGIONS, new MeteringRectangle[]{focusAreaTouch});
+                }
+                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO);
+                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_START);
+                mPreviewRequestBuilder.setTag("FOCUS_TAG"); //we'll capture this later for resuming the preview
+
+                //then we ask for a single request (not repeating!)
+                try {
+                    mCaptureSession.capture(mPreviewRequestBuilder.build(), captureCallbackHandler, mBackgroundHandler);
+                } catch (CameraAccessException e) {
+                    e.printStackTrace();
+                }
+                mManualFocusEngaged = true;
+
+                return true;
+            }
+
+            private boolean isMeteringAreaAFSupported() {
+                return characteristics.get(CameraCharacteristics.CONTROL_MAX_REGIONS_AF) >= 1;
+            }
+        });
 
     }
 
@@ -1003,5 +1070,6 @@ public class ScanActivity extends AppCompatActivity {
         }
 
     }
+
 
 }

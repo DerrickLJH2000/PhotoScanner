@@ -76,12 +76,10 @@ import static java.security.AccessController.getContext;
 
 public class AdjustmentActivity extends AppCompatActivity {
     private static final String TAG = "AdjustmentActivity123";
-    private static final int REQUEST_CODE = 99;
     private ImageView ivBack, ivCrop, ivConfirm, ivRotateLeft, ivRotateRight, ivResult;
     private PolygonView polygonView;
     private RelativeLayout rellay;
-    private FrameLayout frmSource;
-    private File mFile , mFile2;
+    private File mFile, mFile2;
     private String imagePath;
     private Bitmap bmp, newBmp, resizedBmp;
     private Mat mat;
@@ -126,12 +124,11 @@ public class AdjustmentActivity extends AppCompatActivity {
         ivBack = findViewById(R.id.ivBack);
         ivRotateLeft = findViewById(R.id.ivRotateLeft);
         ivRotateRight = findViewById(R.id.ivRotateRight);
+        rellay = findViewById(R.id.rellay2);
         ivCrop = findViewById(R.id.ivCrop);
         ivConfirm = findViewById(R.id.ivConfirm);
         ivResult = findViewById(R.id.ivResult);
-        frmSource = findViewById(R.id.sourceFrame);
         polygonView = findViewById(R.id.polygonView);
-        rellay = findViewById(R.id.rellay2);
         if (!OpenCVLoader.initDebug()) {
             return;
         }
@@ -149,7 +146,6 @@ public class AdjustmentActivity extends AppCompatActivity {
         Log.i(TAG, (reqCode) + imagePath);
         mFile = new File(imagePath);
         BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inSampleSize = 4;
         bmp = BitmapFactory.decodeFile(mFile.getAbsolutePath(), options);
         Matrix matrix = new Matrix();
 //        if (reqCode != 0) {
@@ -163,17 +159,15 @@ public class AdjustmentActivity extends AppCompatActivity {
 
         mat = new Mat(newBmp.getWidth(), newBmp.getHeight(), CvType.CV_8UC4);
         Utils.bitmapToMat(newBmp, mat);
-//        Imgproc.resize(mat, mat, new Size(984, 1312));
         resizedBmp = Bitmap.createBitmap(mat.width(), mat.height(), Bitmap.Config.ARGB_8888);
 
         performGammaCorrection(mat);
         Utils.matToBitmap(mat, resizedBmp);
         findContours(mat);
-        if (!isFourPointed) {
-            Map<Integer, PointF> pointFs = getOutlinePoints(newBmp);
-            polygonView.setPoints(pointFs);
-        }
-        setBitmap(resizedBmp);
+        ivResult.setImageBitmap(resizedBmp);
+        Bitmap bmpImg = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
+        Log.i(TAG, "Height :" + rellay.getHeight());
+        setBitmap(bmpImg);
 
         ivBack.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -192,6 +186,7 @@ public class AdjustmentActivity extends AppCompatActivity {
             }
         });
 
+
         ivRotateLeft.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -201,6 +196,8 @@ public class AdjustmentActivity extends AppCompatActivity {
                         ivRotateLeft.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
                         ivResult.setRotation(ivResult.getRotation() - 90);
                         polygonView.setRotation(polygonView.getRotation() - 90);
+                        float scaledRatio = Float.parseFloat(Integer.toString(ivResult.getWidth()))
+                                / Float.parseFloat(Integer.toString(ivResult.getHeight()));
                         if (ivResult.getRotation() == -360 || polygonView.getRotation() == -360) {
                             ivResult.setRotation(0);
                             polygonView.setRotation(0);
@@ -209,8 +206,6 @@ public class AdjustmentActivity extends AppCompatActivity {
 
                         }
                         if (ivResult.getRotation() == 90 || ivResult.getRotation() == -90 || ivResult.getRotation() == 270 || ivResult.getRotation() == -270) {
-                            float scaledRatio = Float.parseFloat(Integer.toString(ivResult.getWidth()))
-                                    / Float.parseFloat(Integer.toString(ivResult.getHeight()));
                             ivResult.setScaleX(scaledRatio);
                             ivResult.setScaleY(scaledRatio);
                             polygonView.setScaleX(scaledRatio);
@@ -239,13 +234,13 @@ public class AdjustmentActivity extends AppCompatActivity {
                         ivRotateRight.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
                         ivResult.setRotation(ivResult.getRotation() + 90);
                         polygonView.setRotation(polygonView.getRotation() + 90);
+                        float scaledRatio = Float.parseFloat(Integer.toString(ivResult.getWidth()))
+                                / Float.parseFloat(Integer.toString(ivResult.getHeight()));
                         if (ivResult.getRotation() == 360 || polygonView.getRotation() == 360) {
                             ivResult.setRotation(0);
                             polygonView.setRotation(0);
                         }
                         if (ivResult.getRotation() == 90 || ivResult.getRotation() == -90 || ivResult.getRotation() == 270 || ivResult.getRotation() == -270) {
-                            float scaledRatio = Float.parseFloat(Integer.toString(ivResult.getWidth()))
-                                    / Float.parseFloat(Integer.toString(ivResult.getHeight()));
                             ivResult.setScaleX(scaledRatio);
                             ivResult.setScaleY(scaledRatio);
                             polygonView.setScaleX(scaledRatio);
@@ -302,19 +297,18 @@ public class AdjustmentActivity extends AppCompatActivity {
                         ivConfirm.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
                         Map<Integer, PointF> points = polygonView.getPoints();
                         Point[] pointArr = new Point[4];
-
+                        double bmpToIvHeightRatio = newBmp.getHeight() / ivResult.getHeight();
+                        double bmpToIvWidthRatio = newBmp.getWidth() / ivResult.getWidth();
                         for (int i = 0; i < points.size(); i++) {
 //                            if (reqCode != 0) {
-                                pointArr[i] = new Point((double) points.get(i).x / 1.295, (double) points.get(i).y / 1.27);
+                            pointArr[i] = new Point((double) points.get(i).x * (bmpToIvWidthRatio + 0.12), (double) points.get(i).y * (bmpToIvHeightRatio + 0.12));
 
 //                            }
                         }
                         if (polygonView.isValidShape(points)) {
-//                            Log.d(TAG, "Crop Points: " + pointArr[0].toString() + " , " + pointArr[1].toString() + " , " + pointArr[2].toString() + " , " + pointArr[3].toString());
                             Mat dest = perspectiveChange(mat, pointArr);
                             Matrix matrix = new Matrix();
                             matrix.postRotate(ivResult.getRotation());
-//                            Imgproc.resize(dest, dest, new Size(984, 1312));
                             Bitmap tfmBmp = Bitmap.createBitmap(dest.width(), dest.height(), Bitmap.Config.ARGB_8888);
                             Utils.matToBitmap(dest, tfmBmp);
                             Bitmap rotatedBmp = Bitmap.createBitmap(tfmBmp, 0, 0, tfmBmp.getWidth(), tfmBmp.getHeight(), matrix, true);
@@ -339,7 +333,10 @@ public class AdjustmentActivity extends AppCompatActivity {
                         ivConfirm.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.color_white), PorterDuff.Mode.SRC_IN);
                         Intent intent = new Intent(AdjustmentActivity.this, ResultActivity.class);
                         intent.putExtra("croppedPoints", mFile2.getAbsolutePath());
-                        if (ivResult.getRotation() == 90 || ivResult.getRotation() == -90 || ivResult.getRotation() == 270 || ivResult.getRotation() == -270){
+                        float scaledRatio = Float.parseFloat(Integer.toString(ivResult.getWidth()))
+                                / Float.parseFloat(Integer.toString(ivResult.getHeight()));
+                        intent.putExtra("scaledRatio", scaledRatio);
+                        if (ivResult.getRotation() == 90 || ivResult.getRotation() == -90 || ivResult.getRotation() == 270 || ivResult.getRotation() == -270) {
                             intent.putExtra("isRotated", true);
                         }
                         startActivity(intent);
@@ -453,7 +450,7 @@ public class AdjustmentActivity extends AppCompatActivity {
     }
 
 
-    private ArrayList<MatOfPoint> findContours(Mat src) {
+    private Quadrilateral findContours(Mat src) {
 
         Size size = new Size(newBmp.getWidth(), newBmp.getHeight());
         Mat grayImage = new Mat(size, CvType.CV_8UC1);
@@ -463,13 +460,13 @@ public class AdjustmentActivity extends AppCompatActivity {
 //        Imgproc.dilate(grayImage, grayImage, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
 //        Imgproc.erode(grayImage, grayImage, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
         Imgproc.cvtColor(src, grayImage, Imgproc.COLOR_RGBA2GRAY, 1);
-        Imgproc.morphologyEx(grayImage, grayImage, 3, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
-        Imgproc.morphologyEx(src, grayImage, 4, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
         Imgproc.Canny(grayImage, cannedImage, 0, 260);
+        Imgproc.morphologyEx(cannedImage, cannedImage, 3, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
+        Imgproc.morphologyEx(cannedImage, cannedImage, 4, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
         ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
         Mat hierarchy = new Mat();
 
-        Imgproc.findContours(cannedImage, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_NONE);
+        Imgproc.findContours(cannedImage, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_NONE);
 
         hierarchy.release();
         Collections.sort(contours, new Comparator<MatOfPoint>() {
@@ -504,14 +501,16 @@ public class AdjustmentActivity extends AppCompatActivity {
 
                 MatOfPoint matOfPoint = new MatOfPoint(approx.toArray());
                 Point[] points = approx.toArray();
-//                Imgproc.drawContours(mat, contours, maxValIdx, new Scalar(0, 255, 0), 2);
+                Imgproc.drawContours(cannedImage, contours, maxValIdx, new Scalar(0, 255, 0), 2);
                 // select biggest 4 angles polygon
                 if (matOfPoint.total() >= 4 & Math.abs(Imgproc.contourArea(matOfPoint)) > 1000) {
                     Point[] foundPoints = sortPoints(points);
                     isFourPointed = true;
                     isCropped = true;
+
                     quad = new Quadrilateral(contours.get(maxValIdx), foundPoints);
 //                    for (Point point : quad.points) {
+//                        Imgproc.floodFill(mat, cannedImage, point, new Scalar(0, 255, 0));
 //                        Imgproc.circle(mat, point, 10, new Scalar(255, 0, 255), 4);
 //                    }
                 } else {
@@ -526,7 +525,7 @@ public class AdjustmentActivity extends AppCompatActivity {
 
         grayImage.release();
         cannedImage.release();
-        return contours;
+        return quad;
     }
 
     private Point[] sortPoints(Point[] src) {
@@ -566,12 +565,9 @@ public class AdjustmentActivity extends AppCompatActivity {
     }
 
     private void setBitmap(Bitmap original) {
-        ivResult.setImageBitmap(original);
-        Bitmap tempBitmap = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
-        Map<Integer, PointF> pointFs = getEdgePoints(tempBitmap);
+        Map<Integer, PointF> pointFs = getEdgePoints(original);
         polygonView.setPoints(pointFs);
         polygonView.setVisibility(View.VISIBLE);
-        //int padding = (int) getResources().getDimension(R.dimen.scanPadding);
     }
 
     private Map<Integer, PointF> getEdgePoints(Bitmap tempBitmap) {
@@ -585,8 +581,8 @@ public class AdjustmentActivity extends AppCompatActivity {
         if (quad != null) {
             Point[] quadPoints = quad.points;
             for (int i = 0; i < quadPoints.length; i++) {
-                float x = Float.parseFloat(Double.toString(quadPoints[i].x * 1.27));
-                float y = Float.parseFloat(Double.toString(quadPoints[i].y * 1.27));
+                float x = Float.parseFloat(Double.toString(quadPoints[i].x / 3.12f));
+                float y = Float.parseFloat(Double.toString(quadPoints[i].y / 3.12f));
                 pointList.add(new PointF(x, y));
             }
         }
@@ -596,11 +592,18 @@ public class AdjustmentActivity extends AppCompatActivity {
 
     private Map<Integer, PointF> getOutlinePoints(Bitmap tempBitmap) {
         Map<Integer, PointF> outlinePoints = new HashMap<>();
-        if (ivResult.getWidth() == 0 && ivResult.getHeight() == 0){
-            outlinePoints.put(0, new PointF(0, 0));
-            outlinePoints.put(1, new PointF(tempBitmap.getWidth()* 1.293f, 0));
-            outlinePoints.put(2, new PointF(0, tempBitmap.getHeight()* 1.268f));
-            outlinePoints.put(3, new PointF(tempBitmap.getWidth() * 1.293f, tempBitmap.getHeight()* 1.268f));
+        if (ivResult.getWidth() == 0 && ivResult.getHeight() == 0) {
+            if (reqCode != 0) {
+                outlinePoints.put(0, new PointF(0, 0));
+                outlinePoints.put(1, new PointF(tempBitmap.getWidth() / 3.12f, 0));
+                outlinePoints.put(2, new PointF(0, tempBitmap.getHeight() / 3.12f));
+                outlinePoints.put(3, new PointF(tempBitmap.getWidth() / 3.12f, tempBitmap.getHeight() / 3.12f));
+            } else {
+                outlinePoints.put(0, new PointF(0, 0));
+                outlinePoints.put(1, new PointF(tempBitmap.getWidth(), 0));
+                outlinePoints.put(2, new PointF(0, tempBitmap.getHeight()));
+                outlinePoints.put(3, new PointF(tempBitmap.getWidth(), tempBitmap.getHeight()));
+            }
         } else {
             outlinePoints.put(0, new PointF(0, 0));
             outlinePoints.put(1, new PointF(ivResult.getWidth(), 0));

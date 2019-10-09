@@ -19,6 +19,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.digitalizedphotobook.adapters.SavedPhotoAdapter;
@@ -32,7 +33,7 @@ import java.util.ArrayList;
 public class MainActivity extends AppCompatActivity {
     final int IMAGE_PICKER_SELECT = 2001;
     final int reqPermissionId = 200;
-
+    private TextView tvUnavailable;
     private FloatingActionButton fabAdd;
     private RecyclerView rvSavedPhotos;
     private RecyclerView.LayoutManager layManager;
@@ -45,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         fabAdd = findViewById(R.id.fabAdd);
         rvSavedPhotos = findViewById(R.id.rvSavedPhotos);
+        tvUnavailable = findViewById(R.id.tvUnavailable);
 
         if (checkPermission()) {
 
@@ -56,25 +58,23 @@ public class MainActivity extends AppCompatActivity {
         rvSavedPhotos.setHasFixedSize(true);
         layManager = new GridLayoutManager(this, 3);
         rvSavedPhotos.setLayoutManager(layManager);
-
         adapter = new SavedPhotoAdapter(photoArr);
+
+        String folder = getIntent().getStringExtra("folderPath");
+        if (folder != null){
+            File f = new File(folder);
+            File[] files = f.listFiles();
+            for (int i = 0; i < files.length; i++){
+                photoArr.add(files[i].getName());
+            }
+        }
+
+        if (photoArr.size() == 0){
+            tvUnavailable.setVisibility(View.VISIBLE);
+        } else {
+            tvUnavailable.setVisibility(View.GONE);
+        }
         rvSavedPhotos.setAdapter(adapter);
-        photoArr.add("Sample 1");
-        photoArr.add("Sample 2");
-        photoArr.add("Sample 3");
-        photoArr.add("Sample 4");
-        photoArr.add("Sample 5");
-        photoArr.add("Sample 6");
-        photoArr.add("Sample 7");
-        photoArr.add("Sample 8");
-        photoArr.add("Sample 9");
-        photoArr.add("Sample 10");
-        photoArr.add("Sample 11");
-        photoArr.add("Sample 12");
-        photoArr.add("Sample 13");
-        photoArr.add("Sample 14");
-        photoArr.add("Sample 15");
-        photoArr.add("Sample 16");
 
 
         fabAdd.setOnClickListener(new View.OnClickListener() {

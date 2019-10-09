@@ -63,7 +63,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.UUID;
 
-
 import static org.opencv.core.CvType.CV_8UC1;
 import static org.opencv.core.CvType.CV_8UC3;
 import static org.opencv.core.CvType.CV_8UC4;
@@ -71,11 +70,12 @@ import static org.opencv.imgproc.Imgproc.cvtColor;
 
 public class ResultActivity extends AppCompatActivity {
     public static final String TAG = "ResultActivity";
-    private ImageView ivColour, ivResult, ivBack, ivSave, ivMore, ivRotate;
-    private TextView tvBrightness, tvContrast, tvReset;
-    private LinearLayout linlayMore, linlay1;
-    private SeekBar seekBarBrightness, seekBarContrast;
-    private String selection, imagePath;
+    private ImageView ivFilters, ivResult, ivBack, ivSave, ivMore, ivRotate;
+    private TextView tvBrightness, tvContrast, tvSharpness, tvReset;
+    private LinearLayout lightSettings, linlay1;
+    private SeekBar seekBarBrightness, seekBarContrast, seekBarSharpness;
+    private float scaledRatio;
+    private String imagePath;
     private Toolbar toolbar;
     private Bitmap bitmap, newBitMap;
     private View mView;
@@ -90,7 +90,6 @@ public class ResultActivity extends AppCompatActivity {
     private boolean isRotated = false;
     private int iBrightness = 50;
     private double dContrast = 1.0;
-    private int isSelected = 0;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -125,17 +124,19 @@ public class ResultActivity extends AppCompatActivity {
         getSupportActionBar().setTitle("");
 
         ivBack = findViewById(R.id.ivBack);
-        ivColour = findViewById(R.id.ivColour);
+        ivFilters = findViewById(R.id.ivFilters);
         ivResult = findViewById(R.id.ivResult);
         ivSave = findViewById(R.id.ivConfirm);
         ivRotate = findViewById(R.id.ivRotate);
         ivMore = findViewById(R.id.ivMore);
         tvContrast = findViewById(R.id.tvContrast);
         tvBrightness = findViewById(R.id.tvBrightness);
+        tvSharpness = findViewById(R.id.tvSharpness);
         tvReset = findViewById(R.id.tvReset);
         seekBarBrightness = findViewById(R.id.sbBrightness);
         seekBarContrast = findViewById(R.id.sbContrast);
-        linlayMore = findViewById(R.id.linlayMore);
+        seekBarSharpness = findViewById(R.id.sbSharpness);
+        lightSettings = findViewById(R.id.lightSettings);
         linlay1 = findViewById(R.id.linlay1);
         mView = findViewById(R.id.clickView);
 
@@ -152,6 +153,7 @@ public class ResultActivity extends AppCompatActivity {
         }
         imagePath = getIntent().getStringExtra("croppedPoints");
         isRotated = getIntent().getBooleanExtra("isRotated", false);
+        scaledRatio = getIntent().getFloatExtra("scaledRatio", 0.0f);
 
         mFile = new File(imagePath);
         setPic(mFile.getAbsolutePath());
@@ -162,16 +164,20 @@ public class ResultActivity extends AppCompatActivity {
                 finish();
             }
         });
+
+        //Expand the Light Settings
         ivMore.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (!isExtended) {
-                    linlayMore.setVisibility(View.VISIBLE);
+                    lightSettings.setVisibility(View.VISIBLE);
                     mView.setVisibility(View.VISIBLE);
-                    linlayMore.animate().translationY(linlayMore.getHeight() * -1);
+                    mView.animate().translationY(lightSettings.getHeight() * -1);
+                    lightSettings.animate().translationY(lightSettings.getHeight() * -1);
                     isExtended = true;
                 } else {
-                    linlayMore.animate().translationY(linlayMore.getHeight() + linlay1.getHeight());
+                    mView.setVisibility(View.GONE);
+                    lightSettings.animate().translationY(lightSettings.getHeight() + linlay1.getHeight());
                     isExtended = false;
                 }
             }
@@ -181,14 +187,14 @@ public class ResultActivity extends AppCompatActivity {
 //        Utils.bitmapToMat(bitmap,rgba);
         final String[] matArr = this.getResources().getStringArray(R.array.mats);
         newBitMap = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
-        newMat = new Mat(mat.rows(),mat.cols(), mat.type());
+        newMat = new Mat(mat.rows(), mat.cols(), mat.type());
         Utils.bitmapToMat(newBitMap, newMat);
 
         mView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (isExtended) {
-                    linlayMore.animate().translationY(linlayMore.getHeight() + linlay1.getHeight());
+                    lightSettings.animate().translationY(lightSettings.getHeight() + linlay1.getHeight());
                     isExtended = false;
                 }
                 mView.setVisibility(View.GONE);
@@ -208,9 +214,10 @@ public class ResultActivity extends AppCompatActivity {
 
                         }
                         if (ivResult.getRotation() == 90 || ivResult.getRotation() == -90 || ivResult.getRotation() == 270 || ivResult.getRotation() == -270) {
-                            float scaledRatio = Float.parseFloat(Integer.toString(ivResult.getWidth()))
-                                    / Float.parseFloat(Integer.toString(ivResult.getHeight()));
-                            Log.i(TAG, "ScaledRatio : " + scaledRatio);
+                            if (scaledRatio == 0.0f) {
+                                scaledRatio = Float.parseFloat(Integer.toString(ivResult.getWidth()))
+                                        / Float.parseFloat(Integer.toString(ivResult.getHeight()));
+                            }
                             if (isRotated == true) {
                                 ivResult.setScaleX(2 - scaledRatio);
                                 ivResult.setScaleY(2 - scaledRatio);
@@ -231,6 +238,14 @@ public class ResultActivity extends AppCompatActivity {
             }
         });
 
+        ivFilters.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showToast("Colorize Feature not available!");
+            }
+        });
+
+
         ivSave.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -238,6 +253,7 @@ public class ResultActivity extends AppCompatActivity {
             }
         });
 
+        // Light Settings Options
         if (newBitMap != null) {
             seekBarContrast.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
@@ -261,19 +277,6 @@ public class ResultActivity extends AppCompatActivity {
             });
 
             seekBarBrightness.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-
-                @Override
-                public void onStopTrackingTouch(SeekBar arg0) {
-
-
-                }
-
-                @Override
-                public void onStartTrackingTouch(SeekBar arg0) {
-
-
-                }
-
                 @Override
                 public void onProgressChanged(SeekBar arg0, int progress, boolean arg2) {
                     Mat dst = new Mat();
@@ -281,12 +284,44 @@ public class ResultActivity extends AppCompatActivity {
                     iBrightness = progress - 50;
 //                    newBitMap = doBrightness(bitmap, progress - 50);
                     newMat.convertTo(dst, -1, dContrast, iBrightness);
-                    Utils.matToBitmap(dst,newBitMap);
+                    Utils.matToBitmap(dst, newBitMap);
                     ivResult.setImageBitmap(newBitMap);
+                }
+
+                @Override
+                public void onStopTrackingTouch(SeekBar arg0) {
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar arg0) {
+                }
+            });
+
+            seekBarSharpness.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+//                    Mat dst = new Mat();
+//                    tvBrightness.setText("" + progress);
+//                    iBrightness = progress - 50;
+//                    newMat.convertTo(dst, -1, dContrast, iBrightness);
+//                    Utils.matToBitmap(dst, newBitMap);
+//                    ivResult.setImageBitmap(newBitMap);
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
+                    Mat dst = doSharpness(newMat);
+                    Utils.matToBitmap(dst, newBitMap);
+                    ivResult.setImageBitmap(newBitMap);
+                }
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
                 }
             });
         }
 
+        // Reset Light Settings
         tvReset.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -297,13 +332,26 @@ public class ResultActivity extends AppCompatActivity {
                     seekBarBrightness.setProgress(50);
                     seekBarContrast.setProgress(50);
                 }
-                newBitMap = doBrightness(bitmap, 0);
+
                 ivResult.setImageBitmap(newBitMap);
             }
         });
 
     }
 
+    private Mat doSharpness(Mat src) {
+        Mat destination = new Mat(src.rows(), src.cols(), src.type());
+        try {
+//            System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+            Imgproc.GaussianBlur(src, destination, new Size(0, 0), 10);
+            Core.addWeighted(src, 1.5, destination, -0.5, 0, destination);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return destination;
+    }
+
+    //Alert to Save Image
     private void alertDialog() {
         AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
         builder1.setMessage("Are you sure you want to save this image?");
@@ -341,6 +389,7 @@ public class ResultActivity extends AppCompatActivity {
                             toast.show();
                             dialog.cancel();
                             Intent intent = new Intent(ResultActivity.this, MainActivity.class);
+                            intent.putExtra("folderPath", getExternalFilesDir("Photobook"));
                             startActivity(intent);
                         } else {
                             showToast("Error Saving Image to Gallery!");
@@ -360,6 +409,8 @@ public class ResultActivity extends AppCompatActivity {
         alert11.show();
     }
 
+
+    //Insert Image to Gallery
     public static final String insertImage(ContentResolver cr,
                                            Bitmap source,
                                            String title,
@@ -453,7 +504,7 @@ public class ResultActivity extends AppCompatActivity {
         }
     }
 
-
+    //Image Color Options Menu
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.original:
@@ -462,7 +513,7 @@ public class ResultActivity extends AppCompatActivity {
                 break;
             case R.id.greyscale:
                 Mat greyscale = new Mat(bitmap.getWidth(), bitmap.getHeight(), CV_8UC1);
-                cvtColor(newMat, greyscale , Imgproc.COLOR_RGB2GRAY, 1);
+                cvtColor(newMat, greyscale, Imgproc.COLOR_RGB2GRAY, 1);
                 Utils.matToBitmap(greyscale, newBitMap);
                 ivResult.setImageBitmap(newBitMap);
                 break;
@@ -479,56 +530,7 @@ public class ResultActivity extends AppCompatActivity {
         return true;
     }
 
-    public static Bitmap doBrightness(Bitmap src, int value) {
-        // image size
-        int width = src.getWidth();
-        int height = src.getHeight();
-        // create output bitmap
-        Bitmap bmOut = Bitmap.createBitmap(width, height, src.getConfig());
-        // color information
-        int A, R, G, B;
-        int pixel;
-
-        // scan through all pixels
-        for (int x = 0; x < width; ++x) {
-            for (int y = 0; y < height; ++y) {
-                // get pixel color
-                pixel = src.getPixel(x, y);
-                A = Color.alpha(pixel);
-                R = Color.red(pixel);
-                G = Color.green(pixel);
-                B = Color.blue(pixel);
-
-                // increase/decrease each channel
-                R += value;
-                if (R > 255) {
-                    R = 255;
-                } else if (R < 0) {
-                    R = 0;
-                }
-
-                G += value;
-                if (G > 255) {
-                    G = 255;
-                } else if (G < 0) {
-                    G = 0;
-                }
-
-                B += value;
-                if (B > 255) {
-                    B = 255;
-                } else if (B < 0) {
-                    B = 0;
-                }
-
-                // apply new pixel color to output bitmap
-                bmOut.setPixel(x, y, Color.argb(A, R, G, B));
-            }
-        }
-        // return final image
-        return bmOut;
-    }
-
+    // Set Image with Bitmap Option Settings
     private void setPic(String photoPath) {
 
         // Get the dimensions of the bitmap

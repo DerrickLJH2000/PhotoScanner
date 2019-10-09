@@ -21,9 +21,14 @@ import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PointF;
+import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.view.TextureView;
+import android.view.View;
+
+import java.util.Map;
 
 /**
  * A {@link TextureView} that can be adjusted to a specified aspect ratio.
@@ -77,5 +82,19 @@ public class AutoFitTextureView extends TextureView {
         }
     }
 
+    private Rect rectangle;
 
+    public void setRect(Rect rect) {
+        rectangle = rect;
+        invalidate();
+    }
+
+    @Override
+    protected void dispatchDraw(Canvas canvas) {
+        super.dispatchDraw(canvas);
+        Paint mPaint = new Paint();
+        mPaint.setStrokeWidth(3);
+        mPaint.setColor(getResources().getColor(R.color.color_red));
+        canvas.drawRect(rectangle,mPaint);
+    }
 }

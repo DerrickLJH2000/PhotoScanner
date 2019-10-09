@@ -21,14 +21,14 @@
 
         <RelativeLayout
             android:id="@+id/rellay2"
-            android:layout_width="wrap_content"
-            android:layout_height="480dp"
+            android:layout_width="match_parent"
+            android:layout_height="490dp"
             android:layout_gravity="center">
 
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_margin="8dp" >
+                android:layout_margin="10dp" >
 
                 <ImageView
                     android:id="@+id/ivResult"
@@ -40,6 +40,8 @@
             <com.example.digitalizedphotobook.PolygonView
                 android:id="@+id/polygonView"
                 android:layout_width="match_parent"
+                android:layout_marginLeft="0.5dp"
+                android:layout_marginRight="0.5dp"
                 android:layout_height="match_parent" />
         </RelativeLayout>
     </FrameLayout>

@@ -51,5 +51,20 @@
             android:text="Recently Saved"
             android:textColor="@color/color_dark_grey2"
             android:textSize="14sp"></TextView>
+
+        <TextView
+            android:id="@+id/tvUnavailable"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:paddingTop="50dp"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            android:text="There are currently\n no saved photos"
+            android:textColor="@color/color_dark_grey2"
+            android:layout_centerInParent="true"
+            android:fontFamily="@font/allerta"
+            android:textSize="20sp"
+            android:paddingBottom="10dp"/>
     </RelativeLayout>
 </LinearLayout>
