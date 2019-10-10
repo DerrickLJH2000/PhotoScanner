@@ -111,7 +111,6 @@ public class ScanActivity extends AppCompatActivity {
     FloatingActionButton fabCamera;
     Boolean mAutoFocusSupported = false;
     String flashmode = "OFF";
-    RelativeLayout rellay1;
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
@@ -352,8 +351,6 @@ public class ScanActivity extends AppCompatActivity {
         ivFlash = findViewById(R.id.ivFlash);
         ivLoadGallery = findViewById(R.id.ivLoad);
         fabCamera = findViewById(R.id.fabCamera);
-        mTextureView = (AutoFitTextureView) findViewById(R.id.tvScan);
-        rellay1 = findViewById(R.id.rellay1);
         mFile = new File(getExternalFilesDir("Temp"), "temp.jpg");
         assert mTextureView != null;
         ivBack.setOnClickListener(new View.OnClickListener() {
@@ -569,56 +566,6 @@ public class ScanActivity extends AppCompatActivity {
         super.onPause();
     }
 
-    /*private void handleFocus(MotionEvent event) {
-        int pointerId = event.getPointerId(0);
-        int pointerIndex = event.findPointerIndex(pointerId);
-        // Get the pointer's current position
-        float x = event.getX(pointerIndex);
-        float y = event.getY(pointerIndex);
-
-        Rect touchRect = new Rect(
-                (int) (x - 100),
-                (int) (y - 100),
-                (int) (x + 100),
-                (int) (y + 100));
-        if (cameraDevice == null)
-            return;
-        CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-        CameraCharacteristics characteristics = null;
-        try {
-            characteristics = manager.getCameraCharacteristics(cameraDevice.getId());
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
-
-        MeteringRectangle focusArea = new MeteringRectangle(touchRect, MeteringRectangle.METERING_WEIGHT_DONT_CARE);
-        captureRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
-        try {
-            cameraCaptureSessions.capture(captureRequestBuilder.build(), null,
-                    mBackgroundHandler);
-
-        } catch (CameraAccessException e) {
-            // log
-        }
-
-        captureRequestBuilder.set(CaptureRequest.CONTROL_AE_REGIONS,
-                new MeteringRectangle[]{focusArea});
-        captureRequestBuilder
-                .set(CaptureRequest.CONTROL_AF_REGIONS, new MeteringRectangle[]{focusArea});
-        captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
-                CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-        captureRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
-                CameraMetadata.CONTROL_AF_TRIGGER_START);
-        captureRequestBuilder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
-                CameraMetadata.CONTROL_AE_PRECAPTURE_TRIGGER_START);
-        try {
-            cameraCaptureSessions.setRepeatingRequest(captureRequestBuilder.build(), null, mBackgroundHandler);
-            /* mManualFocusEngaged = true;
-        } catch (CameraAccessException e) {
-            // error handling
-        }
-
-    } */
     private void requestCameraPermission() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{
