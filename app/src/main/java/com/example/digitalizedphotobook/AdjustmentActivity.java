@@ -56,6 +56,7 @@ import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.ByteArrayOutputStream;
@@ -71,6 +72,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static java.security.AccessController.getContext;
 
 
@@ -346,6 +349,19 @@ public class AdjustmentActivity extends AppCompatActivity {
         });
     }
 
+    private Mat autoCanny(Mat image){
+        double sigma = 0.33;
+        // Gaussian Blur the original image
+        // compute the median of the single channel pixel intensities
+        v = np.median(image);
+        // apply automatic Canny edge detection using the computed median
+        int lower = (int) (max(0, (1.0 - sigma) * v));
+        int upper = (int) (min(255, (1.0 + sigma) * v));
+        Mat edged = new Mat();
+        Imgproc.Canny(image, edged, lower, upper);
+        return edged;
+    }
+
     private byte saturate(double val) {
         int iVal = (int) Math.round(val);
         iVal = iVal > 255 ? 255 : (iVal < 0 ? 0 : iVal);
@@ -390,13 +406,13 @@ public class AdjustmentActivity extends AppCompatActivity {
         double widthA = Math.sqrt(Math.pow(br.x - bl.x, 2) + Math.pow(br.y - bl.y, 2));
         double widthB = Math.sqrt(Math.pow(tr.x - tl.x, 2) + Math.pow(tr.y - tl.y, 2));
 
-        double dw = Math.max(widthA, widthB);
+        double dw = max(widthA, widthB);
         int maxWidth = Double.valueOf(dw).intValue();
 
         double heightA = Math.sqrt(Math.pow(tr.x - br.x, 2) + Math.pow(tr.y - br.y, 2));
         double heightB = Math.sqrt(Math.pow(tl.x - bl.x, 2) + Math.pow(tl.y - bl.y, 2));
 
-        double dh = Math.max(heightA, heightB);
+        double dh = max(heightA, heightB);
         int maxHeight = Double.valueOf(dh).intValue();
 
         Mat destImage = new Mat(maxHeight, maxWidth, CvType.CV_8UC4);
