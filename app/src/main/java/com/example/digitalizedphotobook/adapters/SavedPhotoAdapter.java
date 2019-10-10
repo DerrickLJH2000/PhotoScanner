@@ -1,5 +1,7 @@
 package com.example.digitalizedphotobook.adapters;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Vibrator;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -10,17 +12,18 @@ import android.widget.Toast;
 
 import com.example.digitalizedphotobook.R;
 
+import java.io.File;
 import java.util.ArrayList;
 
 
 public class SavedPhotoAdapter extends RecyclerView.Adapter<SavedPhotoAdapter.ViewHolder> {
-    private ArrayList<String> photoArr;
+    private ArrayList<File> photoArr;
     private static final int LONG_CLICK_DURATION = 500;
     private long startClicktime;
     Vibrator vibrator;
 
     // RecyclerView recyclerView;
-    public SavedPhotoAdapter(ArrayList<String> photoArr) {
+    public SavedPhotoAdapter(ArrayList<File> photoArr) {
         this.photoArr = photoArr;
     }
 
@@ -34,11 +37,14 @@ public class SavedPhotoAdapter extends RecyclerView.Adapter<SavedPhotoAdapter.Vi
 
     @Override
     public void onBindViewHolder(final ViewHolder holder, final int position) {
-        final String currItem = photoArr.get(position);
+        final File currItem = photoArr.get(position);
+        String imgPath = currItem.getAbsolutePath();
+        Bitmap bitmap = BitmapFactory.decodeFile(imgPath);
+        holder.imageView.setImageBitmap(bitmap);
         holder.imageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(v.getContext(), "click on item: " + currItem, Toast.LENGTH_SHORT).show();
+                Toast.makeText(v.getContext(), "click on item: " + currItem.getName(), Toast.LENGTH_SHORT).show();
             }
         });
         //holder.imageView.setImageResource(photoArr[position]);

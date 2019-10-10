@@ -66,6 +66,7 @@ import java.util.UUID;
 import static org.opencv.core.CvType.CV_8UC1;
 import static org.opencv.core.CvType.CV_8UC3;
 import static org.opencv.core.CvType.CV_8UC4;
+import static org.opencv.imgproc.Imgproc.arcLength;
 import static org.opencv.imgproc.Imgproc.cvtColor;
 
 public class ResultActivity extends AppCompatActivity {
@@ -300,19 +301,19 @@ public class ResultActivity extends AppCompatActivity {
             seekBarSharpness.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-//                    Mat dst = new Mat();
-//                    tvBrightness.setText("" + progress);
-//                    iBrightness = progress - 50;
-//                    newMat.convertTo(dst, -1, dContrast, iBrightness);
-//                    Utils.matToBitmap(dst, newBitMap);
-//                    ivResult.setImageBitmap(newBitMap);
+                    Mat blurredMat = new Mat();
+                    Mat dst = new Mat();
+                    tvSharpness.setText("" + progress);
+                    double alpha = progress / 50;
+                    double beta = (1.0 - alpha);
+                    Imgproc.GaussianBlur(newMat, blurredMat, new Size(45, 45), 0);
+                    Core.addWeighted(newMat, alpha, blurredMat, beta, 0.0, dst);
+                    Utils.matToBitmap(dst, newBitMap);
+                    ivResult.setImageBitmap(newBitMap);
                 }
 
                 @Override
                 public void onStartTrackingTouch(SeekBar seekBar) {
-                    Mat dst = doSharpness(newMat);
-                    Utils.matToBitmap(dst, newBitMap);
-                    ivResult.setImageBitmap(newBitMap);
                 }
 
                 @Override
@@ -337,18 +338,6 @@ public class ResultActivity extends AppCompatActivity {
             }
         });
 
-    }
-
-    private Mat doSharpness(Mat src) {
-        Mat destination = new Mat(src.rows(), src.cols(), src.type());
-        try {
-//            System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-            Imgproc.GaussianBlur(src, destination, new Size(0, 0), 10);
-            Core.addWeighted(src, 1.5, destination, -0.5, 0, destination);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return destination;
     }
 
     //Alert to Save Image
