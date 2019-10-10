@@ -154,17 +154,16 @@ public class AdjustmentActivity extends AppCompatActivity {
 //        }
         newBmp = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
 
-
         Log.i(TAG, "Height: " + newBmp.getHeight() + "Width: " + newBmp.getWidth());
-
         mat = new Mat(newBmp.getWidth(), newBmp.getHeight(), CvType.CV_8UC4);
         Utils.bitmapToMat(newBmp, mat);
         resizedBmp = Bitmap.createBitmap(mat.width(), mat.height(), Bitmap.Config.ARGB_8888);
 
         performGammaCorrection(mat);
-        Utils.matToBitmap(mat, resizedBmp);
         findContours(mat);
+        Utils.matToBitmap(mat, resizedBmp);
         ivResult.setImageBitmap(resizedBmp);
+
         Bitmap bmpImg = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
         Log.i(TAG, "Height :" + rellay.getHeight());
         setBitmap(bmpImg);
@@ -460,13 +459,13 @@ public class AdjustmentActivity extends AppCompatActivity {
 //        Imgproc.dilate(grayImage, grayImage, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
 //        Imgproc.erode(grayImage, grayImage, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
         Imgproc.cvtColor(src, grayImage, Imgproc.COLOR_RGBA2GRAY, 1);
-        Imgproc.Canny(grayImage, cannedImage, 0, 260);
-        Imgproc.morphologyEx(cannedImage, cannedImage, 3, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
-        Imgproc.morphologyEx(cannedImage, cannedImage, 4, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
+        Imgproc.Canny(grayImage, cannedImage, 240, 240);
+        Imgproc.morphologyEx(cannedImage, cannedImage, 3, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(25, 25)));
+        Imgproc.morphologyEx(cannedImage, cannedImage, 4, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(12, 12)));
         ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
         Mat hierarchy = new Mat();
 
-        Imgproc.findContours(cannedImage, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_NONE);
+        Imgproc.findContours(cannedImage, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
 
         hierarchy.release();
         Collections.sort(contours, new Comparator<MatOfPoint>() {
@@ -501,7 +500,7 @@ public class AdjustmentActivity extends AppCompatActivity {
 
                 MatOfPoint matOfPoint = new MatOfPoint(approx.toArray());
                 Point[] points = approx.toArray();
-                Imgproc.drawContours(cannedImage, contours, maxValIdx, new Scalar(0, 255, 0), 2);
+                Imgproc.drawContours(mat, contours, -1, new Scalar(0, 255, 0), 10);
                 // select biggest 4 angles polygon
                 if (matOfPoint.total() >= 4 & Math.abs(Imgproc.contourArea(matOfPoint)) > 1000) {
                     Point[] foundPoints = sortPoints(points);
@@ -509,10 +508,10 @@ public class AdjustmentActivity extends AppCompatActivity {
                     isCropped = true;
 
                     quad = new Quadrilateral(contours.get(maxValIdx), foundPoints);
-//                    for (Point point : quad.points) {
-//                        Imgproc.floodFill(mat, cannedImage, point, new Scalar(0, 255, 0));
-//                        Imgproc.circle(mat, point, 10, new Scalar(255, 0, 255), 4);
-//                    }
+                    for (Point point : quad.points) {
+                        Imgproc.floodFill(grayImage, grayImage, point, new Scalar(0, 255, 0));
+                        Imgproc.circle(mat, point, 40, new Scalar(255, 0, 255), 20);
+                    }
                 } else {
                     quad = null;
                 }

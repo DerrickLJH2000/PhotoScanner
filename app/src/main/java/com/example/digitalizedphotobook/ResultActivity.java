@@ -1,7 +1,6 @@
 package com.example.digitalizedphotobook;
 
 import android.Manifest;
-import android.animation.Animator;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -15,9 +14,8 @@ import android.graphics.Matrix;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
-import android.os.Handler;
-import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -44,11 +42,7 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfPoint;
-import org.opencv.core.Point;
-import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -66,15 +60,14 @@ import java.util.UUID;
 import static org.opencv.core.CvType.CV_8UC1;
 import static org.opencv.core.CvType.CV_8UC3;
 import static org.opencv.core.CvType.CV_8UC4;
-import static org.opencv.imgproc.Imgproc.arcLength;
 import static org.opencv.imgproc.Imgproc.cvtColor;
 
 public class ResultActivity extends AppCompatActivity {
     public static final String TAG = "ResultActivity";
     private ImageView ivFilters, ivResult, ivBack, ivSave, ivMore, ivRotate;
-    private TextView tvBrightness, tvContrast, tvSharpness, tvReset;
+    private TextView tvBrightness, tvContrast, tvReset;
     private LinearLayout lightSettings, linlay1;
-    private SeekBar seekBarBrightness, seekBarContrast, seekBarSharpness;
+    private SeekBar seekBarBrightness, seekBarContrast;
     private float scaledRatio;
     private String imagePath;
     private Toolbar toolbar;
@@ -132,11 +125,9 @@ public class ResultActivity extends AppCompatActivity {
         ivMore = findViewById(R.id.ivMore);
         tvContrast = findViewById(R.id.tvContrast);
         tvBrightness = findViewById(R.id.tvBrightness);
-        tvSharpness = findViewById(R.id.tvSharpness);
         tvReset = findViewById(R.id.tvReset);
         seekBarBrightness = findViewById(R.id.sbBrightness);
         seekBarContrast = findViewById(R.id.sbContrast);
-        seekBarSharpness = findViewById(R.id.sbSharpness);
         lightSettings = findViewById(R.id.lightSettings);
         linlay1 = findViewById(R.id.linlay1);
         mView = findViewById(R.id.clickView);
@@ -183,8 +174,6 @@ public class ResultActivity extends AppCompatActivity {
                 }
             }
         });
-        mat = new Mat(bitmap.getWidth(), bitmap.getHeight(), CV_8UC1);
-        Utils.bitmapToMat(bitmap, mat);
 //        Utils.bitmapToMat(bitmap,rgba);
         final String[] matArr = this.getResources().getStringArray(R.array.mats);
         newBitMap = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
@@ -259,10 +248,7 @@ public class ResultActivity extends AppCompatActivity {
             seekBarContrast.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                    Mat dst = new Mat();
-                    tvContrast.setText("" + progress);
-                    dContrast = progress / 50.0;
-                    newMat.convertTo(dst, -1, dContrast, iBrightness);
+                    Mat dst = doContrast(progress);
                     Utils.matToBitmap(dst, newBitMap);
                     ivResult.setImageBitmap(newBitMap);
                 }
@@ -280,11 +266,7 @@ public class ResultActivity extends AppCompatActivity {
             seekBarBrightness.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar arg0, int progress, boolean arg2) {
-                    Mat dst = new Mat();
-                    tvBrightness.setText("" + progress);
-                    iBrightness = progress - 50;
-//                    newBitMap = doBrightness(bitmap, progress - 50);
-                    newMat.convertTo(dst, -1, dContrast, iBrightness);
+                    Mat dst = doBrightness(progress);
                     Utils.matToBitmap(dst, newBitMap);
                     ivResult.setImageBitmap(newBitMap);
                 }
@@ -298,28 +280,6 @@ public class ResultActivity extends AppCompatActivity {
                 }
             });
 
-            seekBarSharpness.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-                @Override
-                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                    Mat blurredMat = new Mat();
-                    Mat dst = new Mat();
-                    tvSharpness.setText("" + progress);
-                    double alpha = progress / 50;
-                    double beta = (1.0 - alpha);
-                    Imgproc.GaussianBlur(newMat, blurredMat, new Size(45, 45), 0);
-                    Core.addWeighted(newMat, alpha, blurredMat, beta, 0.0, dst);
-                    Utils.matToBitmap(dst, newBitMap);
-                    ivResult.setImageBitmap(newBitMap);
-                }
-
-                @Override
-                public void onStartTrackingTouch(SeekBar seekBar) {
-                }
-
-                @Override
-                public void onStopTrackingTouch(SeekBar seekBar) {
-                }
-            });
         }
 
         // Reset Light Settings
@@ -338,6 +298,22 @@ public class ResultActivity extends AppCompatActivity {
             }
         });
 
+    }
+
+    private Mat doContrast(int progress) {
+        Mat dst = new Mat();
+        tvContrast.setText("" + progress);
+        dContrast = progress / 50.0;
+        newMat.convertTo(dst, -1, dContrast, iBrightness);
+        return dst;
+    }
+
+    private Mat doBrightness(int progress) {
+        Mat dst = new Mat();
+        tvBrightness.setText("" + progress);
+        iBrightness = progress - 50;
+        newMat.convertTo(dst, -1, dContrast, iBrightness);
+        return dst;
     }
 
     //Alert to Save Image
@@ -533,6 +509,12 @@ public class ResultActivity extends AppCompatActivity {
         bmOptions.inPurgeable = true;
 
         bitmap = BitmapFactory.decodeFile(photoPath, bmOptions);
+
+        mat = new Mat(bitmap.getWidth(), bitmap.getHeight(), CV_8UC1);
+        Utils.bitmapToMat(bitmap, mat);
+        Mat blurredMat = new Mat();
+        Imgproc.GaussianBlur(mat, blurredMat, new Size(5, 5), 0);
+        Core.addWeighted(mat, 1.5, blurredMat, 0.5, 0.0, mat);
         ivResult.setImageBitmap(bitmap);
     }
 

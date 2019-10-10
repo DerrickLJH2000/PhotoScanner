@@ -351,6 +351,7 @@ public class ScanActivity extends AppCompatActivity {
         ivFlash = findViewById(R.id.ivFlash);
         ivLoadGallery = findViewById(R.id.ivLoad);
         fabCamera = findViewById(R.id.fabCamera);
+        mTextureView = (AutoFitTextureView) findViewById(R.id.tvScan);
         mFile = new File(getExternalFilesDir("Temp"), "temp.jpg");
         assert mTextureView != null;
         ivBack.setOnClickListener(new View.OnClickListener() {
@@ -840,11 +841,11 @@ public class ScanActivity extends AppCompatActivity {
     }
 
     private void takePicture() {
-        if (mAutoFocusSupported) {
-            lockFocus();
-        } else {
+//        if (mAutoFocusSupported) {
+//            lockFocus();
+//        } else {
             captureStillPicture();
-        }
+//        }
     }
 
     private void lockFocus() {
