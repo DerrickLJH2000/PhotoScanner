@@ -11,42 +11,6 @@
         android:id="@+id/include"
         layout="@layout/app_bar_adjustment" />
 
-    <FrameLayout
-        android:id="@+id/sourceFrame"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_margin="10dp"
-        app:layout_constraintBottom_toTopOf="@id/line"
-        app:layout_constraintTop_toBottomOf="@id/include">
-
-        <RelativeLayout
-            android:id="@+id/rellay2"
-            android:layout_width="match_parent"
-            android:layout_height="490dp"
-            android:layout_gravity="center">
-
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_margin="10dp" >
-
-                <ImageView
-                    android:id="@+id/ivResult"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:adjustViewBounds="true"
-                    android:scaleType="fitCenter"/>
-            </RelativeLayout>
-
-            <com.example.digitalizedphotobook.PolygonView
-                android:id="@+id/polygonView"
-                android:layout_width="match_parent"
-                android:layout_marginLeft="0.5dp"
-                android:layout_marginRight="0.5dp"
-                android:layout_height="match_parent" />
-        </RelativeLayout>
-    </FrameLayout>
-
     <View
         android:id="@+id/line"
         android:layout_width="match_parent"
@@ -137,6 +101,43 @@
 
 
     </LinearLayout>
+    <FrameLayout
+        android:id="@+id/sourceFrame"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        app:layout_constraintBottom_toTopOf="@id/line"
+        app:layout_constraintTop_toBottomOf="@id/include">
 
+        <FrameLayout
+            android:id="@+id/rellay2"
+            android:layout_width="match_parent"
+            android:layout_height="490dp"
+            android:minHeight="450dp"
+            android:layout_gravity="center">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="10dp" >
+
+                <ImageView
+                    android:id="@+id/ivResult"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:adjustViewBounds="true"
+                    android:scaleType="fitCenter"/>
+            </RelativeLayout>
+
+            <com.example.digitalizedphotobook.PolygonView
+                android:id="@+id/polygonView"
+                android:layout_width="match_parent"
+                android:layout_marginLeft="0.5dp"
+                android:layout_marginRight="0.5dp"
+                android:layout_height="match_parent"
+                android:visibility="gone"/>
+        </FrameLayout>
+    </FrameLayout>
 
 </android.support.constraint.ConstraintLayout>

@@ -121,6 +121,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        Toast.makeText(this, "Note: Older phones have problem rendering the image", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
     public void onBackPressed() {
     }
 }

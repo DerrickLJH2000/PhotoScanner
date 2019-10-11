@@ -2,6 +2,7 @@ package com.example.digitalizedphotobook;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -17,7 +18,9 @@ import android.graphics.PorterDuff;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.media.ExifInterface;
 import android.os.AsyncTask;
+import android.renderscript.ScriptGroup;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -51,6 +54,7 @@ import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfDouble;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
@@ -81,7 +85,6 @@ public class AdjustmentActivity extends AppCompatActivity {
     private static final String TAG = "AdjustmentActivity123";
     private ImageView ivBack, ivCrop, ivConfirm, ivRotateLeft, ivRotateRight, ivResult;
     private PolygonView polygonView;
-    private RelativeLayout rellay;
     private File mFile, mFile2;
     private String imagePath;
     private Bitmap bmp, newBmp, resizedBmp;
@@ -91,6 +94,8 @@ public class AdjustmentActivity extends AppCompatActivity {
     private boolean isCropped = false;
     private int reqCode;
     private double gammaValue = 1.0;
+    private Map<Integer, PointF> points;
+    private boolean isEditing = false;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -127,7 +132,6 @@ public class AdjustmentActivity extends AppCompatActivity {
         ivBack = findViewById(R.id.ivBack);
         ivRotateLeft = findViewById(R.id.ivRotateLeft);
         ivRotateRight = findViewById(R.id.ivRotateRight);
-        rellay = findViewById(R.id.rellay2);
         ivCrop = findViewById(R.id.ivCrop);
         ivConfirm = findViewById(R.id.ivConfirm);
         ivResult = findViewById(R.id.ivResult);
@@ -147,13 +151,13 @@ public class AdjustmentActivity extends AppCompatActivity {
         imagePath = getIntent().getStringExtra("image");
         reqCode = getIntent().getIntExtra("reqCode", -1);
         Log.i(TAG, (reqCode) + imagePath);
+        int orientation = getCameraPhotoOrientation(imagePath);
         mFile = new File(imagePath);
         BitmapFactory.Options options = new BitmapFactory.Options();
         bmp = BitmapFactory.decodeFile(mFile.getAbsolutePath(), options);
         Matrix matrix = new Matrix();
 //        if (reqCode != 0) {
         matrix.postRotate(90);
-
 //        }
         newBmp = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
 
@@ -167,9 +171,8 @@ public class AdjustmentActivity extends AppCompatActivity {
         Utils.matToBitmap(mat, resizedBmp);
         ivResult.setImageBitmap(resizedBmp);
 
+
         Bitmap bmpImg = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
-        Log.i(TAG, "Height :" + rellay.getHeight());
-        setBitmap(bmpImg);
 
         ivBack.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -297,7 +300,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                 switch (eid) {
                     case (MotionEvent.ACTION_DOWN):
                         ivConfirm.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
-                        Map<Integer, PointF> points = polygonView.getPoints();
+                        points = polygonView.getPoints();
                         Point[] pointArr = new Point[4];
                         double bmpToIvHeightRatio = newBmp.getHeight() / ivResult.getHeight();
                         double bmpToIvWidthRatio = newBmp.getWidth() / ivResult.getWidth();
@@ -333,6 +336,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                         break;
                     case (MotionEvent.ACTION_UP):
                         ivConfirm.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.color_white), PorterDuff.Mode.SRC_IN);
+                        isEditing = true;
                         Intent intent = new Intent(AdjustmentActivity.this, ResultActivity.class);
                         intent.putExtra("croppedPoints", mFile2.getAbsolutePath());
                         float scaledRatio = Float.parseFloat(Integer.toString(ivResult.getWidth()))
@@ -349,17 +353,41 @@ public class AdjustmentActivity extends AppCompatActivity {
         });
     }
 
-    private Mat autoCanny(Mat image){
-        double sigma = 0.33;
-        // Gaussian Blur the original image
-        // compute the median of the single channel pixel intensities
-        v = np.median(image);
-        // apply automatic Canny edge detection using the computed median
-        int lower = (int) (max(0, (1.0 - sigma) * v));
-        int upper = (int) (min(255, (1.0 + sigma) * v));
-        Mat edged = new Mat();
-        Imgproc.Canny(image, edged, lower, upper);
-        return edged;
+    private Mat otsuAutoCanny(Mat src) {
+        Mat newSrc = new Mat();
+        double otsu_thresh_val = Imgproc.threshold(src, new Mat(), 0, 255, Imgproc.THRESH_BINARY | Imgproc.THRESH_OTSU);
+        double high_thresh_val = otsu_thresh_val,
+                lower_thresh_val = otsu_thresh_val * 0.5;
+        Imgproc.Canny(src, newSrc, lower_thresh_val, high_thresh_val);
+        return newSrc;
+    }
+
+    public int getCameraPhotoOrientation(String imagePath) {
+        int rotate = 0;
+        try {
+            File imageFile = new File(imagePath);
+
+            ExifInterface exif = new ExifInterface(imageFile.getAbsolutePath());
+            int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+
+            switch (orientation) {
+                case ExifInterface.ORIENTATION_ROTATE_270:
+                    rotate = 270;
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_180:
+                    rotate = 180;
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_90:
+                    rotate = 90;
+                    break;
+            }
+
+            Log.i("RotateImage", "Exif orientation: " + orientation);
+            Log.i("RotateImage", "Rotate value: " + rotate);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return rotate;
     }
 
     private byte saturate(double val) {
@@ -390,15 +418,18 @@ public class AdjustmentActivity extends AppCompatActivity {
 //            Log.d(TAG, "OpenCV library found inside package. Using it!");
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
+        if (isEditing) {
+            if (points != null) {
+                polygonView.setPoints(points);
+            } else {
+                Bitmap returnBmp = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
+                polygonView.setPoints(getOutlinePoints(returnBmp));
+            }
+        }
     }
 
     private Mat perspectiveChange(Mat src, Point[] points) {
 
-//        double ratio = src.size().height / 500;
-//        for (int i = 0; i < points.length; i++) {
-//            points[i].x /= 1.29;
-//            points[i].y /= 1.29;
-//        }
         Point bl = points[0];
         Point br = points[1];
         Point tl = points[2];
@@ -475,9 +506,11 @@ public class AdjustmentActivity extends AppCompatActivity {
 //        Imgproc.dilate(grayImage, grayImage, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
 //        Imgproc.erode(grayImage, grayImage, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
         Imgproc.cvtColor(src, grayImage, Imgproc.COLOR_RGBA2GRAY, 1);
-        Imgproc.Canny(grayImage, cannedImage, 240, 240);
-        Imgproc.morphologyEx(cannedImage, cannedImage, 3, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(25, 25)));
-        Imgproc.morphologyEx(cannedImage, cannedImage, 4, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(12, 12)));
+//        Imgproc.Canny(grayImage, cannedImage, 240, 240);
+        Imgproc.GaussianBlur(grayImage, grayImage, new Size(5, 5), 0);
+        cannedImage = otsuAutoCanny(grayImage);
+        Imgproc.morphologyEx(cannedImage, cannedImage, 3, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(7, 7)));
+        Imgproc.morphologyEx(cannedImage, cannedImage, 4, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
         ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
         Mat hierarchy = new Mat();
 
@@ -516,7 +549,7 @@ public class AdjustmentActivity extends AppCompatActivity {
 
                 MatOfPoint matOfPoint = new MatOfPoint(approx.toArray());
                 Point[] points = approx.toArray();
-                Imgproc.drawContours(mat, contours, -1, new Scalar(0, 255, 0), 10);
+//                Imgproc.drawContours(mat, contours, -1, new Scalar(0, 255, 0), 10);
                 // select biggest 4 angles polygon
                 if (matOfPoint.total() >= 4 & Math.abs(Imgproc.contourArea(matOfPoint)) > 1000) {
                     Point[] foundPoints = sortPoints(points);
@@ -524,10 +557,9 @@ public class AdjustmentActivity extends AppCompatActivity {
                     isCropped = true;
 
                     quad = new Quadrilateral(contours.get(maxValIdx), foundPoints);
-                    for (Point point : quad.points) {
-                        Imgproc.floodFill(grayImage, grayImage, point, new Scalar(0, 255, 0));
-                        Imgproc.circle(mat, point, 40, new Scalar(255, 0, 255), 20);
-                    }
+//                    for (Point point : quad.points) {
+//                        Imgproc.circle(mat, point, 40, new Scalar(255, 0, 255), 20);
+//                    }
                 } else {
                     quad = null;
                 }
@@ -594,10 +626,13 @@ public class AdjustmentActivity extends AppCompatActivity {
     private List<PointF> getContourEdgePoints(Bitmap tempBitmap) {
         List<PointF> pointList = new ArrayList<>();
         if (quad != null) {
+            float widthRatio = tempBitmap.getWidth() / ivResult.getWidth();
+            float heightRatio = tempBitmap.getHeight() / ivResult.getHeight();
             Point[] quadPoints = quad.points;
             for (int i = 0; i < quadPoints.length; i++) {
-                float x = Float.parseFloat(Double.toString(quadPoints[i].x / 3.12f));
-                float y = Float.parseFloat(Double.toString(quadPoints[i].y / 3.12f));
+                // Unable to obtain width and height of imageview so use ratio to hardcode points
+                float x = Float.parseFloat(Double.toString(quadPoints[i].x / (widthRatio + 0.12)));
+                float y = Float.parseFloat(Double.toString(quadPoints[i].y / (heightRatio + 0.12)));
                 pointList.add(new PointF(x, y));
             }
         }
@@ -607,25 +642,25 @@ public class AdjustmentActivity extends AppCompatActivity {
 
     private Map<Integer, PointF> getOutlinePoints(Bitmap tempBitmap) {
         Map<Integer, PointF> outlinePoints = new HashMap<>();
-        if (ivResult.getWidth() == 0 && ivResult.getHeight() == 0) {
-            if (reqCode != 0) {
-                outlinePoints.put(0, new PointF(0, 0));
-                outlinePoints.put(1, new PointF(tempBitmap.getWidth() / 3.12f, 0));
-                outlinePoints.put(2, new PointF(0, tempBitmap.getHeight() / 3.12f));
-                outlinePoints.put(3, new PointF(tempBitmap.getWidth() / 3.12f, tempBitmap.getHeight() / 3.12f));
-            } else {
-                outlinePoints.put(0, new PointF(0, 0));
-                outlinePoints.put(1, new PointF(tempBitmap.getWidth(), 0));
-                outlinePoints.put(2, new PointF(0, tempBitmap.getHeight()));
-                outlinePoints.put(3, new PointF(tempBitmap.getWidth(), tempBitmap.getHeight()));
-            }
-        } else {
-            outlinePoints.put(0, new PointF(0, 0));
-            outlinePoints.put(1, new PointF(ivResult.getWidth(), 0));
-            outlinePoints.put(2, new PointF(0, ivResult.getHeight()));
-            outlinePoints.put(3, new PointF(ivResult.getWidth(), ivResult.getHeight()));
-        }
+
+        outlinePoints.put(0, new PointF(0, 0));
+        outlinePoints.put(1, new PointF(ivResult.getWidth(), 0));
+        outlinePoints.put(2, new PointF(0, ivResult.getHeight()));
+        outlinePoints.put(3, new PointF(ivResult.getWidth(), ivResult.getHeight()));
+
         return outlinePoints;
+
+    }
+
+    public void onWindowFocusChanged(boolean hasFocus) {
+        // TODO Auto-generated method stub
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            if (!isEditing) {
+                Bitmap bmpImg = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
+                setBitmap(bmpImg);
+            }
+        }
 
     }
 

@@ -24,6 +24,8 @@ import android.support.v4.content.PermissionChecker;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Gravity;
@@ -37,11 +39,15 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.digitalizedphotobook.adapters.FilterAdapter;
+import com.example.digitalizedphotobook.classes.Filter;
+
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
@@ -54,6 +60,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.UUID;
 
@@ -64,9 +71,9 @@ import static org.opencv.imgproc.Imgproc.cvtColor;
 
 public class ResultActivity extends AppCompatActivity {
     public static final String TAG = "ResultActivity";
-    private ImageView ivFilters, ivResult, ivBack, ivSave, ivMore, ivRotate;
+    public ImageView ivFilters, ivResult, ivBack, ivSave, ivMore, ivRotate;
     private TextView tvBrightness, tvContrast, tvReset;
-    private LinearLayout lightSettings, linlay1;
+    private LinearLayout lightSettings, linlay1 , filterSettings;
     private SeekBar seekBarBrightness, seekBarContrast;
     private float scaledRatio;
     private String imagePath;
@@ -74,16 +81,21 @@ public class ResultActivity extends AppCompatActivity {
     private Bitmap bitmap, newBitMap;
     private View mView;
     private File mFile;
-    private Mat mat, newMat;
+    public Mat mat, newMat;
     private boolean colorMode = false;
     private boolean filterMode = true;
     private double colorGain = 1.5;       // contrast
     private double colorBias = 0;         // bright
     private int colorThresh = 110;
-    private boolean isExtended = false;
+    private boolean isFilterExtended = false;
+    private boolean isLightExtended = false;
     private boolean isRotated = false;
     private int iBrightness = 50;
     private double dContrast = 1.0;
+    private RecyclerView rvFilter;
+    private RecyclerView.LayoutManager layManager;
+    ArrayList<Filter> filterArr = new ArrayList<Filter>();
+    FilterAdapter adapter;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -123,12 +135,15 @@ public class ResultActivity extends AppCompatActivity {
         ivSave = findViewById(R.id.ivConfirm);
         ivRotate = findViewById(R.id.ivRotate);
         ivMore = findViewById(R.id.ivMore);
+        ivFilters = findViewById(R.id.ivFilters);
+        rvFilter = findViewById(R.id.rvFilters);
         tvContrast = findViewById(R.id.tvContrast);
         tvBrightness = findViewById(R.id.tvBrightness);
         tvReset = findViewById(R.id.tvReset);
         seekBarBrightness = findViewById(R.id.sbBrightness);
         seekBarContrast = findViewById(R.id.sbContrast);
         lightSettings = findViewById(R.id.lightSettings);
+        filterSettings = findViewById(R.id.filterSettings);
         linlay1 = findViewById(R.id.linlay1);
         mView = findViewById(R.id.clickView);
 
@@ -143,6 +158,12 @@ public class ResultActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(ResultActivity.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
             return;
         }
+
+        rvFilter.setHasFixedSize(true);
+        layManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL,false);
+        rvFilter.setLayoutManager(layManager);
+        adapter = new FilterAdapter(filterArr);
+
         imagePath = getIntent().getStringExtra("croppedPoints");
         isRotated = getIntent().getBooleanExtra("isRotated", false);
         scaledRatio = getIntent().getFloatExtra("scaledRatio", 0.0f);
@@ -156,36 +177,76 @@ public class ResultActivity extends AppCompatActivity {
                 finish();
             }
         });
-
+        ivFilters.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!isFilterExtended) {
+                    filterSettings.setVisibility(View.VISIBLE);
+                    mView.setVisibility(View.VISIBLE);
+                    mView.animate().translationY(filterSettings.getHeight() * -1);
+                    filterSettings.animate().translationY(filterSettings.getHeight() * -1);
+                    isFilterExtended = true;
+                } else {
+                    mView.setVisibility(View.GONE);
+                    filterSettings.animate().translationY(filterSettings.getHeight() + linlay1.getHeight());
+                    isFilterExtended = false;
+                }
+            }
+        });
         //Expand the Light Settings
         ivMore.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!isExtended) {
+                if (!isLightExtended) {
                     lightSettings.setVisibility(View.VISIBLE);
                     mView.setVisibility(View.VISIBLE);
                     mView.animate().translationY(lightSettings.getHeight() * -1);
                     lightSettings.animate().translationY(lightSettings.getHeight() * -1);
-                    isExtended = true;
+                    isLightExtended = true;
                 } else {
                     mView.setVisibility(View.GONE);
                     lightSettings.animate().translationY(lightSettings.getHeight() + linlay1.getHeight());
-                    isExtended = false;
+                    isLightExtended = false;
                 }
             }
         });
-//        Utils.bitmapToMat(bitmap,rgba);
-        final String[] matArr = this.getResources().getStringArray(R.array.mats);
+
         newBitMap = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
         newMat = new Mat(mat.rows(), mat.cols(), mat.type());
         Utils.bitmapToMat(newBitMap, newMat);
+        ArrayList<Bitmap> filterBmpArr = new ArrayList<>();
+        String[] filterNames = {"Autumn", "Bone", "Jet", "Winter", "Rainbow", "Ocean", "Summer", "Spring", "Cool", "HSV", "Pink", "Hot"};
+
+
+        for (int i = 0; i < 12 ; i++){
+            Mat filterMat = new Mat(newMat.rows(), newMat.cols(), CvType.CV_8UC1);
+            cvtColor(newMat, filterMat, Imgproc.COLOR_RGB2GRAY, 1);
+            Imgproc.applyColorMap(filterMat, filterMat, i);
+            Imgproc.resize(filterMat,filterMat, new Size(90,90));
+            Bitmap bitmap = Bitmap.createBitmap(filterMat.width(), filterMat.height(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(filterMat,bitmap);
+            filterBmpArr.add(bitmap);
+            filterMat.release();
+        }
+
+        for (int i = 0; i < filterBmpArr.size(); i++){
+            Filter filter = new Filter(filterNames[i],filterBmpArr.get(i));
+            filterArr.add(filter);
+        }
+
+        rvFilter.setAdapter(adapter);
 
         mView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (isExtended) {
+                if (isLightExtended) {
                     lightSettings.animate().translationY(lightSettings.getHeight() + linlay1.getHeight());
-                    isExtended = false;
+                    isLightExtended = false;
+                }
+                if (isFilterExtended) {
+                    filterSettings.animate().translationY(filterSettings.getHeight() + linlay1.getHeight());
+                    isFilterExtended = false;
+
                 }
                 mView.setVisibility(View.GONE);
             }
@@ -225,13 +286,6 @@ public class ResultActivity extends AppCompatActivity {
                         break;
                 }
                 return true;
-            }
-        });
-
-        ivFilters.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showToast("Colorize Feature not available!");
             }
         });
 
