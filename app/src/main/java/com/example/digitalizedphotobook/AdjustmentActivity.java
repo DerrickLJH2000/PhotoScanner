@@ -87,7 +87,7 @@ public class AdjustmentActivity extends AppCompatActivity {
     private PolygonView polygonView;
     private File mFile, mFile2;
     private String imagePath;
-    private Bitmap bmp, newBmp, resizedBmp;
+    private Bitmap bmp, newBmp, resizedBmp, bmpImg;
     private Mat mat;
     private Quadrilateral quad;
     private boolean isFourPointed = false;
@@ -162,17 +162,9 @@ public class AdjustmentActivity extends AppCompatActivity {
         newBmp = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
 
         Log.i(TAG, "Height: " + newBmp.getHeight() + "Width: " + newBmp.getWidth());
-        mat = new Mat(newBmp.getWidth(), newBmp.getHeight(), CvType.CV_8UC4);
-        Utils.bitmapToMat(newBmp, mat);
-        resizedBmp = Bitmap.createBitmap(mat.width(), mat.height(), Bitmap.Config.ARGB_8888);
 
-        performGammaCorrection(mat);
-        findContours(mat);
-        Utils.matToBitmap(mat, resizedBmp);
-        ivResult.setImageBitmap(resizedBmp);
+        ivResult.setImageBitmap(newBmp);
 
-
-        Bitmap bmpImg = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
 
         ivBack.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -498,7 +490,7 @@ public class AdjustmentActivity extends AppCompatActivity {
 
     private Quadrilateral findContours(Mat src) {
 
-        Size size = new Size(newBmp.getWidth(), newBmp.getHeight());
+        Size size = new Size(bmpImg.getWidth(), bmpImg.getHeight());
         Mat grayImage = new Mat(size, CvType.CV_8UC1);
         Mat cannedImage = new Mat(size, CvType.CV_8UC1);
 //        Imgproc.resize(src,resizedImage,size);
@@ -644,9 +636,9 @@ public class AdjustmentActivity extends AppCompatActivity {
         Map<Integer, PointF> outlinePoints = new HashMap<>();
 
         outlinePoints.put(0, new PointF(0, 0));
-        outlinePoints.put(1, new PointF(ivResult.getWidth(), 0));
-        outlinePoints.put(2, new PointF(0, ivResult.getHeight()));
-        outlinePoints.put(3, new PointF(ivResult.getWidth(), ivResult.getHeight()));
+        outlinePoints.put(1, new PointF(resizedBmp.getWidth(), 0));
+        outlinePoints.put(2, new PointF(0, resizedBmp.getHeight()));
+        outlinePoints.put(3, new PointF(resizedBmp.getWidth(), resizedBmp.getHeight()));
 
         return outlinePoints;
 
@@ -657,8 +649,24 @@ public class AdjustmentActivity extends AppCompatActivity {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus) {
             if (!isEditing) {
-                Bitmap bmpImg = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
-                setBitmap(bmpImg);
+                // Ratio 3.125
+                bmpImg = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
+                mat = new Mat(ivResult.getWidth(), ivResult.getHeight(), CvType.CV_8UC4);
+                double ratio = bmpImg.getWidth() / ivResult.getWidth();
+                double height = bmpImg.getHeight() / ratio;
+                Log.i(TAG, "RATIO: " + ratio + ", HEIGHT: " +  height);
+                resizedBmp = Bitmap.createBitmap(ivResult.getWidth(), (int) height, Bitmap.Config.ARGB_8888);
+                Log.i(TAG, "RESIZED BMP SIZE: " + resizedBmp.getWidth() + ", " + resizedBmp.getHeight());
+                Utils.bitmapToMat(bmpImg, mat);
+                Imgproc.resize(mat, mat, new Size(resizedBmp.getWidth(), bmpImg.getHeight() / ratio));
+                findContours(mat);
+                Log.i(TAG, "RESIZED MAT SIZE1: " + mat.width() + ", " + mat.height());
+                Log.i(TAG, "RESIZED BMP SIZE: " + resizedBmp.getWidth() + ", " + resizedBmp.getHeight());
+                performGammaCorrection(mat);
+                Log.i(TAG, "RESIZED MAT SIZE2: " + mat.width() + ", " + mat.height());
+                Log.i(TAG, "RESIZED BMP SIZE: " + resizedBmp.getWidth() + ", " + resizedBmp.getHeight());
+                Utils.matToBitmap(mat, resizedBmp);
+                setBitmap(resizedBmp);
             }
         }
 
