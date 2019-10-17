@@ -2,10 +2,9 @@ package com.example.digitalizedphotobook.adapters;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.os.Vibrator;
-import android.support.annotation.NonNull;
-import android.support.v7.widget.RecyclerView;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,19 +12,9 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.digitalizedphotobook.AdjustmentActivity;
 import com.example.digitalizedphotobook.R;
 import com.example.digitalizedphotobook.classes.Filter;
 
-import org.opencv.android.Utils;
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
-import org.opencv.core.Size;
-import org.opencv.imgproc.Imgproc;
-import org.w3c.dom.Text;
-
-import java.io.File;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 import static org.opencv.imgproc.Imgproc.cvtColor;

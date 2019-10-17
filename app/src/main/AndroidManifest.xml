@@ -30,6 +30,7 @@
         android:roundIcon="@mipmap/app_icon_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <activity android:name=".ImageFullScreen"></activity>
         <activity android:name=".ResultActivity"
             android:screenOrientation="portrait"></activity>
         <activity

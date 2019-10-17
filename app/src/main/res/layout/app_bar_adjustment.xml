@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
+    android:elevation="10dp"
+    android:outlineAmbientShadowColor="@color/color_dark_grey"
     android:layout_height="48dp">
     <RelativeLayout
         android:layout_width="match_parent"
@@ -19,4 +21,4 @@
             android:gravity="center"/>
 
     </RelativeLayout>
-</android.support.constraint.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

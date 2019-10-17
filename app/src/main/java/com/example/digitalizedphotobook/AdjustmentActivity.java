@@ -2,47 +2,34 @@ package com.example.digitalizedphotobook;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.BitmapShader;
 import android.graphics.Color;
 import android.graphics.Matrix;
-import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.PorterDuff;
-import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.media.ExifInterface;
-import android.os.AsyncTask;
-import android.renderscript.ScriptGroup;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.content.PermissionChecker;
-import android.support.v4.graphics.drawable.DrawableCompat;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.PermissionChecker;
+import androidx.core.graphics.drawable.DrawableCompat;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.content.res.AppCompatResources;
-import android.util.DisplayMetrics;
+import androidx.appcompat.content.res.AppCompatResources;
+
 import android.util.Log;
-import android.util.TypedValue;
-import android.view.Display;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.WindowManager;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.example.digitalizedphotobook.classes.Quadrilateral;
@@ -54,13 +41,10 @@ import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfDouble;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
-import org.opencv.core.Scalar;
 import org.opencv.core.Size;
-import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.ByteArrayOutputStream;
@@ -68,17 +52,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
-import static java.security.AccessController.getContext;
 
 
 public class AdjustmentActivity extends AppCompatActivity {
@@ -294,13 +275,9 @@ public class AdjustmentActivity extends AppCompatActivity {
                         ivConfirm.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
                         points = polygonView.getPoints();
                         Point[] pointArr = new Point[4];
-                        double bmpToIvHeightRatio = newBmp.getHeight() / ivResult.getHeight();
-                        double bmpToIvWidthRatio = newBmp.getWidth() / ivResult.getWidth();
                         for (int i = 0; i < points.size(); i++) {
-//                            if (reqCode != 0) {
-                            pointArr[i] = new Point((double) points.get(i).x * (bmpToIvWidthRatio + 0.12), (double) points.get(i).y * (bmpToIvHeightRatio + 0.12));
+                            pointArr[i] = new Point((double) points.get(i).x , (double) points.get(i).y);
 
-//                            }
                         }
                         if (polygonView.isValidShape(points)) {
                             Mat dest = perspectiveChange(mat, pointArr);
@@ -490,17 +467,13 @@ public class AdjustmentActivity extends AppCompatActivity {
 
     private Quadrilateral findContours(Mat src) {
 
-        Size size = new Size(bmpImg.getWidth(), bmpImg.getHeight());
+        Size size = new Size(src.width(), src.height());
         Mat grayImage = new Mat(size, CvType.CV_8UC1);
-        Mat cannedImage = new Mat(size, CvType.CV_8UC1);
-//        Imgproc.resize(src,resizedImage,size);
-//        Imgproc.GaussianBlur(grayImage, grayImage, new Size(5, 5), 0);
-//        Imgproc.dilate(grayImage, grayImage, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
-//        Imgproc.erode(grayImage, grayImage, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
+
         Imgproc.cvtColor(src, grayImage, Imgproc.COLOR_RGBA2GRAY, 1);
-//        Imgproc.Canny(grayImage, cannedImage, 240, 240);
+
         Imgproc.GaussianBlur(grayImage, grayImage, new Size(5, 5), 0);
-        cannedImage = otsuAutoCanny(grayImage);
+        Mat cannedImage = otsuAutoCanny(grayImage);
         Imgproc.morphologyEx(cannedImage, cannedImage, 3, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(7, 7)));
         Imgproc.morphologyEx(cannedImage, cannedImage, 4, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
         ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
@@ -556,6 +529,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                     quad = null;
                 }
                 Utils.matToBitmap(mat, resizedBmp);
+                Log.i(TAG, "Width " + resizedBmp.getWidth() + ", Height" + resizedBmp.getHeight());
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -618,13 +592,11 @@ public class AdjustmentActivity extends AppCompatActivity {
     private List<PointF> getContourEdgePoints(Bitmap tempBitmap) {
         List<PointF> pointList = new ArrayList<>();
         if (quad != null) {
-            float widthRatio = tempBitmap.getWidth() / ivResult.getWidth();
-            float heightRatio = tempBitmap.getHeight() / ivResult.getHeight();
             Point[] quadPoints = quad.points;
             for (int i = 0; i < quadPoints.length; i++) {
                 // Unable to obtain width and height of imageview so use ratio to hardcode points
-                float x = Float.parseFloat(Double.toString(quadPoints[i].x / (widthRatio + 0.12)));
-                float y = Float.parseFloat(Double.toString(quadPoints[i].y / (heightRatio + 0.12)));
+                float x = Float.parseFloat(Double.toString(quadPoints[i].x));
+                float y = Float.parseFloat(Double.toString(quadPoints[i].y));
                 pointList.add(new PointF(x, y));
             }
         }
@@ -639,7 +611,7 @@ public class AdjustmentActivity extends AppCompatActivity {
         outlinePoints.put(1, new PointF(resizedBmp.getWidth(), 0));
         outlinePoints.put(2, new PointF(0, resizedBmp.getHeight()));
         outlinePoints.put(3, new PointF(resizedBmp.getWidth(), resizedBmp.getHeight()));
-
+        Log.i(TAG, resizedBmp.getWidth() + ", " + resizedBmp.getHeight());
         return outlinePoints;
 
     }
@@ -654,17 +626,14 @@ public class AdjustmentActivity extends AppCompatActivity {
                 mat = new Mat(ivResult.getWidth(), ivResult.getHeight(), CvType.CV_8UC4);
                 double ratio = bmpImg.getWidth() / ivResult.getWidth();
                 double height = bmpImg.getHeight() / ratio;
-                Log.i(TAG, "RATIO: " + ratio + ", HEIGHT: " +  height);
                 resizedBmp = Bitmap.createBitmap(ivResult.getWidth(), (int) height, Bitmap.Config.ARGB_8888);
-                Log.i(TAG, "RESIZED BMP SIZE: " + resizedBmp.getWidth() + ", " + resizedBmp.getHeight());
+
                 Utils.bitmapToMat(bmpImg, mat);
                 Imgproc.resize(mat, mat, new Size(resizedBmp.getWidth(), bmpImg.getHeight() / ratio));
                 findContours(mat);
-                Log.i(TAG, "RESIZED MAT SIZE1: " + mat.width() + ", " + mat.height());
-                Log.i(TAG, "RESIZED BMP SIZE: " + resizedBmp.getWidth() + ", " + resizedBmp.getHeight());
+
                 performGammaCorrection(mat);
-                Log.i(TAG, "RESIZED MAT SIZE2: " + mat.width() + ", " + mat.height());
-                Log.i(TAG, "RESIZED BMP SIZE: " + resizedBmp.getWidth() + ", " + resizedBmp.getHeight());
+
                 Utils.matToBitmap(mat, resizedBmp);
                 setBitmap(resizedBmp);
             }

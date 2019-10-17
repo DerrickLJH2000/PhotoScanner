@@ -1,15 +1,17 @@
 package com.example.digitalizedphotobook.adapters;
 
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Vibrator;
-import android.support.v7.widget.RecyclerView;
+import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.example.digitalizedphotobook.ImageFullScreen;
 import com.example.digitalizedphotobook.R;
 
 import java.io.File;
@@ -45,6 +47,9 @@ public class SavedPhotoAdapter extends RecyclerView.Adapter<SavedPhotoAdapter.Vi
             @Override
             public void onClick(View v) {
                 Toast.makeText(v.getContext(), "click on item: " + currItem.getName(), Toast.LENGTH_SHORT).show();
+                Intent i = new Intent(v.getContext(), ImageFullScreen.class);
+                i.putExtra("path", currItem.getAbsolutePath());
+                v.getContext().startActivity(i);
             }
         });
         //holder.imageView.setImageResource(photoArr[position]);

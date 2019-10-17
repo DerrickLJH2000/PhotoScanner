@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -12,20 +12,18 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_margin="10dp"
         android:layout_weight="1"
         app:layout_constraintBottom_toTopOf="@id/linlay1"
         app:layout_constraintTop_toBottomOf="@id/include">
 
-        <ImageView
+        <com.github.chrisbanes.photoview.PhotoView
             android:id="@+id/ivResult"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_alignParentTop="true"
             android:layout_alignParentBottom="true"
-            android:layout_margin="10dp"
-            android:maxWidth="360dp"
-            android:maxHeight="640dp"
+            android:padding="20dp"
+            android:cropToPadding="false"
             android:scaleType="fitCenter" />
     </RelativeLayout>
 
@@ -150,7 +148,7 @@
             android:textColor="@color/color_light_grey"
             android:textStyle="" />
 
-        <android.support.v7.widget.RecyclerView
+        <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvFilters"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -267,4 +265,4 @@
     <include
         android:id="@+id/include"
         layout="@layout/app_bar_finalize" />
-</android.support.constraint.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

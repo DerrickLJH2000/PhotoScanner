@@ -14,19 +14,22 @@ import android.graphics.Matrix;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.provider.MediaStore;
-import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.content.PermissionChecker;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
+
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.PermissionChecker;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+
 import android.os.Bundle;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.appcompat.widget.Toolbar;
+
 import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
@@ -41,6 +44,7 @@ import android.widget.Toast;
 
 import com.example.digitalizedphotobook.adapters.FilterAdapter;
 import com.example.digitalizedphotobook.classes.Filter;
+import com.github.chrisbanes.photoview.PhotoView;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -71,9 +75,10 @@ import static org.opencv.imgproc.Imgproc.cvtColor;
 
 public class ResultActivity extends AppCompatActivity {
     public static final String TAG = "ResultActivity";
-    public ImageView ivFilters, ivResult, ivBack, ivSave, ivMore, ivRotate;
+    public ImageView ivFilters, ivBack, ivSave, ivMore, ivRotate;
+    private PhotoView ivResult;
     private TextView tvBrightness, tvContrast, tvReset;
-    private LinearLayout lightSettings, linlay1 , filterSettings;
+    private LinearLayout lightSettings, linlay1, filterSettings;
     private SeekBar seekBarBrightness, seekBarContrast;
     private float scaledRatio;
     private String imagePath;
@@ -160,7 +165,7 @@ public class ResultActivity extends AppCompatActivity {
         }
 
         rvFilter.setHasFixedSize(true);
-        layManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL,false);
+        layManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
         rvFilter.setLayoutManager(layManager);
         adapter = new FilterAdapter(filterArr);
 
@@ -169,6 +174,7 @@ public class ResultActivity extends AppCompatActivity {
         scaledRatio = getIntent().getFloatExtra("scaledRatio", 0.0f);
 
         mFile = new File(imagePath);
+        Log.i(TAG, "ABSOLUTE PATH" + mFile.getAbsolutePath());
         setPic(mFile.getAbsolutePath());
 
         ivBack.setOnClickListener(new View.OnClickListener() {
@@ -180,16 +186,27 @@ public class ResultActivity extends AppCompatActivity {
         ivFilters.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!isFilterExtended) {
+                if (!isLightExtended) {
+                    if (!isFilterExtended) {
+                        filterSettings.setVisibility(View.VISIBLE);
+                        mView.setVisibility(View.VISIBLE);
+                        mView.animate().translationY(filterSettings.getHeight() * -1);
+                        filterSettings.animate().translationY(filterSettings.getHeight() * -1);
+                        isFilterExtended = true;
+                    } else {
+                        mView.setVisibility(View.GONE);
+                        filterSettings.animate().translationY(filterSettings.getHeight() + linlay1.getHeight());
+                        isFilterExtended = false;
+                    }
+                } else {
+                    mView.setVisibility(View.GONE);
+                    lightSettings.animate().translationY(lightSettings.getHeight() + linlay1.getHeight());
+                    isLightExtended = false;
                     filterSettings.setVisibility(View.VISIBLE);
                     mView.setVisibility(View.VISIBLE);
                     mView.animate().translationY(filterSettings.getHeight() * -1);
                     filterSettings.animate().translationY(filterSettings.getHeight() * -1);
                     isFilterExtended = true;
-                } else {
-                    mView.setVisibility(View.GONE);
-                    filterSettings.animate().translationY(filterSettings.getHeight() + linlay1.getHeight());
-                    isFilterExtended = false;
                 }
             }
         });
@@ -197,16 +214,27 @@ public class ResultActivity extends AppCompatActivity {
         ivMore.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!isLightExtended) {
+                if (!isFilterExtended) {
+                    if (!isLightExtended) {
+                        lightSettings.setVisibility(View.VISIBLE);
+                        mView.setVisibility(View.VISIBLE);
+                        mView.animate().translationY(lightSettings.getHeight() * -1);
+                        lightSettings.animate().translationY(lightSettings.getHeight() * -1);
+                        isLightExtended = true;
+                    } else {
+                        mView.setVisibility(View.GONE);
+                        lightSettings.animate().translationY(lightSettings.getHeight() + linlay1.getHeight());
+                        isLightExtended = false;
+                    }
+                } else {
+                    mView.setVisibility(View.GONE);
+                    filterSettings.animate().translationY(filterSettings.getHeight() + linlay1.getHeight());
+                    isFilterExtended = false;
                     lightSettings.setVisibility(View.VISIBLE);
                     mView.setVisibility(View.VISIBLE);
                     mView.animate().translationY(lightSettings.getHeight() * -1);
                     lightSettings.animate().translationY(lightSettings.getHeight() * -1);
                     isLightExtended = true;
-                } else {
-                    mView.setVisibility(View.GONE);
-                    lightSettings.animate().translationY(lightSettings.getHeight() + linlay1.getHeight());
-                    isLightExtended = false;
                 }
             }
         });
@@ -218,19 +246,19 @@ public class ResultActivity extends AppCompatActivity {
         String[] filterNames = {"Autumn", "Bone", "Jet", "Winter", "Rainbow", "Ocean", "Summer", "Spring", "Cool", "HSV", "Pink", "Hot"};
 
 
-        for (int i = 0; i < 12 ; i++){
+        for (int i = 0; i < 12; i++) {
             Mat filterMat = new Mat(newMat.rows(), newMat.cols(), CvType.CV_8UC1);
             cvtColor(newMat, filterMat, Imgproc.COLOR_RGB2GRAY, 1);
             Imgproc.applyColorMap(filterMat, filterMat, i);
-            Imgproc.resize(filterMat,filterMat, new Size(90,90));
+            Imgproc.resize(filterMat, filterMat, new Size(90, 90));
             Bitmap bitmap = Bitmap.createBitmap(filterMat.width(), filterMat.height(), Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(filterMat,bitmap);
+            Utils.matToBitmap(filterMat, bitmap);
             filterBmpArr.add(bitmap);
             filterMat.release();
         }
 
-        for (int i = 0; i < filterBmpArr.size(); i++){
-            Filter filter = new Filter(filterNames[i],filterBmpArr.get(i));
+        for (int i = 0; i < filterBmpArr.size(); i++) {
+            Filter filter = new Filter(filterNames[i], filterBmpArr.get(i));
             filterArr.add(filter);
         }
 

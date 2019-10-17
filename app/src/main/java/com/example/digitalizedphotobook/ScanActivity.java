@@ -1,29 +1,17 @@
 package com.example.digitalizedphotobook;
 
 import android.Manifest;
-import android.app.ActionBar;
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Camera;
-import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
-import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
-import android.graphics.drawable.BitmapDrawable;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -39,65 +27,40 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.net.Uri;
-import android.nfc.Tag;
-import android.os.Build;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.Message;
 import android.provider.MediaStore;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.annotation.RequiresApi;
-import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.content.PermissionChecker;
-import android.support.v7.app.AppCompatActivity;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.PermissionChecker;
+import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Size;
-import android.util.SparseArray;
 import android.util.SparseIntArray;
 import android.view.Gravity;
-import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.Surface;
-import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
-import android.widget.RelativeLayout;
 import android.widget.Toast;
-
-import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.LoaderCallbackInterface;
-import org.opencv.android.OpenCVLoader;
-import org.opencv.android.Utils;
-import org.opencv.core.Core;
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
-import org.opencv.imgcodecs.Imgcodecs;
-import org.opencv.imgproc.Imgproc;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -110,7 +73,6 @@ public class ScanActivity extends AppCompatActivity {
     ImageView ivBack, ivFlash, ivLoadGallery;
     FloatingActionButton fabCamera;
     Boolean mAutoFocusSupported = false;
-    String flashmode = "OFF";
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
@@ -375,21 +337,20 @@ public class ScanActivity extends AppCompatActivity {
             public void onClick(View v) {
                 mFlashSupported = getApplicationContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
                 if (mFlashSupported) {
-                    if (flashmode == "OFF") {
+                    Integer flashmode = (Integer) ivFlash.getTag();
+                    flashmode = flashmode == null ? R.drawable.ic_flash_off : flashmode;
+                    if (flashmode == R.drawable.ic_flash_off) {
                         ivFlash.setImageResource(R.drawable.ic_flash_on);
                         ivFlash.setTag(R.drawable.ic_flash_on);
                         showToast("Flash Mode : ON");
-                        flashmode = "ON";
-                    } else if (flashmode == "ON") {
+                    } else if (flashmode == R.drawable.ic_flash_on) {
                         ivFlash.setImageResource(R.drawable.ic_flash_auto);
                         ivFlash.setTag(R.drawable.ic_flash_auto);
                         showToast("Flash Mode : AUTO");
-                        flashmode = "AUTO";
-                    } else if (flashmode == "AUTO") {
+                    } else if (flashmode == R.drawable.ic_flash_auto) {
                         ivFlash.setImageResource(R.drawable.ic_flash_off);
                         ivFlash.setTag(R.drawable.ic_flash_off);
                         showToast("Flash Mode : OFF");
-                        flashmode = "OFF";
                     }
                 } else {
                     showToast("You do not have Flash feature on your device!");
@@ -510,6 +471,7 @@ public class ScanActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == IMAGE_PICKER_SELECT && resultCode == RESULT_OK && data != null && data.getData() != null) {
             Uri uri = data.getData();
 
@@ -555,8 +517,6 @@ public class ScanActivity extends AppCompatActivity {
         } else {
             mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
         }
-        flashmode = "OFF";
-        ivFlash.setImageResource(R.drawable.ic_flash_off);
 
     }
 
@@ -793,7 +753,7 @@ public class ScanActivity extends AppCompatActivity {
                                 mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
                                         CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
                                 // Flash is automatically enabled when necessary.
-                                //setAutoFlash(mPreviewRequestBuilder);
+                                setAutoFlash(mPreviewRequestBuilder);
 
                                 // Finally, we start displaying the camera preview.
                                 mPreviewRequest = mPreviewRequestBuilder.build();
@@ -889,7 +849,6 @@ public class ScanActivity extends AppCompatActivity {
             // Use the same AE and AF modes as the preview.
             captureBuilder.set(CaptureRequest.CONTROL_AF_MODE,
                     CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-            setAutoFlash(captureBuilder);
 
             // Orientation
             int rotation = getWindowManager().getDefaultDisplay().getRotation();
@@ -926,12 +885,14 @@ public class ScanActivity extends AppCompatActivity {
 
     private void unlockFocus() {
         try {
+            setAutoFlash(mPreviewRequestBuilder);
             // Reset the auto-focus trigger
             mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
                     CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
-            setAutoFlash(mPreviewRequestBuilder);
+
             mCaptureSession.capture(mPreviewRequestBuilder.build(), mCaptureCallback,
                     mBackgroundHandler);
+
             // After this, the camera will go back to the normal state of preview.
             mState = STATE_PREVIEW;
             mCaptureSession.setRepeatingRequest(mPreviewRequest, mCaptureCallback,
