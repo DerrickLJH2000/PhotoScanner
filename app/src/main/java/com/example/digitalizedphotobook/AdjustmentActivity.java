@@ -140,6 +140,10 @@ public class AdjustmentActivity extends AppCompatActivity {
 //        if (reqCode != 0) {
         matrix.postRotate(90);
 //        }
+        if (bmp == null){
+            showToast("Retake Photo");
+            finish();
+        }
         newBmp = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
 
         Log.i(TAG, "Height: " + newBmp.getHeight() + "Width: " + newBmp.getWidth());

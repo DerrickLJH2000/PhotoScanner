@@ -305,8 +305,6 @@ public class ScanActivity extends AppCompatActivity {
 
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
-
         setContentView(R.layout.activity_scan);
         Log.i(TAG, "I am in onCreate");
         ivBack = findViewById(R.id.ivBack);
@@ -329,6 +327,11 @@ public class ScanActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 takePicture();
+
+                Intent intent = new Intent(ScanActivity.this, AdjustmentActivity.class);
+                intent.putExtra("image", mFile.getAbsolutePath());
+                intent.putExtra("reqCode", 1);
+                startActivity(intent);
             }
         });
 
@@ -343,7 +346,7 @@ public class ScanActivity extends AppCompatActivity {
                         ivFlash.setImageResource(R.drawable.ic_flash_on);
                         ivFlash.setTag(R.drawable.ic_flash_on);
                         showToast("Flash Mode : ON");
-                    } else if (flashmode == R.drawable.ic_flash_on) {
+                    }  else if (flashmode == R.drawable.ic_flash_on) {
                         ivFlash.setImageResource(R.drawable.ic_flash_auto);
                         ivFlash.setTag(R.drawable.ic_flash_auto);
                         showToast("Flash Mode : AUTO");
@@ -355,6 +358,7 @@ public class ScanActivity extends AppCompatActivity {
                 } else {
                     showToast("You do not have Flash feature on your device!");
                 }
+                createCameraPreviewSession();
             }
         });
 
@@ -754,7 +758,6 @@ public class ScanActivity extends AppCompatActivity {
                                         CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
                                 // Flash is automatically enabled when necessary.
                                 setAutoFlash(mPreviewRequestBuilder);
-
                                 // Finally, we start displaying the camera preview.
                                 mPreviewRequest = mPreviewRequestBuilder.build();
                                 mCaptureSession.setRepeatingRequest(mPreviewRequest,
@@ -885,22 +888,18 @@ public class ScanActivity extends AppCompatActivity {
 
     private void unlockFocus() {
         try {
-            setAutoFlash(mPreviewRequestBuilder);
+
             // Reset the auto-focus trigger
             mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
                     CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
-
-            mCaptureSession.capture(mPreviewRequestBuilder.build(), mCaptureCallback,
+            mCaptureSession.capture(mPreviewRequest, mCaptureCallback,
                     mBackgroundHandler);
 
             // After this, the camera will go back to the normal state of preview.
             mState = STATE_PREVIEW;
             mCaptureSession.setRepeatingRequest(mPreviewRequest, mCaptureCallback,
                     mBackgroundHandler);
-            Intent intent = new Intent(ScanActivity.this, AdjustmentActivity.class);
-            intent.putExtra("image", mFile.getAbsolutePath());
-            intent.putExtra("reqCode", 1);
-            startActivity(intent);
+
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
