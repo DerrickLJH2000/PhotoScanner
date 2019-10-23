@@ -113,27 +113,25 @@
         <FrameLayout
             android:id="@+id/rellay2"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="500dp"
             android:layout_gravity="center">
 
             <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_margin="10dp" >
+                android:layout_height="wrap_content"
+                android:layout_margin="10dp">
 
                 <ImageView
                     android:id="@+id/ivResult"
                     android:layout_width="match_parent"
-                    android:layout_height="490dp"
-                    android:adjustViewBounds="true"
-                    android:scaleType="fitXY"/>
+                    android:layout_height="wrap_content"
+                    android:scaleType="fitStart"/>
             </RelativeLayout>
 
             <com.example.digitalizedphotobook.PolygonView
                 android:id="@+id/polygonView"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:visibility="gone"/>
+                android:layout_height="match_parent" />
         </FrameLayout>
     </FrameLayout>
 

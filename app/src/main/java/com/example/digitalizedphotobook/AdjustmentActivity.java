@@ -138,7 +138,7 @@ public class AdjustmentActivity extends AppCompatActivity {
         bmp = BitmapFactory.decodeFile(mFile.getAbsolutePath(), options);
         Matrix matrix = new Matrix();
 //        if (reqCode != 0) {
-        matrix.postRotate(90);
+        matrix.postRotate(orientation);
 //        }
         if (bmp == null){
             showToast("Retake Photo");
@@ -149,7 +149,6 @@ public class AdjustmentActivity extends AppCompatActivity {
         Log.i(TAG, "Height: " + newBmp.getHeight() + "Width: " + newBmp.getWidth());
 
         ivResult.setImageBitmap(newBmp);
-
 
         ivBack.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -610,12 +609,13 @@ public class AdjustmentActivity extends AppCompatActivity {
 
     private Map<Integer, PointF> getOutlinePoints(Bitmap tempBitmap) {
         Map<Integer, PointF> outlinePoints = new HashMap<>();
-
+        int h = ivResult.getHeight();
+        int w = ivResult.getWidth();
         outlinePoints.put(0, new PointF(0, 0));
-        outlinePoints.put(1, new PointF(resizedBmp.getWidth(), 0));
-        outlinePoints.put(2, new PointF(0, resizedBmp.getHeight()));
-        outlinePoints.put(3, new PointF(resizedBmp.getWidth(), resizedBmp.getHeight()));
-        Log.i(TAG, resizedBmp.getWidth() + ", " + resizedBmp.getHeight());
+        outlinePoints.put(1, new PointF(w, 0));
+        outlinePoints.put(2, new PointF(0, h));
+        outlinePoints.put(3, new PointF(w, h));
+        Log.i(TAG, w + ", " + h);
         return outlinePoints;
 
     }
@@ -628,12 +628,13 @@ public class AdjustmentActivity extends AppCompatActivity {
                 // Ratio 3.125
                 bmpImg = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
                 mat = new Mat(ivResult.getWidth(), ivResult.getHeight(), CvType.CV_8UC4);
-                double ratio = bmpImg.getWidth() / ivResult.getWidth();
+                double ratio = bmpImg.getHeight() / ivResult.getHeight();
+                double ratioWidth = bmpImg.getWidth() / ivResult.getWidth();
                 double height = bmpImg.getHeight() / ratio;
-                resizedBmp = Bitmap.createBitmap(ivResult.getWidth(), (int) height, Bitmap.Config.ARGB_8888);
-
+                double width = bmpImg.getWidth() / ratioWidth;
+                resizedBmp = Bitmap.createBitmap((int) width, (int) height, Bitmap.Config.ARGB_8888);
                 Utils.bitmapToMat(bmpImg, mat);
-                Imgproc.resize(mat, mat, new Size(resizedBmp.getWidth(), bmpImg.getHeight() / ratio));
+                Imgproc.resize(mat, mat, new Size(width, height));
                 findContours(mat);
 
                 performGammaCorrection(mat);
