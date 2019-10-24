@@ -30,14 +30,18 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.provider.MediaStore;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.PermissionChecker;
 import androidx.appcompat.app.AppCompatActivity;
+
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Size;
@@ -296,6 +300,7 @@ public class ScanActivity extends AppCompatActivity {
             return choices[0];
         }
     }
+
     CameraCharacteristics characteristics;
     Rect rect;
 
@@ -346,7 +351,7 @@ public class ScanActivity extends AppCompatActivity {
                         ivFlash.setImageResource(R.drawable.ic_flash_on);
                         ivFlash.setTag(R.drawable.ic_flash_on);
                         showToast("Flash Mode : ON");
-                    }  else if (flashmode == R.drawable.ic_flash_on) {
+                    } else if (flashmode == R.drawable.ic_flash_on) {
                         ivFlash.setImageResource(R.drawable.ic_flash_auto);
                         ivFlash.setTag(R.drawable.ic_flash_auto);
                         showToast("Flash Mode : AUTO");
@@ -392,13 +397,13 @@ public class ScanActivity extends AppCompatActivity {
                 final Rect sensorArraySize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
 
                 //TODO: here I just flip x,y, but this needs to correspond with the sensor orientation (via SENSOR_ORIENTATION)
-                final int y = (int)((motionEvent.getX() / (float)view.getWidth())  * (float)sensorArraySize.height());
-                final int x = (int)((motionEvent.getY() / (float)view.getHeight()) * (float)sensorArraySize.width());
-                final int halfTouchWidth  = 150; //(int)motionEvent.getTouchMajor(); //TODO: this doesn't represent actual touch size in pixel. Values range in [3, 10]...
+                final int y = (int) ((motionEvent.getX() / (float) view.getWidth()) * (float) sensorArraySize.height());
+                final int x = (int) ((motionEvent.getY() / (float) view.getHeight()) * (float) sensorArraySize.width());
+                final int halfTouchWidth = 150; //(int)motionEvent.getTouchMajor(); //TODO: this doesn't represent actual touch size in pixel. Values range in [3, 10]...
                 final int halfTouchHeight = 150; //(int)motionEvent.getTouchMinor();
-                MeteringRectangle focusAreaTouch = new MeteringRectangle(Math.max(x - halfTouchWidth,  0),
+                MeteringRectangle focusAreaTouch = new MeteringRectangle(Math.max(x - halfTouchWidth, 0),
                         Math.max(y - halfTouchHeight, 0),
-                        halfTouchWidth  * 2,
+                        halfTouchWidth * 2,
                         halfTouchHeight * 2,
                         MeteringRectangle.METERING_WEIGHT_MAX - 1);
                 rect = focusAreaTouch.getRect();
@@ -804,7 +809,7 @@ public class ScanActivity extends AppCompatActivity {
     }
 
     private void takePicture() {
-            captureStillPicture();
+        captureStillPicture();
     }
 
     private void runPrecaptureSequence() {
@@ -876,7 +881,7 @@ public class ScanActivity extends AppCompatActivity {
                     CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
             mCaptureSession.capture(mPreviewRequest, mCaptureCallback,
                     mBackgroundHandler);
-
+//            setFlash(mPreviewRequestBuilder);
             // After this, the camera will go back to the normal state of preview.
             mState = STATE_PREVIEW;
             mCaptureSession.setRepeatingRequest(mPreviewRequest, mCaptureCallback,
@@ -891,21 +896,43 @@ public class ScanActivity extends AppCompatActivity {
         Integer integer = (Integer) ivFlash.getTag();
         integer = integer == null ? 0 : integer;
         if (mFlashSupported) {
+//            switch (integer) {
+//                case R.drawable.ic_flash_auto:
+            requestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
+                    CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
+//                    break;
+//                case R.drawable.ic_flash_on:
+//                    requestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
+//                            CaptureRequest.CONTROL_AE_MODE_ON_ALWAYS_FLASH);
+//                    break;
+//                default:
+//                    requestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
+//                            CaptureRequest.CONTROL_AE_MODE_OFF);
+//                    break;
+//            }
+        }
+    }
+
+    private void setFlash(CaptureRequest.Builder mPreviewRequestBuilder) {
+        Integer integer = (Integer) ivFlash.getTag();
+        integer = integer == null ? 0 : integer;
+        if (mFlashSupported) {
             switch (integer) {
-                case R.drawable.ic_flash_auto:
-                    requestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
-                            CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
+                case R.drawable.ic_flash_off:
+            mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
+                    CaptureRequest.CONTROL_AE_MODE_OFF);
                     break;
                 case R.drawable.ic_flash_on:
-                    requestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
-                            CaptureRequest.CONTROL_AE_MODE_ON_ALWAYS_FLASH);
+                    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
+                            CaptureRequest.CONTROL_AE_MODE_ON);
                     break;
                 default:
-                    requestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
-                            CaptureRequest.CONTROL_AE_MODE_OFF);
+                    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
+                            CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
                     break;
             }
         }
+
     }
 
     private static class ImageSaver implements Runnable {

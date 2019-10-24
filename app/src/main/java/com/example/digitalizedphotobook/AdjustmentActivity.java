@@ -22,9 +22,12 @@ import androidx.core.content.PermissionChecker;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+
 import android.os.Bundle;
+
 import androidx.appcompat.content.res.AppCompatResources;
 
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -57,6 +60,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -129,18 +133,37 @@ public class AdjustmentActivity extends AppCompatActivity {
             return;
         }
 
-        imagePath = getIntent().getStringExtra("image");
+        imagePath = new File(getExternalFilesDir("Temp"), "temp.jpg").getAbsolutePath();
         reqCode = getIntent().getIntExtra("reqCode", -1);
         Log.i(TAG, (reqCode) + imagePath);
         int orientation = getCameraPhotoOrientation(imagePath);
         mFile = new File(imagePath);
         BitmapFactory.Options options = new BitmapFactory.Options();
+        // Calculate inSampleSize
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        int reqHeight = displayMetrics.heightPixels;
+        int reqWidth = displayMetrics.widthPixels;
+        int sampleSize = 1;
+        try {
+            sampleSize = calculateInSampleSize(options,reqWidth,reqHeight);
+        } catch (Exception e){
+            sampleSize = 1;
+        }
+        options.inSampleSize = sampleSize;
+        Log.i(TAG, "BITMAP SAMPLE SIZE: " + sampleSize);
+        // Decode bitmap with inSampleSize set
+        options.inJustDecodeBounds = false;
         bmp = BitmapFactory.decodeFile(mFile.getAbsolutePath(), options);
+
         Matrix matrix = new Matrix();
-//        if (reqCode != 0) {
-        matrix.postRotate(orientation);
-//        }
-        if (bmp == null){
+        if (reqCode != 0) {
+            ivResult.setScaleType(ImageView.ScaleType.FIT_XY);
+        }
+            matrix.postRotate(90);
+//        matrix.postRotate(0);
+
+        if (bmp == null) {
             showToast("Retake Photo");
             finish();
         }
@@ -279,7 +302,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                         points = polygonView.getPoints();
                         Point[] pointArr = new Point[4];
                         for (int i = 0; i < points.size(); i++) {
-                            pointArr[i] = new Point((double) points.get(i).x , (double) points.get(i).y);
+                            pointArr[i] = new Point((double) points.get(i).x, (double) points.get(i).y);
 
                         }
                         if (polygonView.isValidShape(points)) {
@@ -323,6 +346,29 @@ public class AdjustmentActivity extends AppCompatActivity {
                 return true;
             }
         });
+    }
+
+    public static int calculateInSampleSize(
+            BitmapFactory.Options options, int reqWidth, int reqHeight) {
+        // Raw height and width of image
+        final int height = options.outHeight;
+        final int width = options.outWidth;
+        int inSampleSize = 1;
+
+        if (height > reqHeight || width > reqWidth) {
+
+            final int halfHeight = height / 2;
+            final int halfWidth = width / 2;
+
+            // Calculate the largest inSampleSize value that is a power of 2 and keeps both
+            // height and width larger than the requested height and width.
+            while ((halfHeight / inSampleSize) >= reqHeight
+                    && (halfWidth / inSampleSize) >= reqWidth) {
+                inSampleSize *= 2;
+            }
+        }
+
+        return inSampleSize;
     }
 
     private Mat otsuAutoCanny(Mat src) {
@@ -608,14 +654,21 @@ public class AdjustmentActivity extends AppCompatActivity {
     }
 
     private Map<Integer, PointF> getOutlinePoints(Bitmap tempBitmap) {
+//        Map<Integer, PointF> outlinePoints = new HashMap<>();
+//        int h = ivResult.getHeight();
+//        int w = ivResult.getWidth();
+//        outlinePoints.put(0, new PointF(0, 0));
+//        outlinePoints.put(1, new PointF(w, 0));
+//        outlinePoints.put(2, new PointF(0, h));
+//        outlinePoints.put(3, new PointF(w, h));
+//        Log.i(TAG, w + ", " + h);
         Map<Integer, PointF> outlinePoints = new HashMap<>();
-        int h = ivResult.getHeight();
-        int w = ivResult.getWidth();
+
         outlinePoints.put(0, new PointF(0, 0));
-        outlinePoints.put(1, new PointF(w, 0));
-        outlinePoints.put(2, new PointF(0, h));
-        outlinePoints.put(3, new PointF(w, h));
-        Log.i(TAG, w + ", " + h);
+        outlinePoints.put(1, new PointF(resizedBmp.getWidth(), 0));
+        outlinePoints.put(2, new PointF(0, resizedBmp.getHeight()));
+        outlinePoints.put(3, new PointF(resizedBmp.getWidth(), resizedBmp.getHeight()));
+        Log.i(TAG, resizedBmp.getWidth() + ", " + resizedBmp.getHeight());
         return outlinePoints;
 
     }
@@ -626,15 +679,29 @@ public class AdjustmentActivity extends AppCompatActivity {
         if (hasFocus) {
             if (!isEditing) {
                 // Ratio 3.125
+//                bmpImg = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
+//                mat = new Mat(ivResult.getWidth(), ivResult.getHeight(), CvType.CV_8UC4);
+//                double ratio = bmpImg.getHeight() / ivResult.getHeight();
+////                double ratioWidth = bmpImg.getWidth() / ivResult.getWidth();
+//                double height = bmpImg.getHeight() / ratio;
+////                double width = bmpImg.getWidth() / ratioWidth;
+//                resizedBmp = Bitmap.createBitmap(ivResult.getWidth(), (int) height, Bitmap.Config.ARGB_8888);
+//                Utils.bitmapToMat(bmpImg, mat);
+//                Imgproc.resize(mat, mat, new Size(resizedBmp.getWidth(), height));
+//                findContours(mat);
+//
+//                performGammaCorrection(mat);
+//
+//                Utils.matToBitmap(mat, resizedBmp);
+//                    setBitmap(resizedBmp);
                 bmpImg = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
                 mat = new Mat(ivResult.getWidth(), ivResult.getHeight(), CvType.CV_8UC4);
-                double ratio = bmpImg.getHeight() / ivResult.getHeight();
-                double ratioWidth = bmpImg.getWidth() / ivResult.getWidth();
+                double ratio = bmpImg.getWidth() / ivResult.getWidth();
                 double height = bmpImg.getHeight() / ratio;
-                double width = bmpImg.getWidth() / ratioWidth;
-                resizedBmp = Bitmap.createBitmap((int) width, (int) height, Bitmap.Config.ARGB_8888);
+                resizedBmp = Bitmap.createBitmap(ivResult.getWidth(), ivResult.getHeight(), Bitmap.Config.ARGB_8888);
+
                 Utils.bitmapToMat(bmpImg, mat);
-                Imgproc.resize(mat, mat, new Size(width, height));
+                Imgproc.resize(mat, mat, new Size(resizedBmp.getWidth(), resizedBmp.getHeight()));
                 findContours(mat);
 
                 performGammaCorrection(mat);
