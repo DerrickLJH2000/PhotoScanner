@@ -27,6 +27,7 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.provider.MediaStore;
@@ -346,8 +347,12 @@ public class ScanActivity extends AppCompatActivity {
                 mFlashSupported = getApplicationContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
                 if (mFlashSupported) {
                     Integer flashmode = (Integer) ivFlash.getTag();
-                    flashmode = flashmode == null ? R.drawable.ic_flash_off : flashmode;
-                    if (flashmode == R.drawable.ic_flash_off) {
+                    flashmode = flashmode == null ? R.drawable.ic_flash_auto : flashmode;
+                    if (flashmode == R.drawable.ic_flash_auto) {
+                        ivFlash.setImageResource(R.drawable.ic_flash_off);
+                        ivFlash.setTag(R.drawable.ic_flash_off);
+                        showToast("Flash Mode : OFF");
+                    } else if (flashmode == R.drawable.ic_flash_off) {
                         ivFlash.setImageResource(R.drawable.ic_flash_on);
                         ivFlash.setTag(R.drawable.ic_flash_on);
                         showToast("Flash Mode : ON");
@@ -355,10 +360,6 @@ public class ScanActivity extends AppCompatActivity {
                         ivFlash.setImageResource(R.drawable.ic_flash_auto);
                         ivFlash.setTag(R.drawable.ic_flash_auto);
                         showToast("Flash Mode : AUTO");
-                    } else if (flashmode == R.drawable.ic_flash_auto) {
-                        ivFlash.setImageResource(R.drawable.ic_flash_off);
-                        ivFlash.setTag(R.drawable.ic_flash_off);
-                        showToast("Flash Mode : OFF");
                     }
                 } else {
                     showToast("You do not have Flash feature on your device!");
@@ -896,20 +897,21 @@ public class ScanActivity extends AppCompatActivity {
         Integer integer = (Integer) ivFlash.getTag();
         integer = integer == null ? 0 : integer;
         if (mFlashSupported) {
-//            switch (integer) {
-//                case R.drawable.ic_flash_auto:
-            requestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
-                    CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
-//                    break;
-//                case R.drawable.ic_flash_on:
-//                    requestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
-//                            CaptureRequest.CONTROL_AE_MODE_ON_ALWAYS_FLASH);
-//                    break;
-//                default:
-//                    requestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
-//                            CaptureRequest.CONTROL_AE_MODE_OFF);
-//                    break;
-//            }
+            switch (integer) {
+
+                case R.drawable.ic_flash_off:
+                    mPreviewRequestBuilder.set(CaptureRequest.FLASH_MODE,
+                            CaptureRequest.FLASH_MODE_OFF);
+                    break;
+                case R.drawable.ic_flash_on:
+                    mPreviewRequestBuilder.set(CaptureRequest.FLASH_MODE,
+                            CaptureRequest.FLASH_MODE_SINGLE);
+                    break;
+                default:
+                    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
+                            CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
+                    break;
+            }
         }
     }
 
@@ -919,8 +921,8 @@ public class ScanActivity extends AppCompatActivity {
         if (mFlashSupported) {
             switch (integer) {
                 case R.drawable.ic_flash_off:
-            mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
-                    CaptureRequest.CONTROL_AE_MODE_OFF);
+                    mPreviewRequestBuilder.set(CaptureRequest.FLASH_MODE,
+                            CaptureRequest.FLASH_MODE_OFF);
                     break;
                 case R.drawable.ic_flash_on:
                     mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
@@ -987,6 +989,5 @@ public class ScanActivity extends AppCompatActivity {
         }
 
     }
-
 
 }
