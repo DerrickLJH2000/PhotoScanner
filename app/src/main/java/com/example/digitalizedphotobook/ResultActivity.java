@@ -414,8 +414,11 @@ public class ResultActivity extends AppCompatActivity {
             else if (src.type() == CV_8UC4) cvtColor(src, gray, COLOR_BGRA2GRAY);
             if (clipHistPercent == 0)
             {
+                ArrayList<Integer> list = new ArrayList<Integer>();
+                list.add(minGray,maxGray);
                 // keep full available range
-                Core.minMaxLoc(gray, minGray, maxGray);
+                Mat minmax = Converters.vector_int_to_Mat(list);
+                Core.minMaxLoc(gray, minmax);
             }
             else
             {
@@ -436,7 +439,7 @@ public class ResultActivity extends AppCompatActivity {
                 }
 
                 // locate points that cuts at required value
-                float max = accumulator.back();
+                float max = accumulator.get(-1);
                 clipHistPercent *= (max / 100.0); //make percent as absolute
                 clipHistPercent /= 2.0; // left and right wings
                 // locate left cut
