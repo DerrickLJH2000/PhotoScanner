@@ -53,9 +53,13 @@ import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfFloat;
+import org.opencv.core.MatOfInt;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.utils.Converters;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -66,11 +70,23 @@ import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 import static org.opencv.core.CvType.CV_8UC1;
 import static org.opencv.core.CvType.CV_8UC3;
 import static org.opencv.core.CvType.CV_8UC4;
+import static org.opencv.core.CvType.channels;
+import static org.opencv.imgproc.Imgproc.COLOR_BGR2GRAY;
+import static org.opencv.imgproc.Imgproc.COLOR_BGR2YCrCb;
+import static org.opencv.imgproc.Imgproc.COLOR_BGRA2GRAY;
+import static org.opencv.imgproc.Imgproc.COLOR_GRAY2RGB;
+import static org.opencv.imgproc.Imgproc.COLOR_GRAY2RGBA;
+import static org.opencv.imgproc.Imgproc.COLOR_RGB2GRAY;
+import static org.opencv.imgproc.Imgproc.COLOR_RGB2YCrCb;
+import static org.opencv.imgproc.Imgproc.COLOR_RGBA2GRAY;
+import static org.opencv.imgproc.Imgproc.COLOR_YCrCb2RGB;
+import static org.opencv.imgproc.Imgproc.calcHist;
 import static org.opencv.imgproc.Imgproc.cvtColor;
 
 public class ResultActivity extends AppCompatActivity {
@@ -375,11 +391,83 @@ public class ResultActivity extends AppCompatActivity {
                     seekBarBrightness.setProgress(50);
                     seekBarContrast.setProgress(50);
                 }
-
                 ivResult.setImageBitmap(newBitMap);
             }
         });
 
+    }
+
+    private void BrightnessAndContrastAuto(Mat src, Mat dst, float clipHistPercent)
+        {
+
+            assert(clipHistPercent >= 0);
+            assert((src.type() == CV_8UC1) || (src.type() == CV_8UC3) || (src.type() == CV_8UC4));
+
+            int histSize = 256;
+            float alpha, beta;
+            int minGray = 0, maxGray = 0;
+
+            //to calculate grayscale histogram
+            Mat gray;
+            if (src.type() == CV_8UC1) gray = src;
+            else if (src.type() == CV_8UC3) cvtColor(src, gray, COLOR_BGR2GRAY);
+            else if (src.type() == CV_8UC4) cvtColor(src, gray, COLOR_BGRA2GRAY);
+            if (clipHistPercent == 0)
+            {
+                // keep full available range
+                Core.minMaxLoc(gray, minGray, maxGray);
+            }
+            else
+            {
+                Mat hist;//the grayscale histogram
+
+                float range[] = { 0, 256 };
+                final MatOfFloat histRange = {range};
+                Boolean uniform = true;
+                Boolean accumulate = false;
+                calcHist(gray, 1, 0, new Mat(), hist, 1, histSize, histRange, uniform, accumulate);
+
+                // calculate cumulative distribution from the histogram
+                ArrayList<Float> accumulator = new ArrayList<>(histSize);
+                accumulator.get(0) = hist.at<float>(0);
+                for (int i = 1; i < histSize; i++)
+                {
+                    accumulator.get(i) = accumulator.get(i - 1) + hist.at<float>(i);
+                }
+
+                // locate points that cuts at required value
+                float max = accumulator.back();
+                clipHistPercent *= (max / 100.0); //make percent as absolute
+                clipHistPercent /= 2.0; // left and right wings
+                // locate left cut
+                minGray = 0;
+                while (accumulator.get(minGray) < clipHistPercent)
+                    minGray++;
+
+                // locate right cut
+                maxGray = histSize - 1;
+                while (accumulator.get(maxGray) >= (max - clipHistPercent))
+                    maxGray--;
+            }
+
+            // current range
+            float inputRange = maxGray - minGray;
+
+            alpha = (histSize - 1) / inputRange;   // alpha expands current range to histsize range
+            beta = -minGray * alpha;             // beta shifts current range so that minGray will go to 0
+
+            // Apply brightness and contrast normalization
+            // convertTo operates with saurate_cast
+            src.convertTo(dst, -1, alpha, beta);
+
+            // restore alpha channel from source
+            if (dst.type() == CV_8UC4)
+            {
+                int from_to[] = { 3, 3};
+                MatOfInt matOfInt = new MatOfInt(from_to);
+                Core.mixChannels(src, dst, matOfInt);
+            }
+            return;
     }
 
     private Mat doContrast(int progress) {
@@ -591,12 +679,13 @@ public class ResultActivity extends AppCompatActivity {
         bmOptions.inPurgeable = true;
 
         bitmap = BitmapFactory.decodeFile(photoPath, bmOptions);
-
-        mat = new Mat(bitmap.getWidth(), bitmap.getHeight(), CV_8UC1);
+        mat = new Mat(bitmap.getWidth(), bitmap.getHeight(), CV_8UC3);
         Utils.bitmapToMat(bitmap, mat);
-        Mat blurredMat = new Mat();
-        Imgproc.GaussianBlur(mat, blurredMat, new Size(5, 5), 0);
-        Core.addWeighted(mat, 1.5, blurredMat, 0.5, 0.0, mat);
+//        Mat blurredMat = new Mat();
+//        Imgproc.GaussianBlur(mat, blurredMat, new Size(5, 5), 0);
+//        Core.addWeighted(mat, 1.5, blurredMat, 0.5, 0.0, mat);
+//        Mat mat2 = doAutoFilter(mat);
+        Utils.matToBitmap(mat, bitmap);
         ivResult.setImageBitmap(bitmap);
     }
 
@@ -636,7 +725,7 @@ public class ResultActivity extends AppCompatActivity {
         if (colorMode && filterMode) {
             src.convertTo(src, -1, colorGain, colorBias);
             Mat mask = new Mat(src.size(), CV_8UC1);
-            cvtColor(src, mask, Imgproc.COLOR_RGBA2GRAY);
+            cvtColor(src, mask, COLOR_RGBA2GRAY);
 
             Mat copy = new Mat(src.size(), CV_8UC3);
             src.copyTo(copy);
@@ -652,7 +741,7 @@ public class ResultActivity extends AppCompatActivity {
             // special color threshold algorithm
             colorThresh(src, colorThresh);
         } else if (!colorMode) {
-            cvtColor(src, src, Imgproc.COLOR_RGBA2GRAY);
+            cvtColor(src, src, COLOR_RGBA2GRAY);
             if (filterMode) {
                 Imgproc.adaptiveThreshold(src, src, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 15, 15);
             }
