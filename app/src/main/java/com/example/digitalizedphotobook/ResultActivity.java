@@ -84,6 +84,7 @@ import static org.opencv.imgproc.Imgproc.COLOR_BGR2YCrCb;
 import static org.opencv.imgproc.Imgproc.COLOR_BGRA2GRAY;
 import static org.opencv.imgproc.Imgproc.COLOR_GRAY2RGB;
 import static org.opencv.imgproc.Imgproc.COLOR_GRAY2RGBA;
+import static org.opencv.imgproc.Imgproc.COLOR_RGB2BGR;
 import static org.opencv.imgproc.Imgproc.COLOR_RGB2GRAY;
 import static org.opencv.imgproc.Imgproc.COLOR_RGB2YCrCb;
 import static org.opencv.imgproc.Imgproc.COLOR_RGBA2GRAY;
@@ -402,19 +403,16 @@ public class ResultActivity extends AppCompatActivity {
     private Mat BrightnessAndContrastAuto(Mat src, float clipHistPercent) {
 
         assert (clipHistPercent >= 0);
-        assert ((src.type() == CV_8UC1) || (src.type() == CV_8UC3) || (src.type() == CV_8UC4));
 
-        int histSize = 256;
         float alpha, beta;
         int minGray = 0, maxGray = 0;
 
         //to calculate grayscale histogram
         Mat gray = new Mat();
-        ArrayList<Integer> list = new ArrayList<Integer>();
         ArrayList<Mat> mats = new ArrayList<Mat>();
 
-        cvtColor(src, gray, COLOR_RGB2GRAY);
-
+        cvtColor(src, gray, COLOR_RGB2BGR);
+        cvtColor(src, gray, COLOR_BGR2GRAY);
         Mat hist = new Mat();//the grayscale histogram
         Mat dst = new Mat();
 
@@ -423,7 +421,8 @@ public class ResultActivity extends AppCompatActivity {
         final MatOfFloat histRange = new MatOfFloat(range);
         Boolean accumulate = false;
 
-        calcHist(mats, new MatOfInt(0), new Mat(), hist, new MatOfInt(histSize), histRange, accumulate);
+        calcHist(mats, new MatOfInt(0), new Mat(), hist, new MatOfInt(256), histRange, accumulate);
+        int histSize = (int) hist.total();
         // calculate cumulative distribution from the histogram
         float[] histData = new float[(int) (hist.total() * hist.channels())];
         float histFloat = hist.get(0, 0, histData);
@@ -434,24 +433,20 @@ public class ResultActivity extends AppCompatActivity {
         }
 
         // locate points that cuts at required value
-        Log.e(TAG, accumulator.get(accumulator.size() -1) + "");
         float max = accumulator.get(accumulator.size() - 1);
         clipHistPercent *= (max / 100.0); //make percent as absolute
         clipHistPercent /= 2.0; // left and right wings
+
         // locate left cut
         minGray = 0;
         while (accumulator.get(minGray) < clipHistPercent) {
-            minGray++;
+            minGray += 1;
         }
-
         // locate right cut
-        maxGray = 255;
-        Log.e(TAG, accumulator.get(maxGray) + "");
-        // while (1024.0 >= (1024.0-60.0)){
-        while (accumulator.get(maxGray) >= (max - clipHistPercent)) {
-            maxGray--;
+        maxGray = histSize - 1;
+        while (accumulator.get(maxGray) >= (max - clipHistPercent) && maxGray > 0) {
+            maxGray -= 1;
         }
-
         // current range
         float inputRange = maxGray - minGray;
 
@@ -460,8 +455,8 @@ public class ResultActivity extends AppCompatActivity {
 
         // Apply brightness and contrast normalization
         // convertTo operates with saurate_cast
-        Core.convertScaleAbs(src, dst, alpha, beta);
-        return dst;
+        Core.convertScaleAbs(src, hist, alpha, beta);
+        return hist;
     }
 
     private Mat doContrast(int progress) {
@@ -540,10 +535,7 @@ public class ResultActivity extends AppCompatActivity {
 
 
     //Insert Image to Gallery
-    public static final String insertImage(ContentResolver cr,
-                                           Bitmap source,
-                                           String title,
-                                           String description) {
+    public static final String insertImage(ContentResolver cr, Bitmap source, String title, String description) {
 
         ContentValues values = new ContentValues();
         values.put(MediaStore.Images.Media.TITLE, title);
@@ -591,13 +583,7 @@ public class ResultActivity extends AppCompatActivity {
         return stringUrl;
     }
 
-    private static final Bitmap storeThumbnail(
-            ContentResolver cr,
-            Bitmap source,
-            long id,
-            float width,
-            float height,
-            int kind) {
+    private static final Bitmap storeThumbnail(ContentResolver cr, Bitmap source, long id, float width, float height, int kind) {
 
         // create the matrix to scale it
         Matrix matrix = new Matrix();
@@ -679,7 +665,7 @@ public class ResultActivity extends AppCompatActivity {
 //        Imgproc.GaussianBlur(mat, blurredMat, new Size(5, 5), 0);
 //        Core.addWeighted(mat, 1.5, blurredMat, 0.5, 0.0, mat);
 //        Mat mat2 = doAutoFilter(mat);
-        Mat dst = BrightnessAndContrastAuto(mat, 60f);
+        Mat dst = BrightnessAndContrastAuto(mat, 1);
         Utils.matToBitmap(dst, bitmap);
         ivResult.setImageBitmap(bitmap);
     }
