@@ -78,7 +78,6 @@ public class AdjustmentActivity extends AppCompatActivity {
     private boolean isFourPointed = false;
     private boolean isCropped = false;
     private int reqCode;
-    private double gammaValue = 1.0;
     private Map<Integer, PointF> points;
     private boolean isEditing = false;
 
@@ -408,24 +407,6 @@ public class AdjustmentActivity extends AppCompatActivity {
         return rotate;
     }
 
-    private byte saturate(double val) {
-        int iVal = (int) Math.round(val);
-        iVal = iVal > 255 ? 255 : (iVal < 0 ? 0 : iVal);
-        return (byte) iVal;
-    }
-
-    private void performGammaCorrection(Mat src) {
-        //! [changing-contrast-brightness-gamma-correction]
-        Mat lookUpTable = new Mat(1, 256, CvType.CV_8U);
-        byte[] lookUpTableData = new byte[(int) (lookUpTable.total() * lookUpTable.channels())];
-        for (int i = 0; i < lookUpTable.cols(); i++) {
-            lookUpTableData[i] = saturate(Math.pow(i / 255.0, gammaValue) * 255.0);
-        }
-        lookUpTable.put(0, 0, lookUpTableData);
-        Mat img = new Mat();
-        Core.LUT(src, lookUpTable, img);
-    }
-
     @Override
     public void onResume() {
         super.onResume();
@@ -703,9 +684,6 @@ public class AdjustmentActivity extends AppCompatActivity {
                 Utils.bitmapToMat(bmpImg, mat);
                 Imgproc.resize(mat, mat, new Size(resizedBmp.getWidth(), resizedBmp.getHeight()));
                 findContours(mat);
-
-                performGammaCorrection(mat);
-
                 Utils.matToBitmap(mat, resizedBmp);
                 setBitmap(resizedBmp);
             }

@@ -54,12 +54,9 @@ import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfFloat;
-import org.opencv.core.MatOfInt;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
-import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.utils.Converters;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -67,29 +64,20 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.reflect.Array;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.UUID;
 
-import static android.media.CamcorderProfile.get;
+import static java.lang.Math.log;
 import static org.opencv.core.CvType.CV_8UC1;
 import static org.opencv.core.CvType.CV_8UC3;
 import static org.opencv.core.CvType.CV_8UC4;
-import static org.opencv.core.CvType.channels;
 import static org.opencv.imgproc.Imgproc.COLOR_BGR2GRAY;
-import static org.opencv.imgproc.Imgproc.COLOR_BGR2YCrCb;
-import static org.opencv.imgproc.Imgproc.COLOR_BGRA2GRAY;
+import static org.opencv.imgproc.Imgproc.COLOR_GRAY2BGR;
 import static org.opencv.imgproc.Imgproc.COLOR_GRAY2RGB;
-import static org.opencv.imgproc.Imgproc.COLOR_GRAY2RGBA;
-import static org.opencv.imgproc.Imgproc.COLOR_RGB2BGR;
 import static org.opencv.imgproc.Imgproc.COLOR_RGB2GRAY;
-import static org.opencv.imgproc.Imgproc.COLOR_RGB2YCrCb;
 import static org.opencv.imgproc.Imgproc.COLOR_RGBA2GRAY;
-import static org.opencv.imgproc.Imgproc.COLOR_YCrCb2RGB;
-import static org.opencv.imgproc.Imgproc.calcHist;
 import static org.opencv.imgproc.Imgproc.cvtColor;
 
 public class ResultActivity extends AppCompatActivity {
@@ -111,6 +99,7 @@ public class ResultActivity extends AppCompatActivity {
     private double colorGain = 1.5;       // contrast
     private double colorBias = 0;         // bright
     private int colorThresh = 110;
+    private double gammaValue = 1.0;
     private boolean isFilterExtended = false;
     private boolean isLightExtended = false;
     private boolean isRotated = false;
@@ -401,63 +390,66 @@ public class ResultActivity extends AppCompatActivity {
     }
 
     private Mat BrightnessAndContrastAuto(Mat src, float clipHistPercent) {
-
-        assert (clipHistPercent >= 0);
-
-        float alpha, beta;
-        int minGray = 0, maxGray = 0;
-
-        //to calculate grayscale histogram
-        Mat gray = new Mat();
-        ArrayList<Mat> mats = new ArrayList<Mat>();
-
-        cvtColor(src, gray, COLOR_RGB2BGR);
-        cvtColor(src, gray, COLOR_BGR2GRAY);
-        Mat hist = new Mat();//the grayscale histogram
-        Mat dst = new Mat();
-
-        mats.add(gray);
-        float range[] = {0, 256};
-        final MatOfFloat histRange = new MatOfFloat(range);
-        Boolean accumulate = false;
-
-        calcHist(mats, new MatOfInt(0), new Mat(), hist, new MatOfInt(256), histRange, accumulate);
-        int histSize = (int) hist.total();
-        // calculate cumulative distribution from the histogram
-        float[] histData = new float[(int) (hist.total() * hist.channels())];
-        float histFloat = hist.get(0, 0, histData);
-        ArrayList<Float> accumulator = new ArrayList<Float>();
-        accumulator.add((histFloat));
-        for (int i = 1; i < histSize; i++) {
-            accumulator.add(i, accumulator.get(i - 1) + hist.get(i, i, histData));
-        }
-
-        // locate points that cuts at required value
-        float max = accumulator.get(accumulator.size() - 1);
-        clipHistPercent *= (max / 100.0); //make percent as absolute
-        clipHistPercent /= 2.0; // left and right wings
-
-        // locate left cut
-        minGray = 0;
-        while (accumulator.get(minGray) < clipHistPercent) {
-            minGray += 1;
-        }
-        // locate right cut
-        maxGray = histSize - 1;
-        while (accumulator.get(maxGray) >= (max - clipHistPercent) && maxGray > 0) {
-            maxGray -= 1;
-        }
-        // current range
-        float inputRange = maxGray - minGray;
-
-        alpha = 255 / inputRange;   // alpha expands current range to histsize range
-        beta = -minGray * alpha;             // beta shifts current range so that minGray will go to 0
+//        assert (clipHistPercent >= 0);
+//
+//        float alpha, beta;
+//        int minGray = 0, maxGray = 0;
+//
+//        //to calculate grayscale histogram
+//        Mat gray = new Mat();
+//        ArrayList<Mat> mats = new ArrayList<Mat>();
+//
+//        cvtColor(src, gray, COLOR_RGB2BGR);
+//        cvtColor(src, gray, COLOR_BGR2GRAY);
+//        Mat hist = new Mat();//the grayscale histogram
+//        Mat dst = new Mat();
+//
+//        mats.add(gray);
+//        float range[] = {0, 256};
+//        final MatOfFloat histRange = new MatOfFloat(range);
+//        Boolean accumulate = false;
+//
+//        calcHist(mats, new MatOfInt(0), new Mat(), hist, new MatOfInt(256), histRange, accumulate);
+//        int histSize = (int) hist.total();
+//        // calculate cumulative distribution from the histogram
+//        float[] histData = new float[(int) (hist.total() * hist.channels())];
+//        float histFloat = hist.get(0, 0, histData);
+//        ArrayList<Float> accumulator = new ArrayList<Float>();
+//        accumulator.add((histFloat));
+//        for (int i = 1; i < histSize; i++) {
+//            accumulator.add(i, accumulator.get(i - 1) + hist.get(i, i, histData));
+//        }
+//
+//        // locate points that cuts at required value
+//        float max = accumulator.get(accumulator.size() - 1);
+//        clipHistPercent *= (max / 100.0); //make percent as absolute
+//        clipHistPercent /= 2.0; // left and right wings
+//
+//        // locate left cut
+//        minGray = 0;
+//        while (accumulator.get(minGray) < clipHistPercent) {
+//            minGray += 1;
+//        }
+//        // locate right cut
+//        maxGray = histSize - 1;
+//        while (accumulator.get(maxGray) >= (max - clipHistPercent) && maxGray > 0) {
+//            maxGray -= 1;
+//        }
+//        // current range
+//        float inputRange = maxGray - minGray;
+//
+//        alpha = 255 / inputRange;   // alpha expands current range to histsize range
+//        beta = -minGray * alpha;             // beta shifts current range so that minGray will go to 0
 
         // Apply brightness and contrast normalization
         // convertTo operates with saurate_cast
-        Core.convertScaleAbs(src, hist, alpha, beta);
-        return hist;
+//        Core.convertScaleAbs(src, src, 1.75, -251.25);
+        return src;
     }
+
+//    private Mat doWhiteBalance(Mat src, float perc){
+//        return src;
+//    }
 
     private Mat doContrast(int progress) {
         Mat dst = new Mat();
@@ -664,12 +656,63 @@ public class ResultActivity extends AppCompatActivity {
 //        Mat blurredMat = new Mat();
 //        Imgproc.GaussianBlur(mat, blurredMat, new Size(5, 5), 0);
 //        Core.addWeighted(mat, 1.5, blurredMat, 0.5, 0.0, mat);
-//        Mat mat2 = doAutoFilter(mat);
-        Mat dst = BrightnessAndContrastAuto(mat, 1);
-        Utils.matToBitmap(dst, bitmap);
+
+//        Mat dst = BrightnessAndContrastAuto(mat, 1);
+        Mat mat2 = mat.clone();
+        gammaValue = autoGammaValue(mat2);
+        doGammaCorrection(mat);
+        Utils.matToBitmap(mat, bitmap);
         ivResult.setImageBitmap(bitmap);
     }
 
+    private void doWhiteBalance(Mat src, float perc /*= 0.05 */){
+        assert(src.dataAddr() != 0);
+        assert(src.depth() != 2);
+
+        float range[] = {0, 256};
+        final MatOfFloat histRange = new MatOfFloat(range);
+
+        boolean uniform = true; boolean accumulate = false;
+
+        Mat r_Hist, g_hist, b_hist;
+        Mat bgr[3];
+    }
+
+    private byte saturate(double val) {
+        int iVal = (int) Math.round(val);
+        iVal = iVal > 255 ? 255 : (iVal < 0 ? 0 : iVal);
+        return (byte) iVal;
+    }
+
+    private double mean_pixel(Mat img) {
+        if (img.channels() > 2) {
+            cvtColor(img.clone(), img, COLOR_RGB2GRAY);
+            return Core.mean(img).val[0];
+        } else {
+            return Core.mean(img).val[0];
+        }
+    }
+
+    private double autoGammaValue(Mat src) {
+        double max_pixel = 255;
+        double middle_pixel = 128;
+        double pixel_range = 256;
+        double mean_l = mean_pixel(src);
+
+        double gamma = log(middle_pixel / pixel_range) / log(mean_l / pixel_range); // Formula from ImageJ
+        return gamma;
+    }
+
+    private void doGammaCorrection(Mat src) {
+        //! [changing-contrast-brightness-gamma-correction]
+        Mat lookUpTable = new Mat(1, 256, CvType.CV_8U);
+        byte[] lookUpTableData = new byte[(int) (lookUpTable.total() * lookUpTable.channels())];
+        for (int i = 0; i < lookUpTable.cols(); i++) {
+            lookUpTableData[i] = saturate(Math.pow(i / 255.0, gammaValue) * 255.0);
+        }
+        lookUpTable.put(0, 0, lookUpTableData);
+        Core.LUT(src, lookUpTable, src);
+    }
 
     private void colorThresh(Mat src, int threshold) {
         Size srcSize = src.size();
