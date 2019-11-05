@@ -915,28 +915,6 @@ public class ScanActivity extends AppCompatActivity {
         }
     }
 
-    private void setFlash(CaptureRequest.Builder mPreviewRequestBuilder) {
-        Integer integer = (Integer) ivFlash.getTag();
-        integer = integer == null ? 0 : integer;
-        if (mFlashSupported) {
-            switch (integer) {
-                case R.drawable.ic_flash_off:
-                    mPreviewRequestBuilder.set(CaptureRequest.FLASH_MODE,
-                            CaptureRequest.FLASH_MODE_OFF);
-                    break;
-                case R.drawable.ic_flash_on:
-                    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
-                            CaptureRequest.CONTROL_AE_MODE_ON);
-                    break;
-                default:
-                    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
-                            CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
-                    break;
-            }
-        }
-
-    }
-
     private static class ImageSaver implements Runnable {
 
         /**

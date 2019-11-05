@@ -17,14 +17,14 @@
         app:layout_constraintTop_toBottomOf="@id/include">
 
         <com.github.chrisbanes.photoview.PhotoView
-            android:id="@+id/ivResult"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentBottom="true"
-            android:padding="20dp"
-            android:cropToPadding="false"
-             />
+        android:id="@+id/ivResult"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentBottom="true"
+        android:padding="20dp"
+        android:cropToPadding="false"
+        />
     </RelativeLayout>
 
     <View

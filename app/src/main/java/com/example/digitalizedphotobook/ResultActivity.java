@@ -45,6 +45,7 @@ import android.widget.Toast;
 import com.example.digitalizedphotobook.adapters.FilterAdapter;
 import com.example.digitalizedphotobook.classes.Filter;
 import com.github.chrisbanes.photoview.PhotoView;
+import com.squareup.picasso.Picasso;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -53,7 +54,6 @@ import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfFloat;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -67,17 +67,20 @@ import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 import static java.lang.Math.log;
 import static org.opencv.core.CvType.CV_8UC1;
 import static org.opencv.core.CvType.CV_8UC3;
 import static org.opencv.core.CvType.CV_8UC4;
-import static org.opencv.imgproc.Imgproc.COLOR_BGR2GRAY;
-import static org.opencv.imgproc.Imgproc.COLOR_GRAY2BGR;
+import static org.opencv.imgproc.Imgproc.COLOR_BGR2RGB;
 import static org.opencv.imgproc.Imgproc.COLOR_GRAY2RGB;
+import static org.opencv.imgproc.Imgproc.COLOR_RGB2BGR;
 import static org.opencv.imgproc.Imgproc.COLOR_RGB2GRAY;
+import static org.opencv.imgproc.Imgproc.COLOR_RGB2RGBA;
 import static org.opencv.imgproc.Imgproc.COLOR_RGBA2GRAY;
+import static org.opencv.imgproc.Imgproc.COLOR_RGBA2RGB;
 import static org.opencv.imgproc.Imgproc.cvtColor;
 
 public class ResultActivity extends AppCompatActivity {
@@ -194,28 +197,28 @@ public class ResultActivity extends AppCompatActivity {
         ivFilters.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!isLightExtended) {
-                    if (!isFilterExtended) {
-                        filterSettings.setVisibility(View.VISIBLE);
-                        mView.setVisibility(View.VISIBLE);
-                        mView.animate().translationY(filterSettings.getHeight() * -1);
-                        filterSettings.animate().translationY(filterSettings.getHeight() * -1);
-                        isFilterExtended = true;
-                    } else {
-                        mView.setVisibility(View.GONE);
-                        filterSettings.animate().translationY(filterSettings.getHeight() + linlay1.getHeight());
-                        isFilterExtended = false;
-                    }
-                } else {
-                    mView.setVisibility(View.GONE);
-                    lightSettings.animate().translationY(lightSettings.getHeight() + linlay1.getHeight());
-                    isLightExtended = false;
-                    filterSettings.setVisibility(View.VISIBLE);
-                    mView.setVisibility(View.VISIBLE);
-                    mView.animate().translationY(filterSettings.getHeight() * -1);
-                    filterSettings.animate().translationY(filterSettings.getHeight() * -1);
-                    isFilterExtended = true;
-                }
+//                if (!isLightExtended) {
+//                    if (!isFilterExtended) {
+//                        filterSettings.setVisibility(View.VISIBLE);
+//                        mView.setVisibility(View.VISIBLE);
+//                        mView.animate().translationY(filterSettings.getHeight() * -1);
+//                        filterSettings.animate().translationY(filterSettings.getHeight() * -1);
+//                        isFilterExtended = true;
+//                    } else {
+//                        mView.setVisibility(View.GONE);
+//                        filterSettings.animate().translationY(filterSettings.getHeight() + linlay1.getHeight());
+//                        isFilterExtended = false;
+//                    }
+//                } else {
+//                    mView.setVisibility(View.GONE);
+//                    lightSettings.animate().translationY(lightSettings.getHeight() + linlay1.getHeight());
+//                    isLightExtended = false;
+//                    filterSettings.setVisibility(View.VISIBLE);
+//                    mView.setVisibility(View.VISIBLE);
+//                    mView.animate().translationY(filterSettings.getHeight() * -1);
+//                    filterSettings.animate().translationY(filterSettings.getHeight() * -1);
+//                    isFilterExtended = true;
+//                }
             }
         });
         //Expand the Light Settings
@@ -388,68 +391,6 @@ public class ResultActivity extends AppCompatActivity {
         });
 
     }
-
-    private Mat BrightnessAndContrastAuto(Mat src, float clipHistPercent) {
-//        assert (clipHistPercent >= 0);
-//
-//        float alpha, beta;
-//        int minGray = 0, maxGray = 0;
-//
-//        //to calculate grayscale histogram
-//        Mat gray = new Mat();
-//        ArrayList<Mat> mats = new ArrayList<Mat>();
-//
-//        cvtColor(src, gray, COLOR_RGB2BGR);
-//        cvtColor(src, gray, COLOR_BGR2GRAY);
-//        Mat hist = new Mat();//the grayscale histogram
-//        Mat dst = new Mat();
-//
-//        mats.add(gray);
-//        float range[] = {0, 256};
-//        final MatOfFloat histRange = new MatOfFloat(range);
-//        Boolean accumulate = false;
-//
-//        calcHist(mats, new MatOfInt(0), new Mat(), hist, new MatOfInt(256), histRange, accumulate);
-//        int histSize = (int) hist.total();
-//        // calculate cumulative distribution from the histogram
-//        float[] histData = new float[(int) (hist.total() * hist.channels())];
-//        float histFloat = hist.get(0, 0, histData);
-//        ArrayList<Float> accumulator = new ArrayList<Float>();
-//        accumulator.add((histFloat));
-//        for (int i = 1; i < histSize; i++) {
-//            accumulator.add(i, accumulator.get(i - 1) + hist.get(i, i, histData));
-//        }
-//
-//        // locate points that cuts at required value
-//        float max = accumulator.get(accumulator.size() - 1);
-//        clipHistPercent *= (max / 100.0); //make percent as absolute
-//        clipHistPercent /= 2.0; // left and right wings
-//
-//        // locate left cut
-//        minGray = 0;
-//        while (accumulator.get(minGray) < clipHistPercent) {
-//            minGray += 1;
-//        }
-//        // locate right cut
-//        maxGray = histSize - 1;
-//        while (accumulator.get(maxGray) >= (max - clipHistPercent) && maxGray > 0) {
-//            maxGray -= 1;
-//        }
-//        // current range
-//        float inputRange = maxGray - minGray;
-//
-//        alpha = 255 / inputRange;   // alpha expands current range to histsize range
-//        beta = -minGray * alpha;             // beta shifts current range so that minGray will go to 0
-
-        // Apply brightness and contrast normalization
-        // convertTo operates with saurate_cast
-//        Core.convertScaleAbs(src, src, 1.75, -251.25);
-        return src;
-    }
-
-//    private Mat doWhiteBalance(Mat src, float perc){
-//        return src;
-//    }
 
     private Mat doContrast(int progress) {
         Mat dst = new Mat();
@@ -651,7 +592,7 @@ public class ResultActivity extends AppCompatActivity {
         bmOptions.inPurgeable = true;
 
         bitmap = BitmapFactory.decodeFile(photoPath, bmOptions);
-        mat = new Mat(bitmap.getWidth(), bitmap.getHeight(), CV_8UC3);
+        mat = new Mat(bitmap.getWidth(), bitmap.getHeight(), CvType.CV_8UC4);
         Utils.bitmapToMat(bitmap, mat);
 //        Mat blurredMat = new Mat();
 //        Imgproc.GaussianBlur(mat, blurredMat, new Size(5, 5), 0);
@@ -661,21 +602,12 @@ public class ResultActivity extends AppCompatActivity {
         Mat mat2 = mat.clone();
         gammaValue = autoGammaValue(mat2);
         doGammaCorrection(mat);
+        doWhiteBalance(mat,10);
         Utils.matToBitmap(mat, bitmap);
         ivResult.setImageBitmap(bitmap);
-    }
-
-    private void doWhiteBalance(Mat src, float perc /*= 0.05 */){
-        assert(src.dataAddr() != 0);
-        assert(src.depth() != 2);
-
-        float range[] = {0, 256};
-        final MatOfFloat histRange = new MatOfFloat(range);
-
-        boolean uniform = true; boolean accumulate = false;
-
-        Mat r_Hist, g_hist, b_hist;
-        Mat bgr[3];
+//        Picasso.get()
+//                .load(R.drawable.gradient_bg)
+//                .into(ivResult);
     }
 
     private byte saturate(double val) {
@@ -792,5 +724,120 @@ public class ResultActivity extends AppCompatActivity {
         return true;
     }
 
+    //    private void doWhiteBalance(Mat src, float perc){
+//        if (src.empty()) {
+//            System.err.println("Cannot read image: " + imagePath);
+//            System.exit(0);
+//        }
+//        List<Mat> bgrPlanes = new ArrayList<>();
+//        Core.split(src, bgrPlanes);
+//        int histSize = 256;
+//        float[] range = {0, 256}; //the upper boundary is exclusive
+//        MatOfFloat histRange = new MatOfFloat(range);
+//        boolean accumulate = false;
+//        Mat bHist = new Mat(), gHist = new Mat(), rHist = new Mat();
+//        Imgproc.calcHist(bgrPlanes, new MatOfInt(0), new Mat(), bHist, new MatOfInt(histSize), histRange, accumulate);
+//        Imgproc.calcHist(bgrPlanes, new MatOfInt(1), new Mat(), gHist, new MatOfInt(histSize), histRange, accumulate);
+//        Imgproc.calcHist(bgrPlanes, new MatOfInt(2), new Mat(), rHist, new MatOfInt(histSize), histRange, accumulate);
+////        int histW = 512, histH = 400;
+////        int binW = (int) Math.round((double) histW / histSize);
+//        Mat histImage = new Mat( src.rows(), src.cols(), CvType.CV_8UC3, new Scalar( 0,0,0) );
+//        Core.normalize(bHist, bHist, 0, histImage.rows(), Core.NORM_MINMAX);
+//        Core.normalize(gHist, gHist, 0, histImage.rows(), Core.NORM_MINMAX);
+//        Core.normalize(rHist, rHist, 0, histImage.rows(), Core.NORM_MINMAX);
+//        float[] bHistData = new float[(int) (bHist.total() * bHist.channels())];
+//        bHist.get(0, 0, bHistData);
+//        float[] gHistData = new float[(int) (gHist.total() * gHist.channels())];
+//        gHist.get(0, 0, gHistData);
+//        float[] rHistData = new float[(int) (rHist.total() * rHist.channels())];
+//        rHist.get(0, 0, rHistData);
+//
+//        // Get the min and max pixel values indicating the 5% of pixels at the ends of the histograms
+//        float r_min_val = -1, g_min_val = -1, b_min_val = -1; // Dummy value
+//        float r_max_val = -1, g_max_val = -1, b_max_val = -1; // Dummy value
+//
+//        for (int i=0; i < 256; i++){
+//            if (rHistData[i] >= perc && r_min_val == -1){
+//                r_min_val = (float) i;
+//            }
+//            if (rHistData[i] >= (1.0 - perc) && r_max_val == -1){
+////                cout << rHistData[i] << end1;
+//                r_max_val = (float) i;
+//            }
+//            if (gHistData[i] >= perc && g_min_val == -1){
+//                g_min_val = (float) i;
+//            }
+//            if (gHistData[i] >= (1.0 - perc) && g_max_val == -1){
+//                g_max_val = (float) i;
+//            }
+//            if (bHistData[i] >= perc && b_min_val == -1){
+//                b_min_val = (float) i;
+//            }
+//            if (bHistData[i] >= (1.0 - perc) && b_max_val == -1){
+//                b_max_val = (float) i;
+//            }
+//        }
+//        byte[] r_lut = new byte[256];
+//        byte[] g_lut = new byte[256];
+//        byte[] b_lut = new byte[256];
+//        for( int i = 1; i < histSize; i++ ) {
+////            Imgproc.line(histImage, new Point(binW * (i - 1), histH - Math.round(bHistData[i - 1])),
+////                    new Point(binW * (i), histH - Math.round(bHistData[i])), new Scalar(255, 0, 0), 2);
+////            Imgproc.line(histImage, new Point(binW * (i - 1), histH - Math.round(gHistData[i - 1])),
+////                    new Point(binW * (i), histH - Math.round(gHistData[i])), new Scalar(0, 255, 0), 2);
+////            Imgproc.line(histImage, new Point(binW * (i - 1), histH - Math.round(rHistData[i - 1])),
+////                    new Point(binW * (i), histH - Math.round(rHistData[i])), new Scalar(0, 0, 255), 2);
+//            b_lut[i] = saturate(((i - b_min_val) / (b_max_val - b_min_val)) * 255.0);
+//            g_lut[i] = saturate(((i - g_min_val) / (g_max_val - g_min_val)) * 255.0);
+//            r_lut[i] = saturate(((i - r_min_val) / (r_max_val - r_min_val)) * 255.0);
+////            lookUpTable.put(0, 0, lookUpTableData);
+////            Core.LUT(src, lookUpTable, src);
+//        }
+//        Mat out = src.clone();
+//        ArrayList<Mat> rgbList = new ArrayList<>();
+//        rgbList.add(r_lut,g_lut,b_lut);
+//        Core.merge();
+//        out.put(0, 0,r_lut,g_lut,b_lut);
+//        Core.LUT(src, lookUpTable, src);
+//
+//        Bitmap histBmp = Bitmap.createBitmap(512, 400, Bitmap.Config.ARGB_8888);
+//        Utils.matToBitmap(histImage, histBmp );
+//        ivResult.setImageBitmap(histBmp);
+//    }
+    public static Mat doWhiteBalance(Mat img, int percent) {
+        if (percent <= 0)
+            percent = 5;
+        Imgproc.cvtColor(img,img,COLOR_RGBA2RGB);
+        List<Mat> channels = new ArrayList<>();
+        int rows = img.rows(); // number of rows of image
+        int cols = img.cols(); // number of columns of image
+        int chnls = img.channels(); //  number of channels of image
+        double halfPercent = percent / 200.0;
+        if (chnls == 3) Core.split(img, channels);
+        else channels.add(img);
+        List<Mat> results = new ArrayList<>();
+        for (int i = 0; i < chnls; i++) {
+            // find the low and high precentile values (based on the input percentile)
+            Mat flat = new Mat();
+            channels.get(i).reshape(1, 1).copyTo(flat);
+            Core.sort(flat, flat, Core.SORT_ASCENDING);
+            double lowVal = flat.get(0, (int) Math.floor(flat.cols() * halfPercent))[0];
+            double topVal = flat.get(0, (int) Math.ceil(flat.cols() * (1.0 - halfPercent)))[0];
+            // saturate below the low percentile and above the high percentile
+            Mat channel = channels.get(i);
+            for (int m = 0; m < rows; m++) {
+                for (int n = 0; n < cols; n++) {
+                    if (channel.get(m, n)[0] < lowVal) channel.put(m, n, lowVal);
+                    if (channel.get(m, n)[0] > topVal) channel.put(m, n, topVal);
+                }
+        }
+            Core.normalize(channel, channel, 0.0, 255.0 / 2, Core.NORM_MINMAX);
+            results.add(channel);
+        }
+        Mat outval = new Mat();
+        Core.merge(results, outval);
+
+        return outval;
+    }
 
 }
