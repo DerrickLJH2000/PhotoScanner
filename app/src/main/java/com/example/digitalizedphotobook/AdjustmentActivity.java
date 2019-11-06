@@ -8,6 +8,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.PointF;
 import android.graphics.PorterDuff;
@@ -62,8 +63,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+import static java.lang.Math.log;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static org.opencv.imgproc.Imgproc.COLOR_RGB2GRAY;
+import static org.opencv.imgproc.Imgproc.cvtColor;
 
 
 public class AdjustmentActivity extends AppCompatActivity {
@@ -72,6 +76,7 @@ public class AdjustmentActivity extends AppCompatActivity {
     private PolygonView polygonView;
     private File mFile, mFile2;
     private String imagePath;
+    private double gammaValue = 1.0;
     private Bitmap bmp, newBmp, resizedBmp, bmpImg;
     private Mat mat;
     private Quadrilateral quad;
@@ -167,7 +172,14 @@ public class AdjustmentActivity extends AppCompatActivity {
             finish();
         }
         newBmp = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
+        Mat tempDisplayMat = new Mat();
+        Utils.bitmapToMat(newBmp, tempDisplayMat);
+        Mat tempClone = tempDisplayMat.clone();
+        gammaValue = autoGammaValue(tempClone);
 
+        doGammaCorrection(tempDisplayMat);
+        SimplestColorBalance(tempDisplayMat, 5);
+        Utils.matToBitmap(tempDisplayMat, newBmp);
         Log.i(TAG, "Height: " + newBmp.getHeight() + "Width: " + newBmp.getWidth());
 
         ivResult.setImageBitmap(newBmp);
@@ -709,5 +721,88 @@ public class AdjustmentActivity extends AppCompatActivity {
                 }
             }
         }
+    }
+
+    private byte saturate(double val) {
+        int iVal = (int) Math.round(val);
+        iVal = iVal > 255 ? 255 : (iVal < 0 ? 0 : iVal);
+        return (byte) iVal;
+    }
+
+    private double mean_pixel(Mat img) {
+        if (img.channels() > 2) {
+            cvtColor(img.clone(), img, COLOR_RGB2GRAY);
+            return Core.mean(img).val[0];
+        } else {
+            return Core.mean(img).val[0];
+        }
+    }
+
+    private double autoGammaValue(Mat src) {
+        double max_pixel = 255;
+        double middle_pixel = 128;
+        double pixel_range = 256;
+        double mean_l = mean_pixel(src);
+
+        double gamma = log(middle_pixel / pixel_range) / log(mean_l / pixel_range); // Formula from ImageJ
+        return gamma;
+    }
+
+    private void doGammaCorrection(Mat src) {
+        //! [changing-contrast-brightness-gamma-correction]
+        Mat lookUpTable = new Mat(1, 256, CvType.CV_8U);
+        byte[] lookUpTableData = new byte[(int) (lookUpTable.total() * lookUpTable.channels())];
+        for (int i = 0; i < lookUpTable.cols(); i++) {
+            lookUpTableData[i] = saturate(Math.pow(i / 255.0, gammaValue) * 255.0);
+        }
+        lookUpTable.put(0, 0, lookUpTableData);
+        Core.LUT(src, lookUpTable, src);
+    }
+
+    /**
+     * Simplest Color Balance. Performs color balancing via histogram
+     * normalization.
+     *
+     * @param img input color or gray scale image
+     * @param percent controls the percentage of pixels to clip to white and black. (normally, choose 1~10)
+     * @return Balanced image in CvType.CV_32F
+     */
+    public static Mat SimplestColorBalance(Mat img, int percent) {
+        if (percent <= 0)
+            percent = 5;
+        Imgproc.cvtColor(img , img , Imgproc.COLOR_RGBA2BGR,0);
+//        img.convertTo(img, CvType.CV_32F);
+        List<Mat> channels = new ArrayList<>();
+        int rows = img.rows(); // number of rows of image
+        int cols = img.cols(); // number of columns of image
+        int chnls = img.channels(); //  number of channels of image
+        double halfPercent = percent / 200.0;
+        if (chnls == 3) Core.split(img, channels);
+        else channels.add(img);
+        List<Mat> results = new ArrayList<>();
+        for (int i = 0; i < chnls; i++) {
+            // find the low and high precentile values (based on the input percentile)
+            Mat flat = new Mat();
+            channels.get(i).reshape(1, 1).copyTo(flat);
+            Core.sort(flat, flat, Core.SORT_ASCENDING);
+            double lowVal = flat.get(0, (int) Math.floor(flat.cols() * halfPercent))[0];
+            double topVal = flat.get(0, (int) Math.ceil(flat.cols() * (1.0 - halfPercent)))[0];
+            // saturate below the low percentile and above the high percentile
+            Mat channel = channels.get(i);
+            for (int m = 0; m < rows; m++) {
+                for (int n = 0; n < cols; n++) {
+                    if (channel.get(m, n)[0] < lowVal) channel.put(m, n, lowVal);
+                    if (channel.get(m, n)[0] > topVal) channel.put(m, n, topVal);
+                }
+            }
+            Core.normalize(channel, channel, 0.0, 255.0 / 2, Core.NORM_MINMAX);
+//            channel.convertTo(channel, CvType.CV_32F);
+            results.add(channel);
+
+        }
+        Mat outval = new Mat();
+        Core.merge(results, outval);
+        Imgproc.cvtColor(outval , outval , Imgproc.COLOR_GRAY2RGBA);
+        return outval;
     }
 }
