@@ -10,15 +10,18 @@ import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.Magnifier;
 
 import org.opencv.core.Point;
 
@@ -35,6 +38,7 @@ public class PolygonView extends FrameLayout {
     private ImageView pointer2;
     private ImageView pointer3;
     private ImageView pointer4;
+    private Magnifier magnifier;
     private ImageView midPointer13;
     private ImageView midPointer12;
     private ImageView midPointer34;
@@ -107,24 +111,6 @@ public class PolygonView extends FrameLayout {
         paint.setAntiAlias(true);
     }
 
-//    public void paintZoom(Drawable src){
-//        mPaint = new Paint();
-//        sourceZoom = src;
-//        Bitmap bmp = convertToBitmap(src,300,300);
-//        mShader = new BitmapShader(bmp, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-//
-//        mPaint.setShader(mShader);
-//    }
-
-    public Bitmap convertToBitmap(Drawable drawable, int widthPixels, int heightPixels) {
-        Bitmap mutableBitmap = Bitmap.createBitmap(widthPixels, heightPixels, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(mutableBitmap);
-        drawable.setBounds(0, 0, widthPixels, heightPixels);
-        drawable.draw(canvas);
-
-        return mutableBitmap;
-    }
-
     public Map<Integer, PointF> getPoints() {
 
         List<PointF> points = new ArrayList<PointF>();
@@ -164,8 +150,7 @@ public class PolygonView extends FrameLayout {
     public void setPoints(Map<Integer, PointF> pointFMap) {
         if (pointFMap.size() == 4) {
             setPointsCoordinates(pointFMap);
-        }
-        else {
+        } else {
 
         }
     }
@@ -320,7 +305,10 @@ public class PolygonView extends FrameLayout {
             int eid = event.getAction();
             zoomPos.x = event.getX();
             zoomPos.y = event.getY();
-
+            boolean isShowing = false;
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                magnifier = new Magnifier(AdjustmentActivity.ivResult);
+            }
             switch (eid) {
                 case MotionEvent.ACTION_MOVE:
                     PointF mv = new PointF(event.getX() - DownPT.x, event.getY() - DownPT.y);
@@ -335,6 +323,17 @@ public class PolygonView extends FrameLayout {
                             color = getResources().getColor(R.color.orange);
                         }
                         paint.setColor(color);
+                    }
+                    final int[] viewPosition = new int[2];
+                    Rect outRect = new Rect();
+                    v.getLocationOnScreen(viewPosition);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        if (!isShowing) {
+                            magnifier.show(event.getRawX() - viewPosition[0],
+                                    event.getRawY() - viewPosition[1]);
+                        } else {
+                            magnifier.update();
+                        }
                     }
                     zooming = true;
                     break;
@@ -352,9 +351,20 @@ public class PolygonView extends FrameLayout {
                     }
                     paint.setColor(color);
                     zooming = false;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        magnifier.dismiss();
+                    }
                     break;
                 default:
                     break;
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                post(new Runnable() {
+                    @Override
+                    public void run() {
+                        magnifier.update();
+                    }
+                });
             }
             polygonView.invalidate();
             return true;

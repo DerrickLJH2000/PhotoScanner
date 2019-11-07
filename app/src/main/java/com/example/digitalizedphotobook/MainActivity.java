@@ -25,7 +25,7 @@ import java.io.File;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
-    private static String TAG = "MainActivity";
+    private static String TAG = "Magnifier";
     final int IMAGE_PICKER_SELECT = 2001;
     final int reqPermissionId = 200;
     private TextView tvUnavailable;

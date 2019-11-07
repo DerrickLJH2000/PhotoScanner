@@ -12,11 +12,12 @@ import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.PointF;
 import android.graphics.PorterDuff;
+import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.ExifInterface;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.PermissionChecker;
@@ -34,10 +35,12 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.Magnifier;
 import android.widget.Toast;
 
 import com.example.digitalizedphotobook.classes.Quadrilateral;
 
+import org.jetbrains.annotations.Nullable;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
@@ -63,6 +66,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+import kotlin.jvm.internal.Intrinsics;
+
 import static java.lang.Math.log;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -72,7 +77,8 @@ import static org.opencv.imgproc.Imgproc.cvtColor;
 
 public class AdjustmentActivity extends AppCompatActivity {
     private static final String TAG = "AdjustmentActivity123";
-    private ImageView ivBack, ivCrop, ivConfirm, ivRotateLeft, ivRotateRight, ivResult;
+    private ImageView ivBack, ivCrop, ivConfirm, ivRotateLeft, ivRotateRight;
+    public static ImageView ivResult;
     private PolygonView polygonView;
     private File mFile, mFile2;
     private String imagePath;
@@ -150,8 +156,8 @@ public class AdjustmentActivity extends AppCompatActivity {
         int reqWidth = displayMetrics.widthPixels;
         int sampleSize = 1;
         try {
-            sampleSize = calculateInSampleSize(options,reqWidth,reqHeight);
-        } catch (Exception e){
+            sampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
+        } catch (Exception e) {
             sampleSize = 1;
         }
         options.inSampleSize = sampleSize;
@@ -164,7 +170,7 @@ public class AdjustmentActivity extends AppCompatActivity {
         if (reqCode != 0) {
             ivResult.setScaleType(ImageView.ScaleType.FIT_XY);
         }
-            matrix.postRotate(90);
+        matrix.postRotate(90);
 //        matrix.postRotate(0);
 
         if (bmp == null) {
@@ -178,7 +184,7 @@ public class AdjustmentActivity extends AppCompatActivity {
         gammaValue = autoGammaValue(tempClone);
 
         doGammaCorrection(tempDisplayMat);
-        SimplestColorBalance(tempDisplayMat, 5);
+//        SimplestColorBalance(tempDisplayMat, 5);
         Utils.matToBitmap(tempDisplayMat, newBmp);
         Log.i(TAG, "Height: " + newBmp.getHeight() + "Width: " + newBmp.getWidth());
 
@@ -218,9 +224,6 @@ public class AdjustmentActivity extends AppCompatActivity {
                             polygonView.setRotation(0);
                         }
                         if (ivResult.getRotation() == 90 || ivResult.getRotation() == -90 || ivResult.getRotation() == 270 || ivResult.getRotation() == -270) {
-
-                        }
-                        if (ivResult.getRotation() == 90 || ivResult.getRotation() == -90 || ivResult.getRotation() == 270 || ivResult.getRotation() == -270) {
                             ivResult.setScaleX(scaledRatio);
                             ivResult.setScaleY(scaledRatio);
                             polygonView.setScaleX(scaledRatio);
@@ -239,6 +242,8 @@ public class AdjustmentActivity extends AppCompatActivity {
                 return true;
             }
         });
+
+
 
         ivRotateRight.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -302,6 +307,54 @@ public class AdjustmentActivity extends AppCompatActivity {
                 }
             }
         });
+
+
+//        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+//            final Magnifier magnifier = new Magnifier(polygonView);
+//
+//            // Getting Visible drawing bounds for the view
+//            final Rect outRect = new Rect();
+//
+//// Getting Views's X and Y location from the screen
+//            final int[] viewPosition = new int[2];
+//
+//// Wait till the screen to render
+//            polygonView.post(new Runnable() {
+//                @Override
+//                public void run() {
+//                    polygonView.getDrawingRect(outRect);
+//                    polygonView.getLocationOnScreen(viewPosition);
+//
+//                    // Setting offset to compare the rect with touch event raw values
+//                    outRect.offset(viewPosition[0], viewPosition[1]);
+//                }
+//            });
+//
+//
+//            polygonView.setOnTouchListener(new View.OnTouchListener() {
+//                @Override
+//                public boolean onTouch(View v, MotionEvent event) {
+//                    int eid = event.getAction();
+//                    switch (eid) {
+//                        case (MotionEvent.ACTION_MOVE):
+//                            if (!outRect.contains( (int) event.getRawX(), (int) event.getRawY())) {
+//                                magnifier.dismiss();
+//                                polygonView.setOnTouchListener(null);
+//                            }
+//                            magnifier.show(event.getRawX() - viewPosition[0], event.getRawY() - viewPosition[1]);
+//                        case (MotionEvent.ACTION_DOWN):
+//                            if (!outRect.contains((int) event.getRawX(), (int) event.getRawY())) {
+//                                magnifier.dismiss();
+//                                polygonView.setOnTouchListener(null);
+//                            }
+//                            magnifier.show(event.getRawX() - viewPosition[0], event.getRawY() - viewPosition[1]);
+//                        case (MotionEvent.ACTION_UP):
+//                            magnifier.dismiss();
+//                    }
+//                    return false;
+//                }
+//            });
+
 
         ivConfirm.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -763,14 +816,14 @@ public class AdjustmentActivity extends AppCompatActivity {
      * Simplest Color Balance. Performs color balancing via histogram
      * normalization.
      *
-     * @param img input color or gray scale image
+     * @param img     input color or gray scale image
      * @param percent controls the percentage of pixels to clip to white and black. (normally, choose 1~10)
      * @return Balanced image in CvType.CV_32F
      */
     public static Mat SimplestColorBalance(Mat img, int percent) {
         if (percent <= 0)
             percent = 5;
-        Imgproc.cvtColor(img , img , Imgproc.COLOR_RGBA2BGR,0);
+        Imgproc.cvtColor(img, img, Imgproc.COLOR_RGB2RGBA);
 //        img.convertTo(img, CvType.CV_32F);
         List<Mat> channels = new ArrayList<>();
         int rows = img.rows(); // number of rows of image
@@ -802,7 +855,7 @@ public class AdjustmentActivity extends AppCompatActivity {
         }
         Mat outval = new Mat();
         Core.merge(results, outval);
-        Imgproc.cvtColor(outval , outval , Imgproc.COLOR_GRAY2RGBA);
+        Imgproc.cvtColor(outval, outval, Imgproc.COLOR_RGBA2RGB);
         return outval;
     }
 }
