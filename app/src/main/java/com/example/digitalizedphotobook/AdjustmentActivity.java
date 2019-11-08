@@ -309,53 +309,6 @@ public class AdjustmentActivity extends AppCompatActivity {
         });
 
 
-//        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-//            final Magnifier magnifier = new Magnifier(polygonView);
-//
-//            // Getting Visible drawing bounds for the view
-//            final Rect outRect = new Rect();
-//
-//// Getting Views's X and Y location from the screen
-//            final int[] viewPosition = new int[2];
-//
-//// Wait till the screen to render
-//            polygonView.post(new Runnable() {
-//                @Override
-//                public void run() {
-//                    polygonView.getDrawingRect(outRect);
-//                    polygonView.getLocationOnScreen(viewPosition);
-//
-//                    // Setting offset to compare the rect with touch event raw values
-//                    outRect.offset(viewPosition[0], viewPosition[1]);
-//                }
-//            });
-//
-//
-//            polygonView.setOnTouchListener(new View.OnTouchListener() {
-//                @Override
-//                public boolean onTouch(View v, MotionEvent event) {
-//                    int eid = event.getAction();
-//                    switch (eid) {
-//                        case (MotionEvent.ACTION_MOVE):
-//                            if (!outRect.contains( (int) event.getRawX(), (int) event.getRawY())) {
-//                                magnifier.dismiss();
-//                                polygonView.setOnTouchListener(null);
-//                            }
-//                            magnifier.show(event.getRawX() - viewPosition[0], event.getRawY() - viewPosition[1]);
-//                        case (MotionEvent.ACTION_DOWN):
-//                            if (!outRect.contains((int) event.getRawX(), (int) event.getRawY())) {
-//                                magnifier.dismiss();
-//                                polygonView.setOnTouchListener(null);
-//                            }
-//                            magnifier.show(event.getRawX() - viewPosition[0], event.getRawY() - viewPosition[1]);
-//                        case (MotionEvent.ACTION_UP):
-//                            magnifier.dismiss();
-//                    }
-//                    return false;
-//                }
-//            });
-
-
         ivConfirm.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -858,4 +811,5 @@ public class AdjustmentActivity extends AppCompatActivity {
         Imgproc.cvtColor(outval, outval, Imgproc.COLOR_RGBA2RGB);
         return outval;
     }
+
 }

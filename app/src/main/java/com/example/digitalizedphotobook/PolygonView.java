@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PointF;
@@ -25,6 +26,7 @@ import android.widget.Magnifier;
 
 import org.opencv.core.Point;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,12 +35,11 @@ import java.util.Map;
 public class PolygonView extends FrameLayout {
 
     protected Context context;
-    private Paint paint;
+    private Paint paint, mPaint;
     private ImageView pointer1;
     private ImageView pointer2;
     private ImageView pointer3;
     private ImageView pointer4;
-    private Magnifier magnifier;
     private ImageView midPointer13;
     private ImageView midPointer12;
     private ImageView midPointer34;
@@ -46,11 +47,9 @@ public class PolygonView extends FrameLayout {
     private PolygonView polygonView;
     private Boolean zooming = false;
     private PointF zoomPos = new PointF();
-    private Matrix matrix = new Matrix();
     private BitmapShader mShader;
-    private Paint mPaint;
-
-    private Drawable sourceZoom;
+    private Bitmap mBitmap;
+    private Matrix matrix;
 
     public PolygonView(Context context) {
         super(context);
@@ -97,6 +96,15 @@ public class PolygonView extends FrameLayout {
         addView(pointer3);
         addView(pointer4);
         initPaint();
+        String mImagePath = new File(context.getExternalFilesDir("Temp"), "temp.jpg").getAbsolutePath();
+        mBitmap = BitmapFactory.decodeFile(mImagePath);
+        Matrix matrix = new Matrix();
+        matrix.postRotate(90);
+
+        Bitmap newBmp = Bitmap.createBitmap(mBitmap, 0, 0, mBitmap.getWidth(), mBitmap.getHeight(), matrix, true);
+        mShader = new BitmapShader(newBmp, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+        mPaint = new Paint();
+        mPaint.setShader(mShader);
     }
 
     @Override
@@ -178,7 +186,6 @@ public class PolygonView extends FrameLayout {
         invalidate();
     }
 
-
     @Override
     protected void dispatchDraw(Canvas canvas) {
         super.dispatchDraw(canvas);
@@ -198,13 +205,20 @@ public class PolygonView extends FrameLayout {
         midPointer12.setX(pointer2.getX() - ((pointer2.getX() - pointer1.getX()) / 2));
         midPointer12.setY(pointer2.getY() - ((pointer2.getY() - pointer1.getY()) / 2));
 
-//        if (zooming) {
-//            paintZoom(sourceZoom);
-//            matrix.reset();
-//            matrix.postScale(2f, 2f, 30 , 30);
-//            mPaint.getShader().setLocalMatrix(matrix);
-//            canvas.drawCircle(300, 300, 150, mPaint);
-//        }
+
+        if (zooming) {
+            matrix = new Matrix();
+            matrix.reset();
+            matrix.postScale(1.5f, 1.5f, zoomPos.x, zoomPos.y);
+            mPaint.getShader().setLocalMatrix(matrix);
+            Rect topLeft = new Rect(10,10,300,300);
+            paint.setStyle(Paint.Style.FILL);
+            canvas.drawRect(topLeft,mPaint);
+            /* mPaint.setStyle(Paint.Style.STROKE);
+            mPaint.setStrokeWidth(2);
+            mPaint.setColor(Color.WHITE);
+            canvas.drawRect(topLeft, mPaint);*/
+        }
     }
 
     private ImageView getImageView(int x, int y) {
@@ -305,10 +319,7 @@ public class PolygonView extends FrameLayout {
             int eid = event.getAction();
             zoomPos.x = event.getX();
             zoomPos.y = event.getY();
-            boolean isShowing = false;
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                magnifier = new Magnifier(AdjustmentActivity.ivResult);
-            }
+
             switch (eid) {
                 case MotionEvent.ACTION_MOVE:
                     PointF mv = new PointF(event.getX() - DownPT.x, event.getY() - DownPT.y);
@@ -324,23 +335,14 @@ public class PolygonView extends FrameLayout {
                         }
                         paint.setColor(color);
                     }
-                    final int[] viewPosition = new int[2];
-                    Rect outRect = new Rect();
-                    v.getLocationOnScreen(viewPosition);
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                        if (!isShowing) {
-                            magnifier.show(event.getRawX() - viewPosition[0],
-                                    event.getRawY() - viewPosition[1]);
-                        } else {
-                            magnifier.update();
-                        }
-                    }
                     zooming = true;
+                    polygonView.invalidate();
                     break;
                 case MotionEvent.ACTION_DOWN:
                     DownPT.x = event.getX();
                     DownPT.y = event.getY();
                     StartPT = new PointF(v.getX(), v.getY());
+                    polygonView.invalidate();
                     break;
                 case MotionEvent.ACTION_UP:
                     int color = 0;
@@ -350,26 +352,19 @@ public class PolygonView extends FrameLayout {
                         color = getResources().getColor(R.color.orange);
                     }
                     paint.setColor(color);
+                    polygonView.invalidate();
                     zooming = false;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                        magnifier.dismiss();
-                    }
                     break;
+                case MotionEvent.ACTION_CANCEL:
+                    zooming = false;
+                    polygonView.invalidate();
                 default:
                     break;
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                post(new Runnable() {
-                    @Override
-                    public void run() {
-                        magnifier.update();
-                    }
-                });
-            }
-            polygonView.invalidate();
             return true;
         }
 
     }
+
 
 }
