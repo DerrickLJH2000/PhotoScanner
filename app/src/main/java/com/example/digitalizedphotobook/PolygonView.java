@@ -12,6 +12,7 @@ import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -96,15 +97,6 @@ public class PolygonView extends FrameLayout {
         addView(pointer3);
         addView(pointer4);
         initPaint();
-        String mImagePath = new File(context.getExternalFilesDir("Temp"), "temp.jpg").getAbsolutePath();
-        mBitmap = BitmapFactory.decodeFile(mImagePath);
-        Matrix matrix = new Matrix();
-        matrix.postRotate(90);
-
-        Bitmap newBmp = Bitmap.createBitmap(mBitmap, 0, 0, mBitmap.getWidth(), mBitmap.getHeight(), matrix, true);
-        mShader = new BitmapShader(newBmp, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-        mPaint = new Paint();
-        mPaint.setShader(mShader);
     }
 
     @Override
@@ -117,6 +109,13 @@ public class PolygonView extends FrameLayout {
         paint.setColor(getResources().getColor(R.color.blue));
         paint.setStrokeWidth(3);
         paint.setAntiAlias(true);
+        String imagePath = new File(context.getExternalFilesDir("Temp"), "temp.jpg").getAbsolutePath();
+        mBitmap = BitmapFactory.decodeFile(imagePath);
+
+        mShader = new BitmapShader(mBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+        RectF r = new RectF(30,30,500,500);
+        mPaint = new Paint();
+        mPaint.setShader(mShader);
     }
 
     public Map<Integer, PointF> getPoints() {
@@ -205,19 +204,13 @@ public class PolygonView extends FrameLayout {
         midPointer12.setX(pointer2.getX() - ((pointer2.getX() - pointer1.getX()) / 2));
         midPointer12.setY(pointer2.getY() - ((pointer2.getY() - pointer1.getY()) / 2));
 
-
         if (zooming) {
-            matrix = new Matrix();
+            Matrix matrix = new Matrix();
             matrix.reset();
             matrix.postScale(1.5f, 1.5f, zoomPos.x, zoomPos.y);
             mPaint.getShader().setLocalMatrix(matrix);
-            Rect topLeft = new Rect(10,10,300,300);
-            paint.setStyle(Paint.Style.FILL);
-            canvas.drawRect(topLeft,mPaint);
-            /* mPaint.setStyle(Paint.Style.STROKE);
-            mPaint.setStrokeWidth(2);
-            mPaint.setColor(Color.WHITE);
-            canvas.drawRect(topLeft, mPaint);*/
+            matrix.setRotate(90);
+            canvas.drawCircle(zoomPos.x, zoomPos.y, 100, mPaint);
         }
     }
 
