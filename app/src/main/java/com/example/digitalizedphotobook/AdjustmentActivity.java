@@ -189,19 +189,19 @@ public class AdjustmentActivity extends AppCompatActivity {
         Log.i(TAG, "Height: " + newBmp.getHeight() + "Width: " + newBmp.getWidth());
 
         ivResult.setImageBitmap(newBmp);
-
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        newBmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
-        byte[] bytes = stream.toByteArray();
-        mFile2 = new File(getExternalFilesDir("Temp"), "temp.jpg");
-        try {
-            mFile2.createNewFile();
-            FileOutputStream fileOutputStream = new FileOutputStream(mFile2);
-            fileOutputStream.write(bytes);
-            fileOutputStream.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+//
+//        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+//        newBmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+//        byte[] bytes = stream.toByteArray();
+//        mFile2 = new File(getExternalFilesDir("Temp"), "temp.jpg");
+//        try {
+//            mFile2.createNewFile();
+//            FileOutputStream fileOutputStream = new FileOutputStream(mFile2);
+//            fileOutputStream.write(bytes);
+//            fileOutputStream.close();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
 
         ivBack.setOnTouchListener(new View.OnTouchListener() {
             @Override

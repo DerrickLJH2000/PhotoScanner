@@ -36,7 +36,7 @@ import java.util.Map;
 public class PolygonView extends FrameLayout {
 
     protected Context context;
-    private Paint paint, mPaint;
+    private Paint paint;
     private ImageView pointer1;
     private ImageView pointer2;
     private ImageView pointer3;
@@ -46,11 +46,8 @@ public class PolygonView extends FrameLayout {
     private ImageView midPointer34;
     private ImageView midPointer24;
     private PolygonView polygonView;
-    private Boolean zooming = false;
     private PointF zoomPos = new PointF();
-    private BitmapShader mShader;
-    private Bitmap mBitmap;
-    private Matrix matrix;
+    private Magnifier magnifier;
 
     public PolygonView(Context context) {
         super(context);
@@ -88,6 +85,9 @@ public class PolygonView extends FrameLayout {
         midPointer24 = getImageView(0, getHeight() / 2);
         midPointer24.setOnTouchListener(new MidPointTouchListenerImpl(pointer2, pointer4));
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+            magnifier = new Magnifier(polygonView);
+
         addView(pointer1);
         addView(pointer2);
         addView(midPointer13);
@@ -109,13 +109,22 @@ public class PolygonView extends FrameLayout {
         paint.setColor(getResources().getColor(R.color.blue));
         paint.setStrokeWidth(3);
         paint.setAntiAlias(true);
-        String imagePath = new File(context.getExternalFilesDir("Temp"), "temp.jpg").getAbsolutePath();
-        mBitmap = BitmapFactory.decodeFile(imagePath);
+//        mPaint = new Paint();
+//
+//        String imagePath = new File(context.getExternalFilesDir("Temp"), "temp.jpg").getAbsolutePath();
+//        mBitmap = BitmapFactory.decodeFile(imagePath);
+//        Matrix m = new Matrix();
+//        m.postRotate(90);
+//        width = (int) (paint.descent() + paint.ascent());
+//        Bitmap mBmp = Bitmap.createBitmap(mBitmap, 0, 0, mBitmap.getWidth() / 3, mBitmap.getHeight() / 3, m, false);
+//        mShader = new BitmapShader(mBmp, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+//        mPaint.setShader(mShader);
+//
+//        mStrokePaint = new Paint();
+//        mStrokePaint.setStyle(Paint.Style.STROKE);
+//        mStrokePaint.setColor(getResources().getColor(R.color.blue));
+//        mStrokePaint.setStrokeWidth(5);
 
-        mShader = new BitmapShader(mBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-        RectF r = new RectF(30,30,500,500);
-        mPaint = new Paint();
-        mPaint.setShader(mShader);
     }
 
     public Map<Integer, PointF> getPoints() {
@@ -157,8 +166,6 @@ public class PolygonView extends FrameLayout {
     public void setPoints(Map<Integer, PointF> pointFMap) {
         if (pointFMap.size() == 4) {
             setPointsCoordinates(pointFMap);
-        } else {
-
         }
     }
 
@@ -204,16 +211,36 @@ public class PolygonView extends FrameLayout {
         midPointer12.setX(pointer2.getX() - ((pointer2.getX() - pointer1.getX()) / 2));
         midPointer12.setY(pointer2.getY() - ((pointer2.getY() - pointer1.getY()) / 2));
 
-        if (zooming) {
-            Matrix matrix = new Matrix();
-            matrix.reset();
-            matrix.postScale(1.5f, 1.5f, zoomPos.x, zoomPos.y);
-            mPaint.getShader().setLocalMatrix(matrix);
-            matrix.setRotate(90);
-            canvas.drawCircle(zoomPos.x, zoomPos.y, 100, mPaint);
+//        if (zooming) {
+//            Matrix matrix = new Matrix();
+//            matrix.reset();
+//            matrix.postScale(1.5f, 1.5f, zoomPos.x, zoomPos.y);
+//            mPaint.getShader().setLocalMatrix(matrix);
+//            RectF r = new RectF(0, 300, 300, 0);
+//            int cornerRadius = 50;
+//            canvas.drawRoundRect(r, cornerRadius, cornerRadius, mPaint);
+//            canvas.drawRoundRect(r, cornerRadius, cornerRadius, mStrokePaint);
+//            Paint p = new Paint();
+//            p.setColor(Color.RED);
+//            int xPos = (int) (r.right / 2) - 20;
+//            int yPos = (int) ((r.top / 2) - ((p.descent() + p.ascent()) / 2)) + 20;
+//            p.setTextSize(70);
+//            canvas.drawText("+", xPos, yPos, p);
+//        }
+    }
+    private void drawMag(float x,float y)
+    {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && magnifier!=null) {
+            magnifier.show(x, y);
         }
     }
 
+    private void dismissMag()
+    {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && magnifier!=null) {
+            magnifier.dismiss();
+        }
+    }
     private ImageView getImageView(int x, int y) {
         ImageView imageView = new ImageView(context);
         FrameLayout.LayoutParams layoutParams = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -320,22 +347,13 @@ public class PolygonView extends FrameLayout {
                         v.setX((int) (StartPT.x + mv.x));
                         v.setY((int) (StartPT.y + mv.y));
                         StartPT = new PointF(v.getX(), v.getY());
-                        int color = 0;
-                        if (isValidShape(getPoints())) {
-                            color = getResources().getColor(R.color.blue);
-                        } else {
-                            color = getResources().getColor(R.color.orange);
-                        }
-                        paint.setColor(color);
+                        drawMag(StartPT.x+50,StartPT.y+50);
                     }
-                    zooming = true;
-                    polygonView.invalidate();
                     break;
                 case MotionEvent.ACTION_DOWN:
                     DownPT.x = event.getX();
                     DownPT.y = event.getY();
                     StartPT = new PointF(v.getX(), v.getY());
-                    polygonView.invalidate();
                     break;
                 case MotionEvent.ACTION_UP:
                     int color = 0;
@@ -345,15 +363,12 @@ public class PolygonView extends FrameLayout {
                         color = getResources().getColor(R.color.orange);
                     }
                     paint.setColor(color);
-                    polygonView.invalidate();
-                    zooming = false;
+                    dismissMag();
                     break;
-                case MotionEvent.ACTION_CANCEL:
-                    zooming = false;
-                    polygonView.invalidate();
                 default:
                     break;
             }
+            polygonView.invalidate();
             return true;
         }
 
