@@ -8,39 +8,33 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.PointF;
 import android.graphics.PorterDuff;
-import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.ExifInterface;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.PermissionChecker;
-import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
-
-import androidx.appcompat.content.res.AppCompatResources;
 
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.Magnifier;
 import android.widget.Toast;
 
+import com.example.digitalizedphotobook.classes.NativeClass;
 import com.example.digitalizedphotobook.classes.Quadrilateral;
 
-import org.jetbrains.annotations.Nullable;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
@@ -64,13 +58,14 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
-import kotlin.jvm.internal.Intrinsics;
+import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.schedulers.Schedulers;
 
+import static android.graphics.Bitmap.createBitmap;
 import static java.lang.Math.log;
 import static java.lang.Math.max;
-import static java.lang.Math.min;
 import static org.opencv.imgproc.Imgproc.COLOR_RGB2GRAY;
 import static org.opencv.imgproc.Imgproc.cvtColor;
 
@@ -79,11 +74,13 @@ public class AdjustmentActivity extends AppCompatActivity {
     private static final String TAG = "AdjustmentActivity123";
     private ImageView ivBack, ivCrop, ivConfirm, ivRotateLeft, ivRotateRight;
     public static ImageView ivResult;
+    private FrameLayout frmHolder;
     private PolygonView polygonView;
     private File mFile, mFile2;
     private String imagePath;
+    private NativeClass nativeClass;
     private double gammaValue = 1.0;
-    private Bitmap bmp, newBmp, resizedBmp, bmpImg;
+    private Bitmap bmp, newBmp;
     private Mat mat;
     private Quadrilateral quad;
     private boolean isFourPointed = false;
@@ -117,26 +114,17 @@ public class AdjustmentActivity extends AppCompatActivity {
         toast.show();
     }
 
-
-    @SuppressLint({"ClickableViewAccessibility", "WrongThread"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_adjustment);
-        ivBack = findViewById(R.id.ivBack);
-        ivRotateLeft = findViewById(R.id.ivRotateLeft);
-        ivRotateRight = findViewById(R.id.ivRotateRight);
-        ivCrop = findViewById(R.id.ivCrop);
-        ivConfirm = findViewById(R.id.ivConfirm);
-        ivResult = findViewById(R.id.ivResult);
-        polygonView = findViewById(R.id.polygonView);
+
         if (!OpenCVLoader.initDebug()) {
             return;
         }
+
         int permissionCheck = ContextCompat.checkSelfPermission(AdjustmentActivity.this,
                 Manifest.permission.READ_EXTERNAL_STORAGE);
-
         if (permissionCheck != PermissionChecker.PERMISSION_GRANTED) {
             Log.i(TAG, "Permission Not Granted");
             ActivityCompat.requestPermissions(AdjustmentActivity.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
@@ -145,239 +133,210 @@ public class AdjustmentActivity extends AppCompatActivity {
 
         imagePath = new File(getExternalFilesDir("Temp"), "temp.jpg").getAbsolutePath();
         reqCode = getIntent().getIntExtra("reqCode", -1);
-        Log.i(TAG, (reqCode) + imagePath);
-        int orientation = getCameraPhotoOrientation(imagePath);
         mFile = new File(imagePath);
         BitmapFactory.Options options = new BitmapFactory.Options();
-        // Calculate inSampleSize
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        int reqHeight = displayMetrics.heightPixels;
-        int reqWidth = displayMetrics.widthPixels;
-        int sampleSize = 1;
-        try {
-            sampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
-        } catch (Exception e) {
-            sampleSize = 1;
-        }
-        options.inSampleSize = sampleSize;
-        Log.i(TAG, "BITMAP SAMPLE SIZE: " + sampleSize);
-        // Decode bitmap with inSampleSize set
         options.inJustDecodeBounds = false;
         bmp = BitmapFactory.decodeFile(mFile.getAbsolutePath(), options);
-
-        Matrix matrix = new Matrix();
-        if (reqCode != 0) {
-            ivResult.setScaleType(ImageView.ScaleType.FIT_XY);
-        }
-        matrix.postRotate(90);
-//        matrix.postRotate(0);
-
-        if (bmp == null) {
+        if (bmp != null) {
+            initializeElement();
+        } else {
             showToast("Retake Photo");
             finish();
         }
-        newBmp = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
+
+    }
+    private void initializeElement(){
+        nativeClass = new NativeClass();
+        ivBack = findViewById(R.id.ivBack);
+        ivRotateLeft = findViewById(R.id.ivRotateLeft);
+        ivRotateRight = findViewById(R.id.ivRotateRight);
+        ivCrop = findViewById(R.id.ivCrop);
+        ivConfirm = findViewById(R.id.ivConfirm);
+        ivResult = findViewById(R.id.ivResult);
+        polygonView = findViewById(R.id.polygonView);
+        frmHolder = findViewById(R.id.holderImageCrop);
+
+        Observable.fromCallable(() -> {
+            setImageRotation();
+            return false;
+        })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe((result) -> {
+                    frmHolder.post(this::initializeCropping);
+                    ivRotateLeft.setOnClickListener(btnRotateLeft);
+                    ivRotateRight.setOnClickListener(btnRotateRight);
+                    ivCrop.setOnClickListener(btnCropToFit);
+                    ivConfirm.setOnClickListener(btnConfirmClick);
+                    ivBack.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            alertDialog();
+                        }
+                    });
+                });
+    }
+
+    private void doImageProcessing(Bitmap src) {
         Mat tempDisplayMat = new Mat();
-        Utils.bitmapToMat(newBmp, tempDisplayMat);
+        Utils.bitmapToMat(src, tempDisplayMat);
         Mat tempClone = tempDisplayMat.clone();
         gammaValue = autoGammaValue(tempClone);
 
         doGammaCorrection(tempDisplayMat);
 //        SimplestColorBalance(tempDisplayMat, 5);
         Utils.matToBitmap(tempDisplayMat, newBmp);
-        Log.i(TAG, "Height: " + newBmp.getHeight() + "Width: " + newBmp.getWidth());
-
         ivResult.setImageBitmap(newBmp);
-//
-//        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-//        newBmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
-//        byte[] bytes = stream.toByteArray();
-//        mFile2 = new File(getExternalFilesDir("Temp"), "temp.jpg");
-//        try {
-//            mFile2.createNewFile();
-//            FileOutputStream fileOutputStream = new FileOutputStream(mFile2);
-//            fileOutputStream.write(bytes);
-//            fileOutputStream.close();
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
+    }
 
-        ivBack.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                int eid = event.getAction();
-                switch (eid) {
-                    case MotionEvent.ACTION_DOWN:
-                        ivBack.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
-                        alertDialog();
-                        break;
-                    case MotionEvent.ACTION_UP:
-                        ivBack.setColorFilter(Color.argb(255, 255, 255, 255));
-                        break;
-                }
-                return true;
+    private void initializeCropping() {
+        Bitmap scaledBitmap = Bitmap.createScaledBitmap(bmp, frmHolder.getWidth(), frmHolder.getHeight(), true);
+        ivResult.setImageBitmap(scaledBitmap);
+        mat = new Mat(scaledBitmap.getWidth(),scaledBitmap.getHeight(),CvType.CV_8UC4);
+        Bitmap tempBitmap = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
+        Utils.bitmapToMat(tempBitmap, mat);
+        findContours(mat);
+        Map<Integer, PointF> pointFs = null;
+        try {
+            pointFs = getEdgePoints(tempBitmap);
+            polygonView.setPoints(pointFs);
+            polygonView.setVisibility(View.VISIBLE);
+
+            int padding = (int) getResources().getDimension(R.dimen.scanPadding);
+
+            FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(tempBitmap.getWidth() + 2 * padding, tempBitmap.getHeight() + 2 * padding);
+            layoutParams.gravity = Gravity.CENTER;
+
+            polygonView.setLayoutParams(layoutParams);
+            polygonView.setPointColor(getResources().getColor(R.color.blue));
+            doImageProcessing(scaledBitmap);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void setImageRotation() {
+        Bitmap tempBitmap = bmp.copy(bmp.getConfig(),true);
+        for (int i = 1; i <= 4; i++) {
+            MatOfPoint2f point2f = nativeClass.getPoint(tempBitmap);
+            if (point2f == null) {
+                bmp = rotateBitmap(tempBitmap, 90);
+            } else {
+                bmp = tempBitmap.copy(bmp.getConfig(), true);
+                break;
             }
-        });
+        }
+    }
 
+    public Bitmap rotateBitmap(Bitmap source, float angle) {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(angle);
+        bmp = Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
+        return bmp;
+    }
 
-        ivRotateLeft.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                int eid = event.getAction();
-                switch (eid) {
-                    case MotionEvent.ACTION_DOWN:
-                        ivRotateLeft.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
-                        ivResult.setRotation(ivResult.getRotation() - 90);
-                        polygonView.setRotation(polygonView.getRotation() - 90);
-                        float scaledRatio = Float.parseFloat(Integer.toString(ivResult.getWidth()))
-                                / Float.parseFloat(Integer.toString(ivResult.getHeight()));
-                        if (ivResult.getRotation() == -360 || polygonView.getRotation() == -360) {
-                            ivResult.setRotation(0);
-                            polygonView.setRotation(0);
-                        }
-                        if (ivResult.getRotation() == 90 || ivResult.getRotation() == -90 || ivResult.getRotation() == 270 || ivResult.getRotation() == -270) {
-                            ivResult.setScaleX(scaledRatio);
-                            ivResult.setScaleY(scaledRatio);
-                            polygonView.setScaleX(scaledRatio);
-                            polygonView.setScaleY(scaledRatio);
-                        } else {
-                            ivResult.setScaleX(1.0f);
-                            ivResult.setScaleY(1.0f);
-                            polygonView.setScaleX(1.0f);
-                            polygonView.setScaleY(1.0f);
-                        }
-                        break;
-                    case MotionEvent.ACTION_UP:
-                        ivRotateLeft.setColorFilter(Color.argb(255, 255, 255, 255));
-                        break;
-                }
-                return true;
+    private View.OnClickListener btnRotateLeft = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+
+        }
+    };
+    private View.OnClickListener btnRotateRight = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            ivResult.setRotation(ivResult.getRotation() + 90);
+            polygonView.setRotation(polygonView.getRotation() + 90);
+            float scaledRatio = Float.parseFloat(Integer.toString(ivResult.getWidth()))
+                    / Float.parseFloat(Integer.toString(ivResult.getHeight()));
+            if (ivResult.getRotation() == 360 || polygonView.getRotation() == 360) {
+                ivResult.setRotation(0);
+                polygonView.setRotation(0);
             }
-        });
-
-
-
-        ivRotateRight.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                int eid = event.getAction();
-                switch (eid) {
-                    case MotionEvent.ACTION_DOWN:
-                        ivRotateRight.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
-                        ivResult.setRotation(ivResult.getRotation() + 90);
-                        polygonView.setRotation(polygonView.getRotation() + 90);
-                        float scaledRatio = Float.parseFloat(Integer.toString(ivResult.getWidth()))
-                                / Float.parseFloat(Integer.toString(ivResult.getHeight()));
-                        if (ivResult.getRotation() == 360 || polygonView.getRotation() == 360) {
-                            ivResult.setRotation(0);
-                            polygonView.setRotation(0);
-                        }
-                        if (ivResult.getRotation() == 90 || ivResult.getRotation() == -90 || ivResult.getRotation() == 270 || ivResult.getRotation() == -270) {
-                            ivResult.setScaleX(scaledRatio);
-                            ivResult.setScaleY(scaledRatio);
-                            polygonView.setScaleX(scaledRatio);
-                            polygonView.setScaleY(scaledRatio);
-                        } else {
-                            ivResult.setScaleX(1.0f);
-                            ivResult.setScaleY(1.0f);
-                            polygonView.setScaleX(1.0f);
-                            polygonView.setScaleY(1.0f);
-                        }
-                        break;
-                    case MotionEvent.ACTION_UP:
-                        ivRotateRight.setColorFilter(Color.argb(255, 255, 255, 255));
-                        break;
-                }
-                return true;
+            if (ivResult.getRotation() == 90 || ivResult.getRotation() == -90 || ivResult.getRotation() == 270 || ivResult.getRotation() == -270) {
+                ivResult.setScaleX(scaledRatio);
+                ivResult.setScaleY(scaledRatio);
+                polygonView.setScaleX(scaledRatio);
+                polygonView.setScaleY(scaledRatio);
+            } else {
+                ivResult.setScaleX(1.0f);
+                ivResult.setScaleY(1.0f);
+                polygonView.setScaleX(1.0f);
+                polygonView.setScaleY(1.0f);
             }
-        });
-
-        ivCrop.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!isFourPointed) {
+        }
+    };
+    private View.OnClickListener btnCropToFit = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            if (!isFourPointed) {
+                Map<Integer, PointF> pointFs = getOutlinePoints(newBmp);
+                polygonView.setPoints(pointFs);
+            } else {
+                if (isCropped) {
+                    // Undo Crop Here
+                    ivCrop.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
                     Map<Integer, PointF> pointFs = getOutlinePoints(newBmp);
                     polygonView.setPoints(pointFs);
+                    polygonView.invalidate();
+                    polygonView.setVisibility(View.VISIBLE);
+                    isCropped = false;
                 } else {
-                    if (isCropped) {
-                        // Undo Crop Here
-                        ivCrop.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
-                        Map<Integer, PointF> pointFs = getOutlinePoints(newBmp);
-                        polygonView.setPoints(pointFs);
-                        polygonView.invalidate();
-                        polygonView.setVisibility(View.VISIBLE);
-                        isCropped = false;
-                    } else {
-                        // Auto Crop Here
-                        ivCrop.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.color_white), PorterDuff.Mode.SRC_IN);
-                        Map<Integer, PointF> pointFs = getEdgePoints(newBmp);
-                        polygonView.setPoints(pointFs);
-                        polygonView.invalidate();
-                        polygonView.setVisibility(View.VISIBLE);
-                        isCropped = true;
-                    }
+                    // Auto Crop Here
+                    ivCrop.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.color_white), PorterDuff.Mode.SRC_IN);
+                    Map<Integer, PointF> pointFs = getEdgePoints(newBmp);
+                    polygonView.setPoints(pointFs);
+                    polygonView.invalidate();
+                    polygonView.setVisibility(View.VISIBLE);
+                    isCropped = true;
                 }
             }
-        });
-
-
-        ivConfirm.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                int eid = event.getAction();
-                switch (eid) {
-                    case (MotionEvent.ACTION_DOWN):
-                        ivConfirm.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
-                        points = polygonView.getPoints();
-                        Point[] pointArr = new Point[4];
-                        for (int i = 0; i < points.size(); i++) {
-                            pointArr[i] = new Point((double) points.get(i).x, (double) points.get(i).y);
-
-                        }
-                        if (polygonView.isValidShape(points)) {
-                            Mat dest = perspectiveChange(mat, pointArr);
-                            Matrix matrix = new Matrix();
-                            matrix.postRotate(ivResult.getRotation());
-                            Bitmap tfmBmp = Bitmap.createBitmap(dest.width(), dest.height(), Bitmap.Config.ARGB_8888);
-                            Utils.matToBitmap(dest, tfmBmp);
-                            Bitmap rotatedBmp = Bitmap.createBitmap(tfmBmp, 0, 0, tfmBmp.getWidth(), tfmBmp.getHeight(), matrix, true);
-                            ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                            rotatedBmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
-                            byte[] bytes = stream.toByteArray();
-                            mFile2 = new File(getExternalFilesDir("Temp"), "temp2.jpg");
-                            try {
-                                mFile2.createNewFile();
-                                FileOutputStream fileOutputStream = new FileOutputStream(mFile2);
-                                fileOutputStream.write(bytes);
-                                fileOutputStream.close();
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-
-                        } else {
-                            showToast("Invalid Shape!");
-                        }
-                        break;
-                    case (MotionEvent.ACTION_UP):
-                        ivConfirm.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.color_white), PorterDuff.Mode.SRC_IN);
-                        isEditing = true;
-                        Intent intent = new Intent(AdjustmentActivity.this, ResultActivity.class);
-                        intent.putExtra("croppedPoints", mFile2.getAbsolutePath());
-                        float scaledRatio = Float.parseFloat(Integer.toString(ivResult.getWidth()))
-                                / Float.parseFloat(Integer.toString(ivResult.getHeight()));
-                        intent.putExtra("scaledRatio", scaledRatio);
-                        if (ivResult.getRotation() == 90 || ivResult.getRotation() == -90 || ivResult.getRotation() == 270 || ivResult.getRotation() == -270) {
-                            intent.putExtra("isRotated", true);
-                        }
-                        startActivity(intent);
-                        break;
-                }
-                return true;
+        }
+    };
+    private View.OnClickListener btnConfirmClick = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            points = polygonView.getPoints();
+            Point[] pointArr = new Point[4];
+            for (int i = 0; i < points.size(); i++) {
+                pointArr[i] = new Point((double) points.get(i).x, (double) points.get(i).y);
             }
-        });
+            if (polygonView.isValidShape(points)) {
+                Mat dest = perspectiveChange(mat, pointArr);
+                Matrix matrix = new Matrix();
+                matrix.postRotate(ivResult.getRotation());
+                Bitmap tfmBmp = createBitmap(dest.width(), dest.height(), Bitmap.Config.ARGB_8888);
+                Utils.matToBitmap(dest, tfmBmp);
+                Bitmap rotatedBmp = createBitmap(tfmBmp, 0, 0, tfmBmp.getWidth(), tfmBmp.getHeight(), matrix, true);
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                rotatedBmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+                byte[] bytes = stream.toByteArray();
+                mFile2 = new File(getExternalFilesDir("Temp"), "temp2.jpg");
+                try {
+                    mFile2.createNewFile();
+                    FileOutputStream fileOutputStream = new FileOutputStream(mFile2);
+                    fileOutputStream.write(bytes);
+                    fileOutputStream.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+//            ivConfirm.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.color_white), PorterDuff.Mode.SRC_IN);
+                isEditing = true;
+                Intent intent = new Intent(AdjustmentActivity.this, ResultActivity.class);
+                intent.putExtra("croppedPoints", mFile2.getAbsolutePath());
+                float scaledRatio = Float.parseFloat(Integer.toString(ivResult.getWidth()))
+                        / Float.parseFloat(Integer.toString(ivResult.getHeight()));
+                intent.putExtra("scaledRatio", scaledRatio);
+                if (ivResult.getRotation() == 90 || ivResult.getRotation() == -90 || ivResult.getRotation() == 270 || ivResult.getRotation() == -270) {
+                    intent.putExtra("isRotated", true);
+                }
+                startActivity(intent);
 
-    }
+            } else {
+                showToast("Invalid Shape!");
+            }
+        }
+    };
 
     public static int calculateInSampleSize(
             BitmapFactory.Options options, int reqWidth, int reqHeight) {
@@ -409,34 +368,6 @@ public class AdjustmentActivity extends AppCompatActivity {
                 lower_thresh_val = otsu_thresh_val * 0.5;
         Imgproc.Canny(src, newSrc, lower_thresh_val, high_thresh_val);
         return newSrc;
-    }
-
-    public int getCameraPhotoOrientation(String imagePath) {
-        int rotate = 0;
-        try {
-            File imageFile = new File(imagePath);
-
-            ExifInterface exif = new ExifInterface(imageFile.getAbsolutePath());
-            int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
-
-            switch (orientation) {
-                case ExifInterface.ORIENTATION_ROTATE_270:
-                    rotate = 270;
-                    break;
-                case ExifInterface.ORIENTATION_ROTATE_180:
-                    rotate = 180;
-                    break;
-                case ExifInterface.ORIENTATION_ROTATE_90:
-                    rotate = 90;
-                    break;
-            }
-
-            Log.i("RotateImage", "Exif orientation: " + orientation);
-            Log.i("RotateImage", "Rotate value: " + rotate);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return rotate;
     }
 
     @Override
@@ -526,7 +457,6 @@ public class AdjustmentActivity extends AppCompatActivity {
         alertDialog();
     }
 
-
     private Quadrilateral findContours(Mat src) {
 
         Size size = new Size(src.width(), src.height());
@@ -590,8 +520,8 @@ public class AdjustmentActivity extends AppCompatActivity {
                 } else {
                     quad = null;
                 }
-                Utils.matToBitmap(mat, resizedBmp);
-                Log.i(TAG, "Width " + resizedBmp.getWidth() + ", Height" + resizedBmp.getHeight());
+                Utils.matToBitmap(mat, newBmp);
+
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -639,11 +569,6 @@ public class AdjustmentActivity extends AppCompatActivity {
         return result;
     }
 
-    private void setBitmap(Bitmap original) {
-        Map<Integer, PointF> pointFs = getEdgePoints(original);
-        polygonView.setPoints(pointFs);
-        polygonView.setVisibility(View.VISIBLE);
-    }
 
     private Map<Integer, PointF> getEdgePoints(Bitmap tempBitmap) {
         List<PointF> pointFs = getContourEdgePoints(tempBitmap);
@@ -667,61 +592,16 @@ public class AdjustmentActivity extends AppCompatActivity {
     }
 
     private Map<Integer, PointF> getOutlinePoints(Bitmap tempBitmap) {
-//        Map<Integer, PointF> outlinePoints = new HashMap<>();
-//        int h = ivResult.getHeight();
-//        int w = ivResult.getWidth();
-//        outlinePoints.put(0, new PointF(0, 0));
-//        outlinePoints.put(1, new PointF(w, 0));
-//        outlinePoints.put(2, new PointF(0, h));
-//        outlinePoints.put(3, new PointF(w, h));
-//        Log.i(TAG, w + ", " + h);
         Map<Integer, PointF> outlinePoints = new HashMap<>();
-
         outlinePoints.put(0, new PointF(0, 0));
-        outlinePoints.put(1, new PointF(resizedBmp.getWidth(), 0));
-        outlinePoints.put(2, new PointF(0, resizedBmp.getHeight()));
-        outlinePoints.put(3, new PointF(resizedBmp.getWidth(), resizedBmp.getHeight()));
-        Log.i(TAG, resizedBmp.getWidth() + ", " + resizedBmp.getHeight());
+        outlinePoints.put(1, new PointF((float) frmHolder.getWidth(), 0));
+        outlinePoints.put(2, new PointF(0, (float) frmHolder.getHeight()));
+        outlinePoints.put(3, new PointF((float) frmHolder.getWidth(), (float) frmHolder.getHeight()));
         return outlinePoints;
 
     }
 
-    public void onWindowFocusChanged(boolean hasFocus) {
-        // TODO Auto-generated method stub
-        super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) {
-            if (!isEditing) {
-                // Ratio 3.125
-//                bmpImg = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
-//                mat = new Mat(ivResult.getWidth(), ivResult.getHeight(), CvType.CV_8UC4);
-//                double ratio = bmpImg.getHeight() / ivResult.getHeight();
-////                double ratioWidth = bmpImg.getWidth() / ivResult.getWidth();
-//                double height = bmpImg.getHeight() / ratio;
-////                double width = bmpImg.getWidth() / ratioWidth;
-//                resizedBmp = Bitmap.createBitmap(ivResult.getWidth(), (int) height, Bitmap.Config.ARGB_8888);
-//                Utils.bitmapToMat(bmpImg, mat);
-//                Imgproc.resize(mat, mat, new Size(resizedBmp.getWidth(), height));
-//                findContours(mat);
-//
-//                performGammaCorrection(mat);
-//
-//                Utils.matToBitmap(mat, resizedBmp);
-//                    setBitmap(resizedBmp);
-                bmpImg = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
-                mat = new Mat(ivResult.getWidth(), ivResult.getHeight(), CvType.CV_8UC4);
-                double ratio = bmpImg.getWidth() / ivResult.getWidth();
-                double height = bmpImg.getHeight() / ratio;
-                resizedBmp = Bitmap.createBitmap(ivResult.getWidth(), ivResult.getHeight(), Bitmap.Config.ARGB_8888);
 
-                Utils.bitmapToMat(bmpImg, mat);
-                Imgproc.resize(mat, mat, new Size(resizedBmp.getWidth(), resizedBmp.getHeight()));
-                findContours(mat);
-                Utils.matToBitmap(mat, resizedBmp);
-                setBitmap(resizedBmp);
-            }
-        }
-
-    }
 
     private Map<Integer, PointF> orderedValidEdgePoints(Bitmap tempBitmap, List<PointF> pointFs) {
         Map<Integer, PointF> orderedPoints = polygonView.getOrderedPoints(pointFs);

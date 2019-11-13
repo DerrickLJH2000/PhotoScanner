@@ -77,7 +77,6 @@ public class Magnifier extends AppCompatImageView {
         if (!zooming) {
             buildDrawingCache();
         } else {
-
             bitmap = getDrawingCache();
             shader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
 

@@ -18,6 +18,37 @@
         android:background="@color/color_dark_grey2"
         app:layout_constraintBottom_toTopOf="@id/linlay1" />
 
+    <FrameLayout
+        android:id="@+id/sourceFrame"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:padding="5dp"
+        app:layout_constraintBottom_toTopOf="@id/line"
+        app:layout_constraintTop_toBottomOf="@id/include">
+
+        <FrameLayout
+            android:id="@+id/holderImageCrop"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:layout_margin="16dp">
+
+            <ImageView
+                android:id="@+id/ivResult"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:adjustViewBounds="true"/>
+        </FrameLayout>
+
+        <com.example.digitalizedphotobook.PolygonView
+            android:id="@+id/polygonView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:visibility="gone" />
+
+    </FrameLayout>
     <LinearLayout
         android:id="@+id/linlay1"
         android:layout_width="match_parent"
@@ -68,7 +99,9 @@
                 android:id="@+id/ivCrop"
                 android:layout_width="25dp"
                 android:layout_height="match_parent"
-                android:src="@drawable/ic_crop" />
+                android:rotation="180"
+                android:src="@drawable/ic_crop"
+                android:tint="@color/color_white"/>
         </LinearLayout>
 
         <LinearLayout
@@ -101,41 +134,6 @@
 
 
     </LinearLayout>
-    <FrameLayout
-        android:id="@+id/sourceFrame"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:paddingLeft="10dp"
-        android:paddingRight="10dp"
-        app:layout_constraintBottom_toTopOf="@id/line"
-        app:layout_constraintTop_toBottomOf="@id/include">
 
-        <FrameLayout
-            android:id="@+id/rellay2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center">
-
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_margin="10dp">
-
-                <ImageView
-                    android:id="@+id/ivResult"
-                    android:layout_width="match_parent"
-                    android:layout_height="490dp"
-                    android:adjustViewBounds="true"
-
-      />
-            </RelativeLayout>
-
-            <com.example.digitalizedphotobook.PolygonView
-                android:id="@+id/polygonView"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:visibility="gone"/>
-        </FrameLayout>
-    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

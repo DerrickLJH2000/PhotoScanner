@@ -169,6 +169,12 @@ public class PolygonView extends FrameLayout {
         }
     }
 
+    public void setPointColor(int color)
+    {
+        if (paint!=null)
+            paint.setColor(color);
+    }
+
     private void setPointsCoordinates(Map<Integer, PointF> pointFMap) {
         int color = 0;
         pointer1.setX(pointFMap.get(0).x);
