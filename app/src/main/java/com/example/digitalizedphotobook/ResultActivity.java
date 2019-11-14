@@ -45,7 +45,6 @@ import android.widget.Toast;
 import com.example.digitalizedphotobook.adapters.FilterAdapter;
 import com.example.digitalizedphotobook.classes.Filter;
 import com.github.chrisbanes.photoview.PhotoView;
-import com.squareup.picasso.Picasso;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -73,7 +72,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-import okhttp3.internal.Util;
 
 import static java.lang.Math.log;
 import static org.opencv.core.CvType.CV_8UC1;

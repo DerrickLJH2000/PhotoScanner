@@ -11,6 +11,7 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.PointF;
 import android.graphics.PorterDuff;
+import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.ExifInterface;
 
@@ -28,8 +29,12 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.example.digitalizedphotobook.classes.NativeClass;
@@ -72,15 +77,16 @@ import static org.opencv.imgproc.Imgproc.cvtColor;
 
 public class AdjustmentActivity extends AppCompatActivity {
     private static final String TAG = "AdjustmentActivity123";
-    private ImageView ivBack, ivCrop, ivConfirm, ivRotateLeft, ivRotateRight;
+    private ImageView ivBack, ivCrop, ivConfirm, ivRotate, ivCropEdges;
     public static ImageView ivResult;
+    private ProgressBar progressBar;
     private FrameLayout frmHolder;
     private PolygonView polygonView;
     private File mFile, mFile2;
     private String imagePath;
     private NativeClass nativeClass;
     private double gammaValue = 1.0;
-    private Bitmap bmp, newBmp;
+    private Bitmap bmp, scaledBitmap, newBmp;
     private Mat mat;
     private Quadrilateral quad;
     private boolean isFourPointed = false;
@@ -130,32 +136,40 @@ public class AdjustmentActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(AdjustmentActivity.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
             return;
         }
-
-        imagePath = new File(getExternalFilesDir("Temp"), "temp.jpg").getAbsolutePath();
-        reqCode = getIntent().getIntExtra("reqCode", -1);
-        mFile = new File(imagePath);
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = false;
-        bmp = BitmapFactory.decodeFile(mFile.getAbsolutePath(), options);
-        if (bmp != null) {
-            initializeElement();
+        if (bmp == null) {
+            imagePath = new File(getExternalFilesDir("Temp"), "temp.jpg").getAbsolutePath();
+            reqCode = getIntent().getIntExtra("reqCode", -1);
+            mFile = new File(imagePath);
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = false;
+            bmp = BitmapFactory.decodeFile(mFile.getAbsolutePath(), options);
+            Matrix matrix = new Matrix();
+            matrix.postRotate(90);
+            bmp = createBitmap(bmp, 0,0,bmp.getWidth(), bmp.getHeight(), matrix, true);
         } else {
             showToast("Retake Photo");
             finish();
         }
+        initializeElement();
 
     }
-    private void initializeElement(){
+
+    private void initializeElement() {
         nativeClass = new NativeClass();
         ivBack = findViewById(R.id.ivBack);
-        ivRotateLeft = findViewById(R.id.ivRotateLeft);
-        ivRotateRight = findViewById(R.id.ivRotateRight);
+        ivRotate = findViewById(R.id.ivRotate);
+        ivCropEdges = findViewById(R.id.ivCropEdges);
         ivCrop = findViewById(R.id.ivCrop);
         ivConfirm = findViewById(R.id.ivConfirm);
         ivResult = findViewById(R.id.ivResult);
         polygonView = findViewById(R.id.polygonView);
         frmHolder = findViewById(R.id.holderImageCrop);
-
+        progressBar = findViewById(R.id.progressBar);
+        if (progressBar.getIndeterminateDrawable() != null)
+            progressBar.getIndeterminateDrawable().setColorFilter(Color.parseColor("#ff59a9ff"), android.graphics.PorterDuff.Mode.MULTIPLY);
+        else if (progressBar.getProgressDrawable() != null)
+            progressBar.getProgressDrawable().setColorFilter(Color.parseColor("#ff59a9ff"), android.graphics.PorterDuff.Mode.MULTIPLY);
+        setProgressBar(true);
         Observable.fromCallable(() -> {
             setImageRotation();
             return false;
@@ -163,9 +177,10 @@ public class AdjustmentActivity extends AppCompatActivity {
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe((result) -> {
+                    setProgressBar(false);
                     frmHolder.post(this::initializeCropping);
-                    ivRotateLeft.setOnClickListener(btnRotateLeft);
-                    ivRotateRight.setOnClickListener(btnRotateRight);
+                    ivRotate.setOnClickListener(btnRotate);
+                    ivCropEdges.setOnClickListener(btnCropToEdge);
                     ivCrop.setOnClickListener(btnCropToFit);
                     ivConfirm.setOnClickListener(btnConfirmClick);
                     ivBack.setOnClickListener(new View.OnClickListener() {
@@ -190,9 +205,9 @@ public class AdjustmentActivity extends AppCompatActivity {
     }
 
     private void initializeCropping() {
-        Bitmap scaledBitmap = Bitmap.createScaledBitmap(bmp, frmHolder.getWidth(), frmHolder.getHeight(), true);
+        scaledBitmap = scaledBitmap(bmp, frmHolder.getWidth(), frmHolder.getHeight());
         ivResult.setImageBitmap(scaledBitmap);
-        mat = new Mat(scaledBitmap.getWidth(),scaledBitmap.getHeight(),CvType.CV_8UC4);
+        mat = new Mat(scaledBitmap.getWidth(), scaledBitmap.getHeight(), CvType.CV_8UC4);
         Bitmap tempBitmap = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
         Utils.bitmapToMat(tempBitmap, mat);
         findContours(mat);
@@ -217,11 +232,11 @@ public class AdjustmentActivity extends AppCompatActivity {
     }
 
     private void setImageRotation() {
-        Bitmap tempBitmap = bmp.copy(bmp.getConfig(),true);
+        Bitmap tempBitmap = bmp.copy(bmp.getConfig(), true);
         for (int i = 1; i <= 4; i++) {
             MatOfPoint2f point2f = nativeClass.getPoint(tempBitmap);
             if (point2f == null) {
-                bmp = rotateBitmap(tempBitmap, 90);
+                bmp = rotateBitmap(tempBitmap, 90 * i);
             } else {
                 bmp = tempBitmap.copy(bmp.getConfig(), true);
                 break;
@@ -236,36 +251,50 @@ public class AdjustmentActivity extends AppCompatActivity {
         return bmp;
     }
 
-    private View.OnClickListener btnRotateLeft = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
+    private void setProgressBar(boolean isShow) {
+        RelativeLayout rlContainer = findViewById(R.id.rlContainer);
+        setViewInterract(rlContainer, !isShow);
+        if (isShow)
+            progressBar.setVisibility(View.VISIBLE);
+        else
+            progressBar.setVisibility(View.GONE);
+    }
 
+    private void setViewInterract(View view, boolean canDo) {
+        view.setEnabled(canDo);
+        if (view instanceof ViewGroup) {
+            for (int i = 0; i < ((ViewGroup) view).getChildCount(); i++) {
+                setViewInterract(((ViewGroup) view).getChildAt(i), canDo);
+            }
         }
-    };
-    private View.OnClickListener btnRotateRight = new View.OnClickListener() {
+    }
+
+
+    private View.OnClickListener btnRotate = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            ivResult.setRotation(ivResult.getRotation() + 90);
-            polygonView.setRotation(polygonView.getRotation() + 90);
-            float scaledRatio = Float.parseFloat(Integer.toString(ivResult.getWidth()))
-                    / Float.parseFloat(Integer.toString(ivResult.getHeight()));
-            if (ivResult.getRotation() == 360 || polygonView.getRotation() == 360) {
-                ivResult.setRotation(0);
-                polygonView.setRotation(0);
-            }
-            if (ivResult.getRotation() == 90 || ivResult.getRotation() == -90 || ivResult.getRotation() == 270 || ivResult.getRotation() == -270) {
-                ivResult.setScaleX(scaledRatio);
-                ivResult.setScaleY(scaledRatio);
-                polygonView.setScaleX(scaledRatio);
-                polygonView.setScaleY(scaledRatio);
-            } else {
-                ivResult.setScaleX(1.0f);
-                ivResult.setScaleY(1.0f);
-                polygonView.setScaleX(1.0f);
-                polygonView.setScaleY(1.0f);
-            }
+            setProgressBar(true);
+            bmp = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
+            Observable.fromCallable(() -> {
+                bmp = rotateBitmap(bmp, 90);
+                return false;
+            })
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe((result) -> {
+                        setProgressBar(false);
+                        initializeElement();
+                    });
         }
     };
+
+    private View.OnClickListener btnCropToEdge = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            showToast("还没完成");
+        }
+    };
+
     private View.OnClickListener btnCropToFit = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -337,6 +366,12 @@ public class AdjustmentActivity extends AppCompatActivity {
             }
         }
     };
+
+    private Bitmap scaledBitmap(Bitmap bitmap, int width, int height) {
+        Matrix m = new Matrix();
+        m.setRectToRect(new RectF(0, 0, bitmap.getWidth(), bitmap.getHeight()), new RectF(0, 0, width, height), Matrix.ScaleToFit.CENTER);
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), m, true);
+    }
 
     public static int calculateInSampleSize(
             BitmapFactory.Options options, int reqWidth, int reqHeight) {
@@ -593,14 +628,17 @@ public class AdjustmentActivity extends AppCompatActivity {
 
     private Map<Integer, PointF> getOutlinePoints(Bitmap tempBitmap) {
         Map<Integer, PointF> outlinePoints = new HashMap<>();
-        outlinePoints.put(0, new PointF(0, 0));
+            outlinePoints.put(0, new PointF(0, 0));
+            outlinePoints.put(1, new PointF(scaledBitmap.getWidth(), 0));
+            outlinePoints.put(2, new PointF(0, scaledBitmap.getHeight()));
+            outlinePoints.put(3, new PointF(scaledBitmap.getWidth(), scaledBitmap.getHeight()));
+        /*        outlinePoints.put(0, new PointF(0, 0));
         outlinePoints.put(1, new PointF((float) frmHolder.getWidth(), 0));
         outlinePoints.put(2, new PointF(0, (float) frmHolder.getHeight()));
-        outlinePoints.put(3, new PointF((float) frmHolder.getWidth(), (float) frmHolder.getHeight()));
+        outlinePoints.put(3, new PointF((float) frmHolder.getWidth(), (float) frmHolder.getHeight()));*/
         return outlinePoints;
 
     }
-
 
 
     private Map<Integer, PointF> orderedValidEdgePoints(Bitmap tempBitmap, List<PointF> pointFs) {

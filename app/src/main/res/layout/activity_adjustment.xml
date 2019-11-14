@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rlContainer"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -7,133 +8,150 @@
     android:background="@color/color_dark_grey"
     tools:context=".AdjustmentActivity">
 
-    <include
-        android:id="@+id/include"
-        layout="@layout/app_bar_adjustment" />
-
-    <View
-        android:id="@+id/line"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0.5dp"
-        android:background="@color/color_dark_grey2"
-        app:layout_constraintBottom_toTopOf="@id/linlay1" />
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-    <FrameLayout
-        android:id="@+id/sourceFrame"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:padding="5dp"
-        app:layout_constraintBottom_toTopOf="@id/line"
-        app:layout_constraintTop_toBottomOf="@id/include">
+        <include
+            android:id="@+id/include"
+            layout="@layout/app_bar_adjustment" />
+
+        <View
+            android:id="@+id/line"
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="@color/color_dark_grey2"
+            app:layout_constraintBottom_toTopOf="@id/linlay1" />
 
         <FrameLayout
-            android:id="@+id/holderImageCrop"
+            android:id="@+id/sourceFrame"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_gravity="center"
-            android:layout_margin="16dp">
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:padding="5dp"
+            app:layout_constraintBottom_toTopOf="@id/line"
+            app:layout_constraintTop_toBottomOf="@id/include">
 
-            <ImageView
-                android:id="@+id/ivResult"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+            <FrameLayout
+                android:id="@+id/holderImageCrop"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:layout_gravity="center"
-                android:adjustViewBounds="true"/>
+                android:layout_margin="16dp">
+
+                <ImageView
+                    android:id="@+id/ivResult"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:adjustViewBounds="true"
+                    />
+            </FrameLayout>
+
+            <com.example.digitalizedphotobook.PolygonView
+                android:id="@+id/polygonView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:visibility="gone" />
+
         </FrameLayout>
 
-        <com.example.digitalizedphotobook.PolygonView
-            android:id="@+id/polygonView"
+
+        <LinearLayout
+            android:id="@+id/linlay1"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_gravity="center"
-            android:visibility="gone" />
-
-    </FrameLayout>
-    <LinearLayout
-        android:id="@+id/linlay1"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:elevation="5dp"
-        android:gravity="center"
-        android:orientation="horizontal"
-        android:paddingTop="15dp"
-        android:paddingBottom="15dp"
-        app:layout_constraintBottom_toBottomOf="parent">
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="25dp"
-            android:layout_weight="1"
+            android:layout_height="50dp"
+            android:elevation="5dp"
             android:gravity="center"
-            android:orientation="vertical">
+            android:orientation="horizontal"
+            android:paddingBottom="20dp"
+            app:layout_constraintBottom_toBottomOf="parent">
 
-            <ImageView
-                android:id="@+id/ivBack"
-                android:layout_width="25dp"
-                android:layout_height="match_parent"
-                android:src="@drawable/ic_clear" />
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="25dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/ivBack"
+                    android:layout_width="25dp"
+                    android:layout_height="match_parent"
+                    android:src="@drawable/ic_clear" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="25dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/ivRotate"
+                    android:layout_width="25dp"
+                    android:layout_height="match_parent"
+                    android:src="@drawable/ic_rotate_right" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="25dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/ivCrop"
+                    android:layout_width="25dp"
+                    android:layout_height="match_parent"
+                    android:rotation="180"
+                    android:src="@drawable/ic_crop"
+                    android:tint="@color/color_white" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="25dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/ivCropEdges"
+                    android:layout_width="25dp"
+                    android:layout_height="match_parent"
+                    android:rotation="180"
+                    android:src="@drawable/ic_magnet"
+                    android:tint="@color/color_white" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="25dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/ivConfirm"
+                    android:layout_width="25dp"
+                    android:layout_height="match_parent"
+                    android:src="@drawable/ic_check" />
+            </LinearLayout>
+
+
         </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="25dp"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <ImageView
-                android:id="@+id/ivRotateLeft"
-                android:layout_width="25dp"
-                android:layout_height="match_parent"
-                android:src="@drawable/ic_rotate_left" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="25dp"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <ImageView
-                android:id="@+id/ivCrop"
-                android:layout_width="25dp"
-                android:layout_height="match_parent"
-                android:rotation="180"
-                android:src="@drawable/ic_crop"
-                android:tint="@color/color_white"/>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="25dp"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <ImageView
-                android:id="@+id/ivRotateRight"
-                android:layout_width="25dp"
-                android:layout_height="match_parent"
-                android:src="@drawable/ic_rotate_right" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="25dp"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <ImageView
-                android:id="@+id/ivConfirm"
-                android:layout_width="25dp"
-                android:layout_height="match_parent"
-                android:src="@drawable/ic_check" />
-        </LinearLayout>
-
-
     </LinearLayout>
-
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="150dp"
+        android:background="@color/color_dark_grey"
+        android:visibility="gone"
+        />
+</RelativeLayout>
