@@ -77,7 +77,7 @@ import static org.opencv.imgproc.Imgproc.cvtColor;
 
 public class AdjustmentActivity extends AppCompatActivity {
     private static final String TAG = "AdjustmentActivity123";
-    private ImageView ivBack, ivCrop, ivConfirm, ivRotate, ivCropEdges;
+    private ImageView ivBack, ivCrop, ivConfirm, ivRotateLeft, ivRotateRight;
     public static ImageView ivResult;
     private ProgressBar progressBar;
     private FrameLayout frmHolder;
@@ -145,7 +145,7 @@ public class AdjustmentActivity extends AppCompatActivity {
             bmp = BitmapFactory.decodeFile(mFile.getAbsolutePath(), options);
             Matrix matrix = new Matrix();
             matrix.postRotate(90);
-            bmp = createBitmap(bmp, 0,0,bmp.getWidth(), bmp.getHeight(), matrix, true);
+            bmp = createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
         } else {
             showToast("Retake Photo");
             finish();
@@ -157,8 +157,8 @@ public class AdjustmentActivity extends AppCompatActivity {
     private void initializeElement() {
         nativeClass = new NativeClass();
         ivBack = findViewById(R.id.ivBack);
-        ivRotate = findViewById(R.id.ivRotate);
-        ivCropEdges = findViewById(R.id.ivCropEdges);
+        ivRotateLeft = findViewById(R.id.ivRotateLeft);
+        ivRotateRight = findViewById(R.id.ivRotateRight);
         ivCrop = findViewById(R.id.ivCrop);
         ivConfirm = findViewById(R.id.ivConfirm);
         ivResult = findViewById(R.id.ivResult);
@@ -179,8 +179,8 @@ public class AdjustmentActivity extends AppCompatActivity {
                 .subscribe((result) -> {
                     setProgressBar(false);
                     frmHolder.post(this::initializeCropping);
-                    ivRotate.setOnClickListener(btnRotate);
-                    ivCropEdges.setOnClickListener(btnCropToEdge);
+                    ivRotateLeft.setOnClickListener(btnRotateLeft);
+                    ivRotateRight.setOnClickListener(btnRotateRight);
                     ivCrop.setOnClickListener(btnCropToFit);
                     ivConfirm.setOnClickListener(btnConfirmClick);
                     ivBack.setOnClickListener(new View.OnClickListener() {
@@ -270,7 +270,7 @@ public class AdjustmentActivity extends AppCompatActivity {
     }
 
 
-    private View.OnClickListener btnRotate = new View.OnClickListener() {
+    private View.OnClickListener btnRotateRight = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
             setProgressBar(true);
@@ -288,10 +288,21 @@ public class AdjustmentActivity extends AppCompatActivity {
         }
     };
 
-    private View.OnClickListener btnCropToEdge = new View.OnClickListener() {
+    private View.OnClickListener btnRotateLeft = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            showToast("还没完成");
+            setProgressBar(true);
+            bmp = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
+            Observable.fromCallable(() -> {
+                bmp = rotateBitmap(bmp, -90);
+                return false;
+            })
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe((result) -> {
+                        setProgressBar(false);
+                        initializeElement();
+                    });
         }
     };
 
@@ -304,7 +315,8 @@ public class AdjustmentActivity extends AppCompatActivity {
             } else {
                 if (isCropped) {
                     // Undo Crop Here
-                    ivCrop.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
+                    ivCrop.setImageResource(R.drawable.ic_crop);
+                    ivCrop.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.color_white), PorterDuff.Mode.SRC_IN);
                     Map<Integer, PointF> pointFs = getOutlinePoints(newBmp);
                     polygonView.setPoints(pointFs);
                     polygonView.invalidate();
@@ -312,7 +324,8 @@ public class AdjustmentActivity extends AppCompatActivity {
                     isCropped = false;
                 } else {
                     // Auto Crop Here
-                    ivCrop.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.color_white), PorterDuff.Mode.SRC_IN);
+                    ivCrop.setImageResource(R.drawable.ic_magnet);
+                    ivCrop.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
                     Map<Integer, PointF> pointFs = getEdgePoints(newBmp);
                     polygonView.setPoints(pointFs);
                     polygonView.invalidate();
@@ -547,7 +560,8 @@ public class AdjustmentActivity extends AppCompatActivity {
                     Point[] foundPoints = sortPoints(points);
                     isFourPointed = true;
                     isCropped = true;
-
+                    ivCrop.setImageResource(R.drawable.ic_magnet);
+                    ivCrop.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
                     quad = new Quadrilateral(contours.get(maxValIdx), foundPoints);
 //                    for (Point point : quad.points) {
 //                        Imgproc.circle(mat, point, 40, new Scalar(255, 0, 255), 20);
@@ -628,10 +642,10 @@ public class AdjustmentActivity extends AppCompatActivity {
 
     private Map<Integer, PointF> getOutlinePoints(Bitmap tempBitmap) {
         Map<Integer, PointF> outlinePoints = new HashMap<>();
-            outlinePoints.put(0, new PointF(0, 0));
-            outlinePoints.put(1, new PointF(scaledBitmap.getWidth(), 0));
-            outlinePoints.put(2, new PointF(0, scaledBitmap.getHeight()));
-            outlinePoints.put(3, new PointF(scaledBitmap.getWidth(), scaledBitmap.getHeight()));
+        outlinePoints.put(0, new PointF(0, 0));
+        outlinePoints.put(1, new PointF(scaledBitmap.getWidth(), 0));
+        outlinePoints.put(2, new PointF(0, scaledBitmap.getHeight()));
+        outlinePoints.put(3, new PointF(scaledBitmap.getWidth(), scaledBitmap.getHeight()));
         /*        outlinePoints.put(0, new PointF(0, 0));
         outlinePoints.put(1, new PointF((float) frmHolder.getWidth(), 0));
         outlinePoints.put(2, new PointF(0, (float) frmHolder.getHeight()));

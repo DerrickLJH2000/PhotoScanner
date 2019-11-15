@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layout_gravity="center_horizontal"
-    android:background="@color/ActivityBackground"
+    android:background="@color/color_dark_grey"
     android:orientation="vertical"
     tools:context=".MainActivity">
 
@@ -16,6 +16,7 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvSavedPhotos"
             android:layout_width="match_parent"
@@ -23,11 +24,11 @@
             android:layout_alignParentTop="true"
             android:layout_alignParentBottom="true"
             android:clipToPadding="false"
-            android:paddingTop="50dp"
+            android:overScrollMode="never"
             android:paddingLeft="10dp"
+            android:paddingTop="50dp"
             android:paddingRight="10dp"
             android:paddingBottom="10dp"
-            android:overScrollMode="never"
             android:scrollbars="none" />
 
 
@@ -35,36 +36,34 @@
             android:id="@+id/fabAdd"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:background="@drawable/gradient_bg"
-            android:src="@drawable/ic_add"
             android:layout_alignParentRight="true"
+            android:layout_alignParentBottom="true"
             android:layout_margin="20dp"
-            android:layout_alignParentBottom="true"/>
+            android:background="@drawable/gradient_bg"
+            android:src="@drawable/ic_add" />
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@color/color_black_trans60"
             android:fontFamily="@font/allerta"
             android:paddingLeft="10dp"
             android:paddingTop="15dp"
-            android:background="@color/color_white_trans60"
             android:paddingBottom="10dp"
             android:text="Recently Saved"
-            android:textColor="@color/color_dark_grey2"
+            android:textColor="@color/ActivityBackground"
             android:textSize="14sp"></TextView>
 
         <TextView
             android:id="@+id/tvUnavailable"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:visibility="gone"
-            android:paddingTop="50dp"
-            android:paddingLeft="10dp"
-            android:paddingRight="10dp"
-            android:text="There are currently\n no saved photos"
-            android:textColor="@color/color_dark_grey2"
             android:layout_centerInParent="true"
             android:fontFamily="@font/allerta"
-            android:textSize="20sp"
-            android:paddingBottom="10dp"/>
+            android:gravity="center"
+            android:paddingBottom="10dp"
+            android:text="There are currently\n no saved photos"
+            android:textColor="@color/ActivityBackground"
+            android:textSize="20sp" />
     </RelativeLayout>
 </LinearLayout>

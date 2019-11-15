@@ -91,10 +91,10 @@
                 android:orientation="vertical">
 
                 <ImageView
-                    android:id="@+id/ivRotate"
+                    android:id="@+id/ivRotateLeft"
                     android:layout_width="25dp"
                     android:layout_height="match_parent"
-                    android:src="@drawable/ic_rotate_right" />
+                    android:src="@drawable/ic_rotate_left" />
             </LinearLayout>
 
             <LinearLayout
@@ -121,11 +121,10 @@
                 android:orientation="vertical">
 
                 <ImageView
-                    android:id="@+id/ivCropEdges"
+                    android:id="@+id/ivRotateRight"
                     android:layout_width="25dp"
                     android:layout_height="match_parent"
-                    android:rotation="180"
-                    android:src="@drawable/ic_magnet"
+                    android:src="@drawable/ic_rotate_right"
                     android:tint="@color/color_white" />
             </LinearLayout>
 

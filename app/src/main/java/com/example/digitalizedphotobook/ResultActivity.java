@@ -297,46 +297,13 @@ public class ResultActivity extends AppCompatActivity {
             }
         });
 
-        ivRotate.setOnTouchListener(new View.OnTouchListener() {
+        ivRotate.setOnClickListener(new View.OnClickListener() {
             @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                int eid = event.getAction();
-                switch (eid) {
-                    case MotionEvent.ACTION_DOWN:
-                        ivRotate.setColorFilter(ContextCompat.getColor(ResultActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
-                        ivResult.setRotation(ivResult.getRotation() + 90);
-                        if (ivResult.getRotation() == 360) {
-                            ivResult.setRotation(0);
-
-                        }
-                        if (ivResult.getRotation() == 90 || ivResult.getRotation() == -90 || ivResult.getRotation() == 270 || ivResult.getRotation() == -270) {
-                            if (scaledRatio == 0.0f) {
-                                scaledRatio = Float.parseFloat(Integer.toString(ivResult.getWidth()))
-                                        / Float.parseFloat(Integer.toString(ivResult.getHeight()));
-                            }
-                            if (isRotated == true) {
-                                ivResult.setScaleX(2 - scaledRatio);
-                                ivResult.setScaleY(2 - scaledRatio);
-                            } else {
-                                ivResult.setScaleX(scaledRatio);
-                                ivResult.setScaleY(scaledRatio);
-                            }
-                        } else {
-                            ivResult.setScaleX(1.0f);
-                            ivResult.setScaleY(1.0f);
-                        }
-                        break;
-                    case MotionEvent.ACTION_UP:
-                        ivRotate.setColorFilter(Color.argb(255, 255, 255, 255));
-                        break;
-                }
-//                Bitmap temp = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
-//                Mat mat5 = new Mat();
-//                Utils.bitmapToMat(temp, mat5);
-//                doWhiteBalance(mat5,5);
-//                Utils.matToBitmap(mat5, temp);
-//                ivResult.setImageBitmap(temp);
-                return true;
+            public void onClick(View view) {
+                Bitmap tempBmp = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
+                tempBmp = doRotate(tempBmp,90);
+                ivResult.setImageBitmap(tempBmp);
+                Log.i(TAG,"Rotated 90 degrees");
             }
         });
 
@@ -402,6 +369,13 @@ public class ResultActivity extends AppCompatActivity {
             }
         });
 
+    }
+
+    private Bitmap doRotate(Bitmap source, int angle) {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(angle);
+        source = Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
+        return source;
     }
 
     private Mat doContrast(int progress) {
@@ -774,9 +748,9 @@ public class ResultActivity extends AppCompatActivity {
 //        out.put(0, 0,r_lut,g_lut,b_lut);
 //        Core.LUT(src, lookUpTable, src);
 //
-        Bitmap histBmp = Bitmap.createBitmap(250,250, Bitmap.Config.ARGB_8888);
+        Bitmap histBmp = Bitmap.createBitmap(250, 250, Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(histImage, histBmp);
-        ivHistogram.setImageBitmap(histBmp);
+//        ivHistogram.setImageBitmap(histBmp);
     }
 
 }
