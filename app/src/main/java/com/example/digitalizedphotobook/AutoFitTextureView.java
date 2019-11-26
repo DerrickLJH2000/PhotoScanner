@@ -89,12 +89,24 @@ public class AutoFitTextureView extends TextureView {
         invalidate();
     }
 
-    @Override
-    protected void dispatchDraw(Canvas canvas) {
-        super.dispatchDraw(canvas);
-        Paint mPaint = new Paint();
-        mPaint.setStrokeWidth(3);
-        mPaint.setColor(getResources().getColor(R.color.color_red));
-        canvas.drawRect(rectangle,mPaint);
-    }
+        /*Paint gridPaint = new Paint();
+        gridPaint.setStrokeWidth(3);
+        gridPaint.setColor(getResources().getColor(R.color.color_light_grey));
+        boolean setGridLines =true;
+        if (setGridLines) {
+            int width = getMeasuredWidth();
+            int height = getMeasuredHeight();
+            // Vertical lines
+            int numColumns = 3;
+            int numRows = 3;
+            for (int i = 1; i < numColumns; i++) {
+                canvas.drawLine(width * i / numColumns, 0, width * i / numColumns, height, gridPaint);
+            }
+
+            // Horizontal lines
+            for (int i = 1; i < numRows; i++) {
+                canvas.drawLine(0, height * i / numRows, width, height * i / numRows, gridPaint);
+            }
+        }*/
+
 }
