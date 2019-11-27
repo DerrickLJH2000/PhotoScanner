@@ -261,7 +261,7 @@ public class ResultActivity extends AppCompatActivity {
         newMat = new Mat(mat.rows(), mat.cols(), mat.type());
         Utils.bitmapToMat(newBitMap, newMat);
         ArrayList<Bitmap> filterBmpArr = new ArrayList<>();
-        String[] filterNames = {"Autumn", "Bone", "Jet", "Winter", "Rainbow", "Ocean", "Summer", "Spring", "Cool", "HSV", "Pink", "Hot"};
+        String[] filterNames = {"Original", "Autofix", "Greyscale", "Sepia", "Temperature"};
         Mat filterMat = new Mat(newMat.rows(), newMat.cols(), CvType.CV_8UC1);
         cvtColor(newMat, filterMat, Imgproc.COLOR_RGB2GRAY, 1);
         Imgproc.applyColorMap(filterMat, filterMat, 0);
