@@ -9,6 +9,7 @@ import android.graphics.Bitmap;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Point;
+import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
@@ -44,6 +45,7 @@ import androidx.core.content.PermissionChecker;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
@@ -53,6 +55,7 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -75,7 +78,7 @@ public class ScanActivity extends AppCompatActivity {
     final int IMAGE_PICKER_SELECT = 2001;
     private static final int REQUEST_CAMERA_PERMISSION = 1;
     private static final String FRAGMENT_DIALOG = "dialog";
-    ImageView ivBack, ivFlash, ivLoadGallery;
+    ImageView ivBack, ivFlash, ivLoadGallery, ivGrid;
     FloatingActionButton fabCamera;
     Boolean mAutoFocusSupported = false;
 
@@ -144,6 +147,10 @@ public class ScanActivity extends AppCompatActivity {
     private CameraCaptureSession mCaptureSession;
     private CameraDevice mCameraDevice;
     private Size mPreviewSize;
+    private GridLineView mGridLineView;
+    private int DSI_height;
+    private int DSI_width;
+
 
     private final CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
 
@@ -305,6 +312,8 @@ public class ScanActivity extends AppCompatActivity {
     CameraCharacteristics characteristics;
     Rect rect;
 
+    private Boolean isGridEnabled = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -316,7 +325,9 @@ public class ScanActivity extends AppCompatActivity {
         ivBack = findViewById(R.id.ivBack);
         ivFlash = findViewById(R.id.ivFlash);
         ivLoadGallery = findViewById(R.id.ivLoad);
+        ivGrid = findViewById(R.id.ivGrid);
         fabCamera = findViewById(R.id.fabCamera);
+        mGridLineView = findViewById(R.id.grid_line_view);
         mTextureView = (AutoFitTextureView) findViewById(R.id.tvScan);
         mFile = new File(getExternalFilesDir("Temp"), "temp.jpg");
         assert mTextureView != null;
@@ -474,6 +485,23 @@ public class ScanActivity extends AppCompatActivity {
 
             private boolean isMeteringAreaAFSupported() {
                 return characteristics.get(CameraCharacteristics.CONTROL_MAX_REGIONS_AF) >= 1;
+            }
+        });
+
+
+        ivGrid.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mGridLineView.isGridShown()) {
+                    ivGrid.setImageResource(R.drawable.ic_grid_off);
+                    ivGrid.setColorFilter(ContextCompat.getColor(ScanActivity.this, R.color.color_white), PorterDuff.Mode.SRC_IN);
+                    isGridEnabled = false;
+                } else {
+                    ivGrid.setImageResource(R.drawable.ic_grid_on);
+                    ivGrid.setColorFilter(ContextCompat.getColor(ScanActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
+                    isGridEnabled = true;
+                }
+                mGridLineView.toggleGrid();
             }
         });
 
@@ -638,10 +666,12 @@ public class ScanActivity extends AppCompatActivity {
                 int orientation = getResources().getConfiguration().orientation;
                 if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
                     mTextureView.setAspectRatio(
-                            mTextureView.getWidth(), mPreviewSize.getHeight());
+                            mTextureView.getWidth(), mTextureView.getHeight());
+                    mGridLineView.setWidthHeight(mTextureView.getHeight(), mTextureView.getWidth());
                 } else {
                     mTextureView.setAspectRatio(
-                            mPreviewSize.getHeight(), mPreviewSize.getWidth());
+                            mTextureView.getWidth(), mTextureView.getHeight());
+                    mGridLineView.setWidthHeight(mTextureView.getHeight(), mTextureView.getWidth());
                 }
 
                 // Check if the flash is supported.

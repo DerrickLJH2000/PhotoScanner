@@ -1,6 +1,7 @@
 package com.example.digitalizedphotobook.adapters;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 
 import androidx.annotation.NonNull;
@@ -13,6 +14,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.digitalizedphotobook.R;
+import com.example.digitalizedphotobook.ResultActivity;
 import com.example.digitalizedphotobook.classes.Filter;
 
 import java.util.ArrayList;
@@ -49,7 +51,10 @@ public class FilterAdapter extends RecyclerView.Adapter<FilterAdapter.ViewHolder
         viewHolder.imageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(context, "Not Implemented yet.", Toast.LENGTH_SHORT).show();
+//                Toast.makeText(context, "Not Implemented yet.", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(context, ResultActivity.class);
+                intent.putExtra("mode", "AUTOFIX");
+                context.startActivity(intent);
             }
         });
     }

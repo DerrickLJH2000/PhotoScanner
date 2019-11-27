@@ -44,6 +44,7 @@ import android.widget.Toast;
 
 import com.example.digitalizedphotobook.adapters.FilterAdapter;
 import com.example.digitalizedphotobook.classes.Filter;
+import com.example.digitalizedphotobook.effects.MvEffects;
 import com.github.chrisbanes.photoview.PhotoView;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -261,9 +262,16 @@ public class ResultActivity extends AppCompatActivity {
         Utils.bitmapToMat(newBitMap, newMat);
         ArrayList<Bitmap> filterBmpArr = new ArrayList<>();
         String[] filterNames = {"Autumn", "Bone", "Jet", "Winter", "Rainbow", "Ocean", "Summer", "Spring", "Cool", "HSV", "Pink", "Hot"};
-
-
-        for (int i = 0; i < 12; i++) {
+        Mat filterMat = new Mat(newMat.rows(), newMat.cols(), CvType.CV_8UC1);
+        cvtColor(newMat, filterMat, Imgproc.COLOR_RGB2GRAY, 1);
+        Imgproc.applyColorMap(filterMat, filterMat, 0);
+        Imgproc.resize(filterMat, filterMat, new Size(90, 90));
+        Bitmap bitmap = Bitmap.createBitmap(filterMat.width(), filterMat.height(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(filterMat, bitmap);
+        filterBmpArr.add(bitmap);
+        Filter filter = new Filter(filterNames[0], filterBmpArr.get(0));
+        filterArr.add(filter);
+       /* for (int i = 0; i < 12; i++) {
             Mat filterMat = new Mat(newMat.rows(), newMat.cols(), CvType.CV_8UC1);
             cvtColor(newMat, filterMat, Imgproc.COLOR_RGB2GRAY, 1);
             Imgproc.applyColorMap(filterMat, filterMat, i);
@@ -272,14 +280,16 @@ public class ResultActivity extends AppCompatActivity {
             Utils.matToBitmap(filterMat, bitmap);
             filterBmpArr.add(bitmap);
             filterMat.release();
-        }
 
         for (int i = 0; i < filterBmpArr.size(); i++) {
             Filter filter = new Filter(filterNames[i], filterBmpArr.get(i));
             filterArr.add(filter);
-        }
+        }*/
 
         rvFilter.setAdapter(adapter);
+
+        Intent intentReceived = getIntent();
+        String mode = intentReceived.getStringExtra("mode");
 
         mView.setOnClickListener(new View.OnClickListener() {
             @Override
