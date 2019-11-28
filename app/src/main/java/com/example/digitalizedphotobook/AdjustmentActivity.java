@@ -193,14 +193,13 @@ public class AdjustmentActivity extends AppCompatActivity {
     }
 
     private void doImageProcessing(Bitmap src) {
-        Mat tempDisplayMat = new Mat();
-        Utils.bitmapToMat(src, tempDisplayMat);
-        Mat tempClone = tempDisplayMat.clone();
-        gammaValue = autoGammaValue(tempClone);
-
-        doGammaCorrection(tempDisplayMat);
+        newBmp = src.copy(Bitmap.Config.ARGB_8888,false);
+//        Mat tempClone = tempDisplayMat.clone();
+//        gammaValue = autoGammaValue(tempClone);
+//
+//        doGammaCorrection(tempDisplayMat);
 //        SimplestColorBalance(tempDisplayMat, 5);
-        Utils.matToBitmap(tempDisplayMat, newBmp);
+//        Utils.matToBitmap(tempDisplayMat, newBmp);
         ivResult.setImageBitmap(newBmp);
     }
 
@@ -386,28 +385,28 @@ public class AdjustmentActivity extends AppCompatActivity {
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), m, true);
     }
 
-    public static int calculateInSampleSize(
-            BitmapFactory.Options options, int reqWidth, int reqHeight) {
-        // Raw height and width of image
-        final int height = options.outHeight;
-        final int width = options.outWidth;
-        int inSampleSize = 1;
-
-        if (height > reqHeight || width > reqWidth) {
-
-            final int halfHeight = height / 2;
-            final int halfWidth = width / 2;
-
-            // Calculate the largest inSampleSize value that is a power of 2 and keeps both
-            // height and width larger than the requested height and width.
-            while ((halfHeight / inSampleSize) >= reqHeight
-                    && (halfWidth / inSampleSize) >= reqWidth) {
-                inSampleSize *= 2;
-            }
-        }
-
-        return inSampleSize;
-    }
+//    public static int calculateInSampleSize(
+//            BitmapFactory.Options options, int reqWidth, int reqHeigh t) {
+//        // Raw height and width of image
+//        final int height = options.outHeight;
+//        final int width = options.outWidth;
+//        int inSampleSize = 1;
+//
+//        if (height > reqHeight || width > reqWidth) {
+//
+//            final int halfHeight = height / 2;
+//            final int halfWidth = width / 2;
+//
+//            // Calculate the largest inSampleSize value that is a power of 2 and keeps both
+//            // height and width larger than the requested height and width.
+//            while ((halfHeight / inSampleSize) >= reqHeight
+//                    && (halfWidth / inSampleSize) >= reqWidth) {
+//                inSampleSize *= 2;
+//            }
+//        }
+//
+//        return inSampleSize;
+//    }
 
     private Mat otsuAutoCanny(Mat src) {
         Mat newSrc = new Mat();
@@ -690,26 +689,26 @@ public class AdjustmentActivity extends AppCompatActivity {
         }
     }
 
-    private double autoGammaValue(Mat src) {
-        double max_pixel = 255;
-        double middle_pixel = 128;
-        double pixel_range = 256;
-        double mean_l = mean_pixel(src);
-
-        double gamma = log(middle_pixel / pixel_range) / log(mean_l / pixel_range); // Formula from ImageJ
-        return gamma;
-    }
-
-    private void doGammaCorrection(Mat src) {
-        //! [changing-contrast-brightness-gamma-correction]
-        Mat lookUpTable = new Mat(1, 256, CvType.CV_8U);
-        byte[] lookUpTableData = new byte[(int) (lookUpTable.total() * lookUpTable.channels())];
-        for (int i = 0; i < lookUpTable.cols(); i++) {
-            lookUpTableData[i] = saturate(Math.pow(i / 255.0, gammaValue) * 255.0);
-        }
-        lookUpTable.put(0, 0, lookUpTableData);
-        Core.LUT(src, lookUpTable, src);
-    }
+//    private double autoGammaValue(Mat src) {
+//        double max_pixel = 255;
+//        double middle_pixel = 128;
+//        double pixel_range = 256;
+//        double mean_l = mean_pixel(src);
+//
+//        double gamma = log(middle_pixel / pixel_range) / log(mean_l / pixel_range); // Formula from ImageJ
+//        return gamma;
+//    }
+//
+//    private void doGammaCorrection(Mat src) {
+//        //! [changing-contrast-brightness-gamma-correction]
+//        Mat lookUpTable = new Mat(1, 256, CvType.CV_8U);
+//        byte[] lookUpTableData = new byte[(int) (lookUpTable.total() * lookUpTable.channels())];
+//        for (int i = 0; i < lookUpTable.cols(); i++) {
+//            lookUpTableData[i] = saturate(Math.pow(i / 255.0, gammaValue) * 255.0);
+//        }
+//        lookUpTable.put(0, 0, lookUpTableData);
+//        Core.LUT(src, lookUpTable, src);
+//    }
 
     /**
      * Simplest Color Balance. Performs color balancing via histogram

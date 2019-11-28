@@ -13,7 +13,9 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.BitmapDrawable;
+import android.media.effect.EffectContext;
 import android.net.Uri;
+import android.opengl.GLSurfaceView;
 import android.os.Build;
 import android.provider.MediaStore;
 
@@ -44,6 +46,7 @@ import android.widget.Toast;
 
 import com.example.digitalizedphotobook.adapters.FilterAdapter;
 import com.example.digitalizedphotobook.classes.Filter;
+import com.example.digitalizedphotobook.effects.EffectGLSurfaceView;
 import com.example.digitalizedphotobook.effects.MvEffects;
 import com.github.chrisbanes.photoview.PhotoView;
 
@@ -74,6 +77,9 @@ import java.util.List;
 import java.util.UUID;
 
 
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL10;
+
 import static java.lang.Math.log;
 import static org.opencv.core.CvType.CV_8UC1;
 import static org.opencv.core.CvType.CV_8UC3;
@@ -87,9 +93,9 @@ import static org.opencv.imgproc.Imgproc.COLOR_RGBA2GRAY;
 import static org.opencv.imgproc.Imgproc.COLOR_RGBA2RGB;
 import static org.opencv.imgproc.Imgproc.cvtColor;
 
-public class ResultActivity extends AppCompatActivity {
+public class ResultActivity extends AppCompatActivity{
     public static final String TAG = "ResultActivity";
-    public ImageView ivFilters, ivBack, ivSave, ivMore, ivRotate, ivHistogram;
+    public ImageView ivFilters, ivBack, ivSave, ivMore, ivRotate;
     private PhotoView ivResult;
     private TextView tvBrightness, tvContrast, tvReset;
     private LinearLayout lightSettings, linlay1, filterSettings;
@@ -154,19 +160,10 @@ public class ResultActivity extends AppCompatActivity {
         ivResult = findViewById(R.id.ivResult);
         ivSave = findViewById(R.id.ivConfirm);
         ivRotate = findViewById(R.id.ivRotate);
-        ivMore = findViewById(R.id.ivMore);
         ivFilters = findViewById(R.id.ivFilters);
         rvFilter = findViewById(R.id.rvFilters);
-        tvContrast = findViewById(R.id.tvContrast);
-        tvBrightness = findViewById(R.id.tvBrightness);
-        tvReset = findViewById(R.id.tvReset);
-        seekBarBrightness = findViewById(R.id.sbBrightness);
-        seekBarContrast = findViewById(R.id.sbContrast);
-        lightSettings = findViewById(R.id.lightSettings);
         filterSettings = findViewById(R.id.filterSettings);
         linlay1 = findViewById(R.id.linlay1);
-        mView = findViewById(R.id.clickView);
-        ivHistogram = findViewById(R.id.ivHistogram);
 
         if (!OpenCVLoader.initDebug()) {
             return;
@@ -202,118 +199,89 @@ public class ResultActivity extends AppCompatActivity {
         ivFilters.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!isLightExtended) {
-                    if (!isFilterExtended) {
-                        filterSettings.setVisibility(View.VISIBLE);
-                        mView.setVisibility(View.VISIBLE);
-                        mView.animate().translationY(filterSettings.getHeight() * -1);
-                        filterSettings.animate().translationY(filterSettings.getHeight() * -1);
-                        isFilterExtended = true;
-                    } else {
-                        mView.setVisibility(View.GONE);
-                        filterSettings.animate().translationY(filterSettings.getHeight() + linlay1.getHeight());
-                        isFilterExtended = false;
-                    }
-                } else {
-                    mView.setVisibility(View.GONE);
-                    lightSettings.animate().translationY(lightSettings.getHeight() + linlay1.getHeight());
-                    isLightExtended = false;
+                if (!isFilterExtended) {
                     filterSettings.setVisibility(View.VISIBLE);
-                    mView.setVisibility(View.VISIBLE);
-                    mView.animate().translationY(filterSettings.getHeight() * -1);
                     filterSettings.animate().translationY(filterSettings.getHeight() * -1);
                     isFilterExtended = true;
+                } else {
+                    filterSettings.animate().translationY(filterSettings.getHeight() + linlay1.getHeight());
+                    isFilterExtended = false;
                 }
 //                Bitmap temp = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
 //                calcHist(temp);
             }
         });
-        //Expand the Light Settings
-        ivMore.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!isFilterExtended) {
-                    if (!isLightExtended) {
-                        lightSettings.setVisibility(View.VISIBLE);
-                        mView.setVisibility(View.VISIBLE);
-                        mView.animate().translationY(lightSettings.getHeight() * -1);
-                        lightSettings.animate().translationY(lightSettings.getHeight() * -1);
-                        isLightExtended = true;
-                    } else {
-                        mView.setVisibility(View.GONE);
-                        lightSettings.animate().translationY(lightSettings.getHeight() + linlay1.getHeight());
-                        isLightExtended = false;
-                    }
-                } else {
-                    mView.setVisibility(View.GONE);
-                    filterSettings.animate().translationY(filterSettings.getHeight() + linlay1.getHeight());
-                    isFilterExtended = false;
-                    lightSettings.setVisibility(View.VISIBLE);
-                    mView.setVisibility(View.VISIBLE);
-                    mView.animate().translationY(lightSettings.getHeight() * -1);
-                    lightSettings.animate().translationY(lightSettings.getHeight() * -1);
-                    isLightExtended = true;
-                }
-            }
-        });
 
         newBitMap = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
-        newMat = new Mat(mat.rows(), mat.cols(), mat.type());
-        Utils.bitmapToMat(newBitMap, newMat);
         ArrayList<Bitmap> filterBmpArr = new ArrayList<>();
-        String[] filterNames = {"Original", "Autofix", "Greyscale", "Sepia", "Temperature"};
-        Mat filterMat = new Mat(newMat.rows(), newMat.cols(), CvType.CV_8UC1);
-        cvtColor(newMat, filterMat, Imgproc.COLOR_RGB2GRAY, 1);
-        Imgproc.applyColorMap(filterMat, filterMat, 0);
-        Imgproc.resize(filterMat, filterMat, new Size(90, 90));
-        Bitmap bitmap = Bitmap.createBitmap(filterMat.width(), filterMat.height(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(filterMat, bitmap);
-        filterBmpArr.add(bitmap);
-        Filter filter = new Filter(filterNames[0], filterBmpArr.get(0));
-        filterArr.add(filter);
-       /* for (int i = 0; i < 12; i++) {
-            Mat filterMat = new Mat(newMat.rows(), newMat.cols(), CvType.CV_8UC1);
-            cvtColor(newMat, filterMat, Imgproc.COLOR_RGB2GRAY, 1);
-            Imgproc.applyColorMap(filterMat, filterMat, i);
-            Imgproc.resize(filterMat, filterMat, new Size(90, 90));
-            Bitmap bitmap = Bitmap.createBitmap(filterMat.width(), filterMat.height(), Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(filterMat, bitmap);
-            filterBmpArr.add(bitmap);
-            filterMat.release();
+        String[] filterNames = {"Original", "Autofix", "Grayscale", "Sepia", "Sunset", "Fill Light", "Sharpen", "Intensify"};
+
+        for (int i = 0; i < filterNames.length; i++) {
+            // Resize Bitmap to 90,90 Thumbnail
+            Bitmap tempBmp;
+            if (i == 0) {
+                tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.NONE);
+            } else if (i == 1) {
+                tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.AUTOFIX);
+            } else if (i == 2) {
+                tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.GRAYSCALE);
+            } else if (i == 3) {
+                tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.SEPIA);
+            } else if (i == 4) {
+                tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.SUNSET);
+            } else if (i == 5) {
+                tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.FILLLIGHT);
+            } else if (i == 6) {
+                tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.SHARPEN);
+            } else {
+                tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.COLORINTENSIFY);
+            }
+            filterBmpArr.add(tempBmp);
+        }
 
         for (int i = 0; i < filterBmpArr.size(); i++) {
             Filter filter = new Filter(filterNames[i], filterBmpArr.get(i));
             filterArr.add(filter);
-        }*/
+        }
 
-        rvFilter.setAdapter(adapter);
-
-        Intent intentReceived = getIntent();
-        String mode = intentReceived.getStringExtra("mode");
-
-        mView.setOnClickListener(new View.OnClickListener() {
+        adapter.setOnItemClickListener(new FilterAdapter.ClickListener() {
             @Override
-            public void onClick(View v) {
-                if (isLightExtended) {
-                    lightSettings.animate().translationY(lightSettings.getHeight() + linlay1.getHeight());
-                    isLightExtended = false;
+            public void onItemClick(int i, View v) {
+                Bitmap tempBmp;
+                if (i == 0) {
+                    tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.NONE);
+                } else if (i == 1) {
+                    tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.AUTOFIX);
+                } else if (i == 2) {
+                    tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.GRAYSCALE);
+                } else if (i == 3) {
+                    tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.SEPIA);
+                } else if (i == 4) {
+                    tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.SUNSET);
+                } else if (i == 5) {
+                    tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.FILLLIGHT);
+                } else if (i == 6) {
+                    tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.SHARPEN);
+                } else {
+                    tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.COLORINTENSIFY);
                 }
-                if (isFilterExtended) {
-                    filterSettings.animate().translationY(filterSettings.getHeight() + linlay1.getHeight());
-                    isFilterExtended = false;
+                ivResult.setImageBitmap(tempBmp);
+            }
 
-                }
-                mView.setVisibility(View.GONE);
+            @Override
+            public void onItemLongClick(int position, View v) {
+
             }
         });
+        rvFilter.setAdapter(adapter);
 
         ivRotate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Bitmap tempBmp = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
-                tempBmp = doRotate(tempBmp,90);
+                tempBmp = doRotate(tempBmp, 90);
                 ivResult.setImageBitmap(tempBmp);
-                Log.i(TAG,"Rotated 90 degrees");
+                Log.i(TAG, "Rotated 90 degrees");
             }
         });
 
@@ -325,59 +293,6 @@ public class ResultActivity extends AppCompatActivity {
             }
         });
 
-        // Light Settings Options
-        if (newBitMap != null) {
-            seekBarContrast.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-                @Override
-                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                    Mat dst = doContrast(progress);
-                    Utils.matToBitmap(dst, newBitMap);
-                    ivResult.setImageBitmap(newBitMap);
-                }
-
-                @Override
-                public void onStartTrackingTouch(SeekBar seekBar) {
-
-                }
-
-                @Override
-                public void onStopTrackingTouch(SeekBar seekBar) {
-                }
-            });
-
-            seekBarBrightness.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-                @Override
-                public void onProgressChanged(SeekBar arg0, int progress, boolean arg2) {
-                    Mat dst = doBrightness(progress);
-                    Utils.matToBitmap(dst, newBitMap);
-                    ivResult.setImageBitmap(newBitMap);
-                }
-
-                @Override
-                public void onStopTrackingTouch(SeekBar arg0) {
-                }
-
-                @Override
-                public void onStartTrackingTouch(SeekBar arg0) {
-                }
-            });
-
-        }
-
-        // Reset Light Settings
-        tvReset.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    seekBarBrightness.setProgress(50, true);
-                    seekBarContrast.setProgress(50, true);
-                } else {
-                    seekBarBrightness.setProgress(50);
-                    seekBarContrast.setProgress(50);
-                }
-                ivResult.setImageBitmap(newBitMap);
-            }
-        });
 
     }
 
@@ -386,22 +301,6 @@ public class ResultActivity extends AppCompatActivity {
         matrix.postRotate(angle);
         source = Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
         return source;
-    }
-
-    private Mat doContrast(int progress) {
-        Mat dst = new Mat();
-        tvContrast.setText("" + progress);
-        dContrast = progress / 50.0;
-        newMat.convertTo(dst, -1, dContrast, iBrightness);
-        return dst;
-    }
-
-    private Mat doBrightness(int progress) {
-        Mat dst = new Mat();
-        tvBrightness.setText("" + progress);
-        iBrightness = progress - 50;
-        newMat.convertTo(dst, -1, dContrast, iBrightness);
-        return dst;
     }
 
     //Alert to Save Image
@@ -564,7 +463,7 @@ public class ResultActivity extends AppCompatActivity {
             case R.id.blackwhite:
                 Mat doc = new Mat(newBitMap.getWidth(), newBitMap.getHeight(), CV_8UC4);
                 Utils.bitmapToMat(newBitMap, doc);
-                enhanceDocument(doc);
+//                enhanceDocument(doc);
                 Utils.matToBitmap(doc, newBitMap);
                 ivResult.setImageBitmap(newBitMap);
                 break;
@@ -596,70 +495,70 @@ public class ResultActivity extends AppCompatActivity {
 //        doWhiteBalance(mat, 10);
         Utils.matToBitmap(mat, bitmap);
         ivResult.setImageBitmap(bitmap);
-        calcHist(bitmap);
+//        calcHist(bitmap);
 //        Picasso.get()
 //                .load(R.drawable.gradient_bg)
 //                .into(ivResult);
     }
 
-    private void colorThresh(Mat src, int threshold) {
-        Size srcSize = src.size();
-        int size = (int) (srcSize.height * srcSize.width) * 3;
-        byte[] d = new byte[size];
-        src.get(0, 0, d);
+//    private void colorThresh(Mat src, int threshold) {
+//        Size srcSize = src.size();
+//        int size = (int) (srcSize.height * srcSize.width) * 3;
+//        byte[] d = new byte[size];
+//        src.get(0, 0, d);
+//
+//        for (int i = 0; i < size; i += 3) {
+//
+//            // the "& 0xff" operations are needed to convert the signed byte to double
+//
+//            // avoid unneeded work
+//            if ((double) (d[i] & 0xff) == 255) {
+//                continue;
+//            }
+//
+//            double max = Math.max(Math.max((double) (d[i] & 0xff), (double) (d[i + 1] & 0xff)),
+//                    (double) (d[i + 2] & 0xff));
+//            double mean = ((double) (d[i] & 0xff) + (double) (d[i + 1] & 0xff)
+//                    + (double) (d[i + 2] & 0xff)) / 3;
+//
+//            if (max > threshold && mean < max * 0.8) {
+//                d[i] = (byte) ((double) (d[i] & 0xff) * 255 / max);
+//                d[i + 1] = (byte) ((double) (d[i + 1] & 0xff) * 255 / max);
+//                d[i + 2] = (byte) ((double) (d[i + 2] & 0xff) * 255 / max);
+//            } else {
+//                d[i] = d[i + 1] = d[i + 2] = 0;
+//            }
+//        }
+//        src.put(0, 0, d);
+//    }
 
-        for (int i = 0; i < size; i += 3) {
-
-            // the "& 0xff" operations are needed to convert the signed byte to double
-
-            // avoid unneeded work
-            if ((double) (d[i] & 0xff) == 255) {
-                continue;
-            }
-
-            double max = Math.max(Math.max((double) (d[i] & 0xff), (double) (d[i + 1] & 0xff)),
-                    (double) (d[i + 2] & 0xff));
-            double mean = ((double) (d[i] & 0xff) + (double) (d[i + 1] & 0xff)
-                    + (double) (d[i + 2] & 0xff)) / 3;
-
-            if (max > threshold && mean < max * 0.8) {
-                d[i] = (byte) ((double) (d[i] & 0xff) * 255 / max);
-                d[i + 1] = (byte) ((double) (d[i + 1] & 0xff) * 255 / max);
-                d[i + 2] = (byte) ((double) (d[i + 2] & 0xff) * 255 / max);
-            } else {
-                d[i] = d[i + 1] = d[i + 2] = 0;
-            }
-        }
-        src.put(0, 0, d);
-    }
-
-    private Mat enhanceDocument(Mat src) {
-        if (colorMode && filterMode) {
-            src.convertTo(src, -1, colorGain, colorBias);
-            Mat mask = new Mat(src.size(), CV_8UC1);
-            cvtColor(src, mask, COLOR_RGBA2GRAY);
-
-            Mat copy = new Mat(src.size(), CV_8UC3);
-            src.copyTo(copy);
-
-            Imgproc.adaptiveThreshold(mask, mask, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY_INV, 15, 15);
-
-            src.setTo(new Scalar(255, 255, 255));
-            copy.copyTo(src, mask);
-
-            copy.release();
-            mask.release();
-
-            // special color threshold algorithm
-            colorThresh(src, colorThresh);
-        } else if (!colorMode) {
-            cvtColor(src, src, COLOR_RGBA2GRAY);
-            if (filterMode) {
-                Imgproc.adaptiveThreshold(src, src, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 15, 15);
-            }
-        }
-        return src;
-    }
+//    private Mat enhanceDocument(Mat src) {
+//        if (colorMode && filterMode) {
+//            src.convertTo(src, -1, colorGain, colorBias);
+//            Mat mask = new Mat(src.size(), CV_8UC1);
+//            cvtColor(src, mask, COLOR_RGBA2GRAY);
+//
+//            Mat copy = new Mat(src.size(), CV_8UC3);
+//            src.copyTo(copy);
+//
+//            Imgproc.adaptiveThreshold(mask, mask, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY_INV, 15, 15);
+//
+//            src.setTo(new Scalar(255, 255, 255));
+//            copy.copyTo(src, mask);
+//
+//            copy.release();
+//            mask.release();
+//
+//            // special color threshold algorithm
+//            colorThresh(src, colorThresh);
+//        } else if (!colorMode) {
+//            cvtColor(src, src, COLOR_RGBA2GRAY);
+//            if (filterMode) {
+//                Imgproc.adaptiveThreshold(src, src, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 15, 15);
+//            }
+//        }
+//        return src;
+//    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -671,96 +570,6 @@ public class ResultActivity extends AppCompatActivity {
                 }
             }
         }
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.color_menu, menu);
-        return true;
-    }
-
-    private void calcHist(Bitmap bmp) {
-        Mat src = new Mat();
-        Utils.bitmapToMat(bmp, src);
-        if (src.empty()) {
-            System.err.println("Cannot read image: " + imagePath);
-            System.exit(0);
-        }
-        List<Mat> bgrPlanes = new ArrayList<>();
-        Core.split(src, bgrPlanes);
-        int histSize = 256;
-        float[] range = {0, 256}; //the upper boundary is exclusive
-        MatOfFloat histRange = new MatOfFloat(range);
-        boolean accumulate = false;
-        Mat bHist = new Mat(), gHist = new Mat(), rHist = new Mat();
-        Imgproc.calcHist(bgrPlanes, new MatOfInt(0), new Mat(), bHist, new MatOfInt(histSize), histRange, accumulate);
-        Imgproc.calcHist(bgrPlanes, new MatOfInt(1), new Mat(), gHist, new MatOfInt(histSize), histRange, accumulate);
-        Imgproc.calcHist(bgrPlanes, new MatOfInt(2), new Mat(), rHist, new MatOfInt(histSize), histRange, accumulate);
-        int histW = 250, histH = 250;
-        int binW = (int) Math.round((double) histW / histSize);
-        Mat histImage = new Mat(histH, histW, CvType.CV_8UC3, new Scalar(0, 0, 0));
-        Core.normalize(bHist, bHist, 0, histImage.rows(), Core.NORM_MINMAX);
-        Core.normalize(gHist, gHist, 0, histImage.rows(), Core.NORM_MINMAX);
-        Core.normalize(rHist, rHist, 0, histImage.rows(), Core.NORM_MINMAX);
-        float[] bHistData = new float[(int) (bHist.total() * bHist.channels())];
-        bHist.get(0, 0, bHistData);
-        float[] gHistData = new float[(int) (gHist.total() * gHist.channels())];
-        gHist.get(0, 0, gHistData);
-        float[] rHistData = new float[(int) (rHist.total() * rHist.channels())];
-        rHist.get(0, 0, rHistData);
-//
-//        // Get the min and max pixel values indicating the 5% of pixels at the ends of the histograms
-//        float r_min_val = -1, g_min_val = -1, b_min_val = -1; // Dummy value
-//        float r_max_val = -1, g_max_val = -1, b_max_val = -1; // Dummy value
-//
-//        for (int i=0; i < 256; i++){
-//            if (rHistData[i] >= perc && r_min_val == -1){
-//                r_min_val = (float) i;
-//            }
-//            if (rHistData[i] >= (1.0 - perc) && r_max_val == -1){
-////                cout << rHistData[i] << end1;
-//                r_max_val = (float) i;
-//            }
-//            if (gHistData[i] >= perc && g_min_val == -1){
-//                g_min_val = (float) i;
-//            }
-//            if (gHistData[i] >= (1.0 - perc) && g_max_val == -1){
-//                g_max_val = (float) i;
-//            }
-//            if (bHistData[i] >= perc && b_min_val == -1){
-//                b_min_val = (float) i;
-//            }
-//            if (bHistData[i] >= (1.0 - perc) && b_max_val == -1){
-//                b_max_val = (float) i;
-//            }
-//        }
-//        byte[] r_lut = new byte[256];
-//        byte[] g_lut = new byte[256];
-//        byte[] b_lut = new byte[256];
-        for (int i = 1; i < histSize; i++) {
-            Imgproc.line(histImage, new Point(binW * (i - 1), histH - Math.round(bHistData[i - 1])),
-                    new Point(binW * (i), histH - Math.round(bHistData[i])), new Scalar(255, 0, 0), 2);
-            Imgproc.line(histImage, new Point(binW * (i - 1), histH - Math.round(gHistData[i - 1])),
-                    new Point(binW * (i), histH - Math.round(gHistData[i])), new Scalar(0, 255, 0), 2);
-            Imgproc.line(histImage, new Point(binW * (i - 1), histH - Math.round(rHistData[i - 1])),
-                    new Point(binW * (i), histH - Math.round(rHistData[i])), new Scalar(0, 0, 255), 2);
-//            b_lut[i] = saturate(((i - b_min_val) / (b_max_val - b_min_val)) * 255.0);
-//            g_lut[i] = saturate(((i - g_min_val) / (g_max_val - g_min_val)) * 255.0);
-//            r_lut[i] = saturate(((i - r_min_val) / (r_max_val - r_min_val)) * 255.0);
-////            lookUpTable.put(0, 0, lookUpTableData);
-////            Core.LUT(src, lookUpTable, src);
-        }
-//        Mat out = src.clone();
-//        ArrayList<Mat> rgbList = new ArrayList<>();
-//        rgbList.add(r_lut,g_lut,b_lut);
-//        Core.merge();
-//        out.put(0, 0,r_lut,g_lut,b_lut);
-//        Core.LUT(src, lookUpTable, src);
-//
-        Bitmap histBmp = Bitmap.createBitmap(250, 250, Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(histImage, histBmp);
-//        ivHistogram.setImageBitmap(histBmp);
     }
 
 }

@@ -7,10 +7,20 @@
     android:elevation="10dp"
     android:outlineAmbientShadowColor="@color/color_dark_grey"
     android:background="@drawable/gradient_bg">
-    <LinearLayout
-        android:layout_width="wrap_content"
+    <RelativeLayout
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_alignParentTop="true"
+        android:background="@drawable/gradient_bg">
 
-    </LinearLayout>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="Finalize Photo"
+            android:textSize="16sp"
+            android:fontFamily="@font/allerta"
+            android:textColor="@color/color_white"
+            android:gravity="center"/>
+
+    </RelativeLayout>
 </androidx.appcompat.widget.Toolbar>

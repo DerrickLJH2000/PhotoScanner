@@ -6,6 +6,7 @@
     <color name="color_white">#FFFFFF</color>
     <color name="color_white_trans">#B3FFFFFF</color>
     <color name="color_white_trans60">#66FFFFFF</color>
+    <color name="color_white_trans00">#00FFFFFF</color>
     <color name="color_black_trans60">#4D000000</color>
     <color name="color_black">#000000</color>
     <color name="color_dark_grey">#212121</color>

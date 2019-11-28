@@ -1,6 +1,7 @@
 package com.example.digitalizedphotobook.effects;
 
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.media.effect.Effect;
 import android.media.effect.EffectContext;
 import android.media.effect.EffectFactory;
@@ -18,7 +19,6 @@ import java.nio.IntBuffer;
 public class MvEffects{
 
     private static final String TAG = MvEffects.class.getCanonicalName();
-
     private EffectGLSurfaceView mEffectView;
     private int[] mTextures = new int[2];
     private EffectContext mEffectContext;
@@ -37,7 +37,11 @@ public class MvEffects{
         AUTOFIX("autofix"),
         GRAYSCALE("grayscale"),
         SEPIA("sepia"),
-        SUNSET("sunset");
+        SUNSET("sunset"),
+        COLORINTENSIFY("intensify"),
+        FILLLIGHT("filllight"),
+        SHARPEN("sharpen");
+
 
         private String name;
 
@@ -267,14 +271,31 @@ public class MvEffects{
                     Log.e(TAG, "Effect not supported: " + mCurrentEffect);
                 }
                 break;
-//
-//            case R.id.bw:
+
+            case SHARPEN:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_SHARPEN);
+                break;
+            case COLORINTENSIFY:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_BLACKWHITE);
+                mEffect.setParameter("black", .1f);
+                mEffect.setParameter("white", .7f);
+                break;
+
+            case FILLLIGHT:
+                mEffect = effectFactory.createEffect(
+                        EffectFactory.EFFECT_FILLLIGHT);
+                mEffect.setParameter("strength", .8f);
+                break;
+
+//            case DUOTONE:
 //                mEffect = effectFactory.createEffect(
-//                        EffectFactory.EFFECT_BLACKWHITE);
-//                mEffect.setParameter("black", .1f);
-//                mEffect.setParameter("white", .7f);
+//                        EffectFactory.EFFECT_DUOTONE);
+//                mEffect.setParameter("first_color", Color.YELLOW);
+//                mEffect.setParameter("second_color", Color.DKGRAY);
 //                break;
-//
+
 //            case R.id.brightness:
 //                mEffect = effectFactory.createEffect(
 //                        EffectFactory.EFFECT_BRIGHTNESS);
@@ -297,19 +318,7 @@ public class MvEffects{
 //                        EffectFactory.EFFECT_DOCUMENTARY);
 //                break;
 //
-//            case R.id.duotone:
-//                mEffect = effectFactory.createEffect(
-//                        EffectFactory.EFFECT_DUOTONE);
-//                mEffect.setParameter("first_color", Color.YELLOW);
-//                mEffect.setParameter("second_color", Color.DKGRAY);
-//                break;
-//
-//            case R.id.filllight:
-//                mEffect = effectFactory.createEffect(
-//                        EffectFactory.EFFECT_FILLLIGHT);
-//                mEffect.setParameter("strength", .8f);
-//                break;
-//
+
 //            case R.id.fisheye:
 //                mEffect = effectFactory.createEffect(
 //                        EffectFactory.EFFECT_FISHEYE);
@@ -363,11 +372,7 @@ public class MvEffects{
 //                break;
 //
 
-//
-//            case R.id.sharpen:
-//                mEffect = effectFactory.createEffect(
-//                        EffectFactory.EFFECT_SHARPEN);
-//                break;
+
 
 //
 //            case R.id.tint:

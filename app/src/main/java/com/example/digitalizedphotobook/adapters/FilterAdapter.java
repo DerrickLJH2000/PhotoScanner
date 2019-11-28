@@ -23,6 +23,7 @@ import static org.opencv.imgproc.Imgproc.cvtColor;
 
 public class FilterAdapter extends RecyclerView.Adapter<FilterAdapter.ViewHolder> {
 
+    private static ClickListener clickListener;
     private ArrayList<Filter> filterArr;
     private Context context;
 
@@ -48,29 +49,44 @@ public class FilterAdapter extends RecyclerView.Adapter<FilterAdapter.ViewHolder
         Bitmap bitmap = currItem.getImage();
         viewHolder.imageView.setImageBitmap(bitmap);
         viewHolder.textView.setText(name);
-        viewHolder.imageView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-//                Toast.makeText(context, "Not Implemented yet.", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(context, ResultActivity.class);
-                intent.putExtra("mode", "AUTOFIX");
-                context.startActivity(intent);
-            }
-        });
     }
+
+
 
     @Override
     public int getItemCount() {
         return filterArr.size();
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
+    public static class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener{
         public ImageView imageView;
         public TextView textView;
         public ViewHolder(View itemView) {
             super(itemView);
+            itemView.setOnClickListener(this);
+            itemView.setOnLongClickListener(this);
             this.imageView = (ImageView) itemView.findViewById(R.id.ivFilter);
             this.textView = (TextView) itemView.findViewById(R.id.tvFilter);
         }
+
+        @Override
+        public void onClick(View v) {
+            clickListener.onItemClick(getAdapterPosition(), v);
+        }
+
+        @Override
+        public boolean onLongClick(View v) {
+            clickListener.onItemLongClick(getAdapterPosition(), v);
+            return false;
+        }
+    }
+
+    public void setOnItemClickListener(ClickListener clickListener) {
+        FilterAdapter.clickListener = clickListener;
+    }
+
+    public interface ClickListener {
+        void onItemClick(int position, View v);
+        void onItemLongClick(int position, View v);
     }
 }
