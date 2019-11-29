@@ -51,7 +51,7 @@
             android:paddingTop="15dp"
             android:paddingBottom="10dp"
             android:text="Recently Saved"
-            android:textColor="@color/ActivityBackground"
+            android:textColor="@color/color_light_grey2"
             android:textSize="14sp"></TextView>
 
         <TextView
@@ -63,7 +63,7 @@
             android:gravity="center"
             android:paddingBottom="10dp"
             android:text="There are currently\n no saved photos"
-            android:textColor="@color/ActivityBackground"
+            android:textColor="@color/color_light_grey2"
             android:textSize="20sp" />
     </RelativeLayout>
 </LinearLayout>

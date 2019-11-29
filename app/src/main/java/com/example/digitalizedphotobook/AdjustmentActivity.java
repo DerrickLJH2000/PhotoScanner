@@ -39,6 +39,7 @@ import android.widget.Toast;
 
 import com.example.digitalizedphotobook.classes.NativeClass;
 import com.example.digitalizedphotobook.classes.Quadrilateral;
+import com.example.digitalizedphotobook.classes.ScannerConstants;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -85,8 +86,7 @@ public class AdjustmentActivity extends AppCompatActivity {
     private File mFile, mFile2;
     private String imagePath;
     private NativeClass nativeClass;
-    private double gammaValue = 1.0;
-    private Bitmap bmp, scaledBitmap, newBmp;
+    private Bitmap bmp, newBmp, scaledBitmap;
     private Mat mat;
     private Quadrilateral quad;
     private boolean isFourPointed = false;
@@ -136,22 +136,61 @@ public class AdjustmentActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(AdjustmentActivity.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
             return;
         }
-        if (bmp == null) {
-            imagePath = new File(getExternalFilesDir("Temp"), "temp.jpg").getAbsolutePath();
-            reqCode = getIntent().getIntExtra("reqCode", -1);
-            mFile = new File(imagePath);
-            BitmapFactory.Options options = new BitmapFactory.Options();
-            options.inJustDecodeBounds = false;
-            bmp = BitmapFactory.decodeFile(mFile.getAbsolutePath(), options);
-            Matrix matrix = new Matrix();
+        imagePath = new File(getExternalFilesDir("Temp"), "temp.jpg").getAbsolutePath();
+        reqCode = getIntent().getIntExtra("reqCode", -1);
+        mFile = new File(imagePath);
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = false;
+        bmp = BitmapFactory.decodeFile(mFile.getAbsolutePath(), options);
+        Matrix matrix = new Matrix();
+        if (reqCode != 0) {
             matrix.postRotate(90);
-            bmp = createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
+        }
+        bmp = createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
+        ScannerConstants.selectedImageBitmap = bmp;
+        if (ScannerConstants.selectedImageBitmap != null) {
+            initializeElement();
         } else {
-            showToast("Retake Photo");
+            showToast("Retake Photo!");
             finish();
         }
-        initializeElement();
+    }
 
+    private void setImageRotation() {
+        Bitmap tempBitmap = bmp.copy(bmp.getConfig(), true);
+        for (int i = 1; i <= 4; i++) {
+            MatOfPoint2f point2f = nativeClass.getPoint(tempBitmap);
+            if (point2f == null) {
+                tempBitmap = rotateBitmap(tempBitmap, 90 * i);
+            } else {
+                newBmp = tempBitmap.copy(bmp.getConfig(), true);
+                break;
+            }
+        }
+    }
+
+    public static Bitmap rotateBitmap(Bitmap source, float angle) {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(angle);
+        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
+    }
+
+    private void setProgressBar(boolean isShow) {
+        RelativeLayout rlContainer = findViewById(R.id.rlContainer);
+        setViewInterract(rlContainer, !isShow);
+        if (isShow)
+            progressBar.setVisibility(View.VISIBLE);
+        else
+            progressBar.setVisibility(View.GONE);
+    }
+
+    private void setViewInterract(View view, boolean canDo) {
+        view.setEnabled(canDo);
+        if (view instanceof ViewGroup) {
+            for (int i = 0; i < ((ViewGroup) view).getChildCount(); i++) {
+                setViewInterract(((ViewGroup) view).getChildAt(i), canDo);
+            }
+        }
     }
 
     private void initializeElement() {
@@ -192,24 +231,17 @@ public class AdjustmentActivity extends AppCompatActivity {
                 });
     }
 
-    private void doImageProcessing(Bitmap src) {
-        newBmp = src.copy(Bitmap.Config.ARGB_8888,false);
-//        Mat tempClone = tempDisplayMat.clone();
-//        gammaValue = autoGammaValue(tempClone);
-//
-//        doGammaCorrection(tempDisplayMat);
-//        SimplestColorBalance(tempDisplayMat, 5);
-//        Utils.matToBitmap(tempDisplayMat, newBmp);
-        ivResult.setImageBitmap(newBmp);
-    }
-
     private void initializeCropping() {
+        newBmp = ScannerConstants.selectedImageBitmap;
+        ScannerConstants.selectedImageBitmap = null;
         scaledBitmap = scaledBitmap(bmp, frmHolder.getWidth(), frmHolder.getHeight());
         ivResult.setImageBitmap(scaledBitmap);
+
         mat = new Mat(scaledBitmap.getWidth(), scaledBitmap.getHeight(), CvType.CV_8UC4);
         Bitmap tempBitmap = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
         Utils.bitmapToMat(tempBitmap, mat);
         findContours(mat);
+
         Map<Integer, PointF> pointFs = null;
         try {
             pointFs = getEdgePoints(tempBitmap);
@@ -223,50 +255,13 @@ public class AdjustmentActivity extends AppCompatActivity {
 
             polygonView.setLayoutParams(layoutParams);
             polygonView.setPointColor(getResources().getColor(R.color.blue));
-            doImageProcessing(scaledBitmap);
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void setImageRotation() {
-        Bitmap tempBitmap = bmp.copy(bmp.getConfig(), true);
-        for (int i = 1; i <= 4; i++) {
-            MatOfPoint2f point2f = nativeClass.getPoint(tempBitmap);
-            if (point2f == null) {
-                bmp = rotateBitmap(tempBitmap, 90 * i);
-            } else {
-                bmp = tempBitmap.copy(bmp.getConfig(), true);
-                break;
-            }
-        }
-    }
 
-    public Bitmap rotateBitmap(Bitmap source, float angle) {
-        Matrix matrix = new Matrix();
-        matrix.postRotate(angle);
-        bmp = Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
-        return bmp;
-    }
-
-    private void setProgressBar(boolean isShow) {
-        RelativeLayout rlContainer = findViewById(R.id.rlContainer);
-        setViewInterract(rlContainer, !isShow);
-        if (isShow)
-            progressBar.setVisibility(View.VISIBLE);
-        else
-            progressBar.setVisibility(View.GONE);
-    }
-
-    private void setViewInterract(View view, boolean canDo) {
-        view.setEnabled(canDo);
-        if (view instanceof ViewGroup) {
-            for (int i = 0; i < ((ViewGroup) view).getChildCount(); i++) {
-                setViewInterract(((ViewGroup) view).getChildAt(i), canDo);
-            }
-        }
-    }
 
 
     private View.OnClickListener btnRotateRight = new View.OnClickListener() {
@@ -384,29 +379,6 @@ public class AdjustmentActivity extends AppCompatActivity {
         m.setRectToRect(new RectF(0, 0, bitmap.getWidth(), bitmap.getHeight()), new RectF(0, 0, width, height), Matrix.ScaleToFit.CENTER);
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), m, true);
     }
-
-//    public static int calculateInSampleSize(
-//            BitmapFactory.Options options, int reqWidth, int reqHeigh t) {
-//        // Raw height and width of image
-//        final int height = options.outHeight;
-//        final int width = options.outWidth;
-//        int inSampleSize = 1;
-//
-//        if (height > reqHeight || width > reqWidth) {
-//
-//            final int halfHeight = height / 2;
-//            final int halfWidth = width / 2;
-//
-//            // Calculate the largest inSampleSize value that is a power of 2 and keeps both
-//            // height and width larger than the requested height and width.
-//            while ((halfHeight / inSampleSize) >= reqHeight
-//                    && (halfWidth / inSampleSize) >= reqWidth) {
-//                inSampleSize *= 2;
-//            }
-//        }
-//
-//        return inSampleSize;
-//    }
 
     private Mat otsuAutoCanny(Mat src) {
         Mat newSrc = new Mat();
@@ -617,7 +589,6 @@ public class AdjustmentActivity extends AppCompatActivity {
         return result;
     }
 
-
     private Map<Integer, PointF> getEdgePoints(Bitmap tempBitmap) {
         List<PointF> pointFs = getContourEdgePoints(tempBitmap);
         Map<Integer, PointF> orderedPoints = orderedValidEdgePoints(tempBitmap, pointFs);
@@ -672,89 +643,6 @@ public class AdjustmentActivity extends AppCompatActivity {
                 }
             }
         }
-    }
-
-    private byte saturate(double val) {
-        int iVal = (int) Math.round(val);
-        iVal = iVal > 255 ? 255 : (iVal < 0 ? 0 : iVal);
-        return (byte) iVal;
-    }
-
-    private double mean_pixel(Mat img) {
-        if (img.channels() > 2) {
-            cvtColor(img.clone(), img, COLOR_RGB2GRAY);
-            return Core.mean(img).val[0];
-        } else {
-            return Core.mean(img).val[0];
-        }
-    }
-
-//    private double autoGammaValue(Mat src) {
-//        double max_pixel = 255;
-//        double middle_pixel = 128;
-//        double pixel_range = 256;
-//        double mean_l = mean_pixel(src);
-//
-//        double gamma = log(middle_pixel / pixel_range) / log(mean_l / pixel_range); // Formula from ImageJ
-//        return gamma;
-//    }
-//
-//    private void doGammaCorrection(Mat src) {
-//        //! [changing-contrast-brightness-gamma-correction]
-//        Mat lookUpTable = new Mat(1, 256, CvType.CV_8U);
-//        byte[] lookUpTableData = new byte[(int) (lookUpTable.total() * lookUpTable.channels())];
-//        for (int i = 0; i < lookUpTable.cols(); i++) {
-//            lookUpTableData[i] = saturate(Math.pow(i / 255.0, gammaValue) * 255.0);
-//        }
-//        lookUpTable.put(0, 0, lookUpTableData);
-//        Core.LUT(src, lookUpTable, src);
-//    }
-
-    /**
-     * Simplest Color Balance. Performs color balancing via histogram
-     * normalization.
-     *
-     * @param img     input color or gray scale image
-     * @param percent controls the percentage of pixels to clip to white and black. (normally, choose 1~10)
-     * @return Balanced image in CvType.CV_32F
-     */
-    public static Mat SimplestColorBalance(Mat img, int percent) {
-        if (percent <= 0)
-            percent = 5;
-        Imgproc.cvtColor(img, img, Imgproc.COLOR_RGB2RGBA);
-//        img.convertTo(img, CvType.CV_32F);
-        List<Mat> channels = new ArrayList<>();
-        int rows = img.rows(); // number of rows of image
-        int cols = img.cols(); // number of columns of image
-        int chnls = img.channels(); //  number of channels of image
-        double halfPercent = percent / 200.0;
-        if (chnls == 3) Core.split(img, channels);
-        else channels.add(img);
-        List<Mat> results = new ArrayList<>();
-        for (int i = 0; i < chnls; i++) {
-            // find the low and high precentile values (based on the input percentile)
-            Mat flat = new Mat();
-            channels.get(i).reshape(1, 1).copyTo(flat);
-            Core.sort(flat, flat, Core.SORT_ASCENDING);
-            double lowVal = flat.get(0, (int) Math.floor(flat.cols() * halfPercent))[0];
-            double topVal = flat.get(0, (int) Math.ceil(flat.cols() * (1.0 - halfPercent)))[0];
-            // saturate below the low percentile and above the high percentile
-            Mat channel = channels.get(i);
-            for (int m = 0; m < rows; m++) {
-                for (int n = 0; n < cols; n++) {
-                    if (channel.get(m, n)[0] < lowVal) channel.put(m, n, lowVal);
-                    if (channel.get(m, n)[0] > topVal) channel.put(m, n, topVal);
-                }
-            }
-            Core.normalize(channel, channel, 0.0, 255.0 / 2, Core.NORM_MINMAX);
-//            channel.convertTo(channel, CvType.CV_32F);
-            results.add(channel);
-
-        }
-        Mat outval = new Mat();
-        Core.merge(results, outval);
-        Imgproc.cvtColor(outval, outval, Imgproc.COLOR_RGBA2RGB);
-        return outval;
     }
 
 }

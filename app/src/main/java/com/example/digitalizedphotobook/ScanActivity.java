@@ -3,9 +3,11 @@ package com.example.digitalizedphotobook;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Point;
@@ -37,6 +39,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
+import com.example.digitalizedphotobook.classes.ScannerConstants;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import androidx.core.app.ActivityCompat;
@@ -150,6 +153,7 @@ public class ScanActivity extends AppCompatActivity {
     private GridLineView mGridLineView;
     private int DSI_height;
     private int DSI_width;
+    private SharedPreferences pref;
 
 
     private final CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
@@ -204,6 +208,7 @@ public class ScanActivity extends AppCompatActivity {
     private Semaphore mCameraOpenCloseLock = new Semaphore(1);
     private boolean mFlashSupported;
     private int mSensorOrientation;
+    private Boolean isFlashEnabled = false;
     private boolean mManualFocusEngaged = false;
     private CameraCaptureSession.CaptureCallback mCaptureCallback
             = new CameraCaptureSession.CaptureCallback() {
@@ -311,8 +316,7 @@ public class ScanActivity extends AppCompatActivity {
 
     CameraCharacteristics characteristics;
     Rect rect;
-
-    private Boolean isGridEnabled = false;
+    Boolean isGridEnabled = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -330,6 +334,7 @@ public class ScanActivity extends AppCompatActivity {
         mGridLineView = findViewById(R.id.grid_line_view);
         mTextureView = (AutoFitTextureView) findViewById(R.id.tvScan);
         mFile = new File(getExternalFilesDir("Temp"), "temp.jpg");
+        pref = getApplicationContext().getSharedPreferences("USER_PREF", 0);
         assert mTextureView != null;
         ivBack.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -339,7 +344,16 @@ public class ScanActivity extends AppCompatActivity {
         });
         mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
         mTextureView.setWillNotDraw(false);
-
+        if (pref.getBoolean("gridEnabled", false)){
+            mGridLineView.toggleGrid();
+            ivGrid.setImageResource(R.drawable.ic_grid_on);
+            ivGrid.setColorFilter(ContextCompat.getColor(ScanActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
+        }
+        if (pref.getBoolean("flashEnabled", false)) {
+            isFlashEnabled = true;
+            ivFlash.setImageResource(R.drawable.ic_flash_on);
+            ivFlash.setColorFilter(ContextCompat.getColor(ScanActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
+        }
         fabCamera.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -356,25 +370,29 @@ public class ScanActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 mFlashSupported = getApplicationContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
+                SharedPreferences.Editor editor = pref.edit();
                 if (mFlashSupported) {
                     Integer flashmode = (Integer) ivFlash.getTag();
-                    flashmode = flashmode == null ? R.drawable.ic_flash_auto : flashmode;
-                    if (flashmode == R.drawable.ic_flash_auto) {
-                        ivFlash.setImageResource(R.drawable.ic_flash_off);
-                        ivFlash.setTag(R.drawable.ic_flash_off);
-                        showToast("Flash Mode : OFF");
-                    } else if (flashmode == R.drawable.ic_flash_off) {
+                    flashmode = flashmode == null ? R.drawable.ic_flash_off : flashmode;
+                    if (flashmode == R.drawable.ic_flash_off) {
                         ivFlash.setImageResource(R.drawable.ic_flash_on);
                         ivFlash.setTag(R.drawable.ic_flash_on);
+                        ivFlash.setColorFilter(ContextCompat.getColor(ScanActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
                         showToast("Flash Mode : ON");
+                        isFlashEnabled = true;
+                        editor.putBoolean("flashEnabled", true);
                     } else if (flashmode == R.drawable.ic_flash_on) {
-                        ivFlash.setImageResource(R.drawable.ic_flash_auto);
-                        ivFlash.setTag(R.drawable.ic_flash_auto);
-                        showToast("Flash Mode : AUTO");
+                        ivFlash.setImageResource(R.drawable.ic_flash_off);
+                        ivFlash.setTag(R.drawable.ic_flash_off);
+                        ivFlash.setColorFilter(ContextCompat.getColor(ScanActivity.this, R.color.color_white), PorterDuff.Mode.SRC_IN);
+                        showToast("Flash Mode : OFF");
+                        isFlashEnabled = false;
+                        editor.putBoolean("flashEnabled", false);
                     }
                 } else {
                     showToast("You do not have Flash feature on your device!");
                 }
+                editor.commit();
                 createCameraPreviewSession();
             }
         });
@@ -492,16 +510,18 @@ public class ScanActivity extends AppCompatActivity {
         ivGrid.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                SharedPreferences.Editor editor = pref.edit();
                 if (mGridLineView.isGridShown()) {
                     ivGrid.setImageResource(R.drawable.ic_grid_off);
                     ivGrid.setColorFilter(ContextCompat.getColor(ScanActivity.this, R.color.color_white), PorterDuff.Mode.SRC_IN);
-                    isGridEnabled = false;
+                    editor.putBoolean("gridEnabled", false);
                 } else {
                     ivGrid.setImageResource(R.drawable.ic_grid_on);
                     ivGrid.setColorFilter(ContextCompat.getColor(ScanActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
-                    isGridEnabled = true;
+                    editor.putBoolean("gridEnabled", true);
                 }
                 mGridLineView.toggleGrid();
+                editor.commit();
             }
         });
 
@@ -555,7 +575,6 @@ public class ScanActivity extends AppCompatActivity {
         } else {
             mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
         }
-
     }
 
     @Override
@@ -924,23 +943,14 @@ public class ScanActivity extends AppCompatActivity {
     }
 
     private void setAutoFlash(CaptureRequest.Builder requestBuilder) {
-        Integer integer = (Integer) ivFlash.getTag();
-        integer = integer == null ? 0 : integer;
         if (mFlashSupported) {
-            switch (integer) {
+            if (!isFlashEnabled) {
+                mPreviewRequestBuilder.set(CaptureRequest.FLASH_MODE,
+                        CaptureRequest.FLASH_MODE_OFF);
 
-                case R.drawable.ic_flash_off:
-                    mPreviewRequestBuilder.set(CaptureRequest.FLASH_MODE,
-                            CaptureRequest.FLASH_MODE_OFF);
-                    break;
-                case R.drawable.ic_flash_on:
-                    mPreviewRequestBuilder.set(CaptureRequest.FLASH_MODE,
-                            CaptureRequest.FLASH_MODE_SINGLE);
-                    break;
-                default:
-                    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
-                            CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
-                    break;
+            } else {
+                mPreviewRequestBuilder.set(CaptureRequest.FLASH_MODE,
+                        CaptureRequest.FLASH_MODE_SINGLE);
             }
         }
     }

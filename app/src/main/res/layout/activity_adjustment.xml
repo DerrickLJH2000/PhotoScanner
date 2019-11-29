@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/color_dark_grey"
+    android:background="@drawable/gradient_black"
     tools:context=".AdjustmentActivity">
 
     <LinearLayout
@@ -150,7 +150,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:padding="150dp"
-        android:background="@color/color_dark_grey"
+        android:background="#E6000000"
         android:visibility="gone"
         />
 </RelativeLayout>

@@ -1,12 +1,3 @@
-/*
- * *
- *  * Created by Muhammet Ali YÜCE on 3/5/19 4:26 PM
- *  * on Github: /mayuce
- *  * Copyright (c) 2019 . All rights reserved.
- *  * Last modified 3/4/19 4:56 PM
- *
- */
-
 package com.example.digitalizedphotobook.classes;
 
 import android.graphics.Bitmap;

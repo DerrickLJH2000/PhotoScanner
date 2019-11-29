@@ -57,18 +57,6 @@ public class GridLineView extends View {
         }
     }
 
-    public int getNumberOfColumns() {
-        return numColumns;
-    }
-
-    public void setNumberOfColumns(int numColumns) {
-        if (numColumns > 0) {
-            this.numColumns = numColumns;
-        } else {
-            throw new RuntimeException("Cannot have a negative number of columns");
-        }
-    }
-
     public boolean isGridShown() {
         return showGrid;
     }

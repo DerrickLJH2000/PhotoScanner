@@ -23,6 +23,7 @@ import com.example.digitalizedphotobook.adapters.SavedPhotoAdapter;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class MainActivity extends AppCompatActivity {
     private static String TAG = "Magnifier";
@@ -62,6 +63,7 @@ public class MainActivity extends AppCompatActivity {
             for (int i = 0; i < files.length; i++){
                 photoArr.add(files[i]);
             }
+            Collections.sort(photoArr);
         }
 
         if (photoArr.size() == 0){

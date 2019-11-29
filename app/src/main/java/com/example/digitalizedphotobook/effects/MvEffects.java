@@ -39,8 +39,8 @@ public class MvEffects{
         SEPIA("sepia"),
         SUNSET("sunset"),
         COLORINTENSIFY("intensify"),
-        FILLLIGHT("filllight"),
-        SHARPEN("sharpen");
+        SHARPEN("sharpen"),
+        SATURATE("saturate");
 
 
         private String name;
@@ -276,6 +276,7 @@ public class MvEffects{
                 mEffect = effectFactory.createEffect(
                         EffectFactory.EFFECT_SHARPEN);
                 break;
+
             case COLORINTENSIFY:
                 mEffect = effectFactory.createEffect(
                         EffectFactory.EFFECT_BLACKWHITE);
@@ -283,11 +284,16 @@ public class MvEffects{
                 mEffect.setParameter("white", .7f);
                 break;
 
-            case FILLLIGHT:
+            case SATURATE:
                 mEffect = effectFactory.createEffect(
-                        EffectFactory.EFFECT_FILLLIGHT);
-                mEffect.setParameter("strength", .8f);
+                        EffectFactory.EFFECT_SATURATE);
+                mEffect.setParameter("scale", .5f);
                 break;
+//            case FILLLIGHT:
+//                mEffect = effectFactory.createEffect(
+//                        EffectFactory.EFFECT_FILLLIGHT);
+//                mEffect.setParameter("strength", .8f);
+//                break;
 
 //            case DUOTONE:
 //                mEffect = effectFactory.createEffect(
@@ -365,11 +371,7 @@ public class MvEffects{
 //                mEffect.setParameter("angle", 180);
 //                break;
 //
-//            case R.id.saturate:
-//                mEffect = effectFactory.createEffect(
-//                        EffectFactory.EFFECT_SATURATE);
-//                mEffect.setParameter("scale", .5f);
-//                break;
+
 //
 
 

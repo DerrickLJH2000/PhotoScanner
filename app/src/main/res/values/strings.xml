@@ -1,9 +1,3 @@
 <resources>
     <string name="app_name">DigitalizedPhotoBook</string>
-
-    <string-array name="mats">
-        <item>RGBA</item>
-        <item>Grey Scale</item>
-        <item>B &amp; W</item>
-    </string-array>
 </resources>

@@ -95,29 +95,16 @@ import static org.opencv.imgproc.Imgproc.cvtColor;
 
 public class ResultActivity extends AppCompatActivity{
     public static final String TAG = "ResultActivity";
-    public ImageView ivFilters, ivBack, ivSave, ivMore, ivRotate;
+    public ImageView ivFilters, ivBack, ivSave, ivRotate;
     private PhotoView ivResult;
-    private TextView tvBrightness, tvContrast, tvReset;
-    private LinearLayout lightSettings, linlay1, filterSettings;
-    private SeekBar seekBarBrightness, seekBarContrast;
-    private float scaledRatio;
+    private LinearLayout linlay1, filterSettings;
     private String imagePath;
     private Toolbar toolbar;
     private Bitmap bitmap, newBitMap;
     private View mView;
     private File mFile;
     public Mat mat, newMat;
-    private boolean colorMode = false;
-    private boolean filterMode = true;
-    private double colorGain = 1.5;       // contrast
-    private double colorBias = 0;         // bright
-    private int colorThresh = 110;
-    private double gammaValue = 1.0;
     private boolean isFilterExtended = false;
-    private boolean isLightExtended = false;
-    private boolean isRotated = false;
-    private int iBrightness = 50;
-    private double dContrast = 1.0;
     private RecyclerView rvFilter;
     private RecyclerView.LayoutManager layManager;
     ArrayList<Filter> filterArr = new ArrayList<Filter>();
@@ -164,6 +151,8 @@ public class ResultActivity extends AppCompatActivity{
         rvFilter = findViewById(R.id.rvFilters);
         filterSettings = findViewById(R.id.filterSettings);
         linlay1 = findViewById(R.id.linlay1);
+        mView = findViewById(R.id.clickView);
+
 
         if (!OpenCVLoader.initDebug()) {
             return;
@@ -183,8 +172,6 @@ public class ResultActivity extends AppCompatActivity{
         adapter = new FilterAdapter(filterArr);
 
         imagePath = getIntent().getStringExtra("croppedPoints");
-        isRotated = getIntent().getBooleanExtra("isRotated", false);
-        scaledRatio = getIntent().getFloatExtra("scaledRatio", 0.0f);
 
         mFile = new File(imagePath);
         Log.i(TAG, "ABSOLUTE PATH" + mFile.getAbsolutePath());
@@ -201,20 +188,33 @@ public class ResultActivity extends AppCompatActivity{
             public void onClick(View v) {
                 if (!isFilterExtended) {
                     filterSettings.setVisibility(View.VISIBLE);
+                    mView.setVisibility(View.VISIBLE);
+                    mView.animate().translationY(filterSettings.getHeight() * -1);
                     filterSettings.animate().translationY(filterSettings.getHeight() * -1);
                     isFilterExtended = true;
+                    ivFilters.setColorFilter(ContextCompat.getColor(ResultActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
                 } else {
+                    mView.setVisibility(View.GONE);
+                    filterSettings.animate().translationY(filterSettings.getHeight() + linlay1.getHeight());
+                    isFilterExtended = false;
+                    ivFilters.setColorFilter(ContextCompat.getColor(ResultActivity.this, R.color.color_white), PorterDuff.Mode.SRC_IN);
+                }
+            }
+        });
+        mView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (isFilterExtended) {
                     filterSettings.animate().translationY(filterSettings.getHeight() + linlay1.getHeight());
                     isFilterExtended = false;
                 }
-//                Bitmap temp = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
-//                calcHist(temp);
+                mView.setVisibility(View.GONE);
             }
         });
 
         newBitMap = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
         ArrayList<Bitmap> filterBmpArr = new ArrayList<>();
-        String[] filterNames = {"Original", "Autofix", "Grayscale", "Sepia", "Sunset", "Fill Light", "Sharpen", "Intensify"};
+        String[] filterNames = {"Original", "Autofix", "Grayscale", "Sepia", "Sunset", "Saturate", "Sharpen", "Intensify"};
 
         for (int i = 0; i < filterNames.length; i++) {
             // Resize Bitmap to 90,90 Thumbnail
@@ -230,7 +230,7 @@ public class ResultActivity extends AppCompatActivity{
             } else if (i == 4) {
                 tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.SUNSET);
             } else if (i == 5) {
-                tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.FILLLIGHT);
+                tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.SATURATE);
             } else if (i == 6) {
                 tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.SHARPEN);
             } else {
@@ -259,7 +259,7 @@ public class ResultActivity extends AppCompatActivity{
                 } else if (i == 4) {
                     tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.SUNSET);
                 } else if (i == 5) {
-                    tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.FILLLIGHT);
+                    tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.SATURATE);
                 } else if (i == 6) {
                     tempBmp = MvEffects.applyFilter(bitmap, MvEffects.Type.SHARPEN);
                 } else {
@@ -285,14 +285,12 @@ public class ResultActivity extends AppCompatActivity{
             }
         });
 
-
         ivSave.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 alertDialog();
             }
         });
-
 
     }
 
@@ -325,7 +323,7 @@ public class ResultActivity extends AppCompatActivity{
                             rotatedBmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
                             byte[] bytes = stream.toByteArray();
                             long yourmilliseconds = System.currentTimeMillis();
-                            SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy-HH-mm-ss");
+                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
                             Date date = new Date(yourmilliseconds);
                             File mFile = new File(getExternalFilesDir("Photobook"), sdf.format(date) + ".jpg");
                             try {
@@ -487,78 +485,8 @@ public class ResultActivity extends AppCompatActivity{
         bmOptions.inPurgeable = true;
 
         bitmap = BitmapFactory.decodeFile(photoPath, bmOptions);
-        mat = new Mat(bitmap.getWidth(), bitmap.getHeight(), CvType.CV_8UC4);
-        Utils.bitmapToMat(bitmap, mat);
-//        Mat blurredMat = new Mat();
-//        Imgproc.GaussianBlur(mat, blurredMat, new Size(5, 5), 0);
-//        Core.addWeighted(mat, 1.5, blurredMat, 0.5, 0.0, mat);
-//        doWhiteBalance(mat, 10);
-        Utils.matToBitmap(mat, bitmap);
         ivResult.setImageBitmap(bitmap);
-//        calcHist(bitmap);
-//        Picasso.get()
-//                .load(R.drawable.gradient_bg)
-//                .into(ivResult);
     }
-
-//    private void colorThresh(Mat src, int threshold) {
-//        Size srcSize = src.size();
-//        int size = (int) (srcSize.height * srcSize.width) * 3;
-//        byte[] d = new byte[size];
-//        src.get(0, 0, d);
-//
-//        for (int i = 0; i < size; i += 3) {
-//
-//            // the "& 0xff" operations are needed to convert the signed byte to double
-//
-//            // avoid unneeded work
-//            if ((double) (d[i] & 0xff) == 255) {
-//                continue;
-//            }
-//
-//            double max = Math.max(Math.max((double) (d[i] & 0xff), (double) (d[i + 1] & 0xff)),
-//                    (double) (d[i + 2] & 0xff));
-//            double mean = ((double) (d[i] & 0xff) + (double) (d[i + 1] & 0xff)
-//                    + (double) (d[i + 2] & 0xff)) / 3;
-//
-//            if (max > threshold && mean < max * 0.8) {
-//                d[i] = (byte) ((double) (d[i] & 0xff) * 255 / max);
-//                d[i + 1] = (byte) ((double) (d[i + 1] & 0xff) * 255 / max);
-//                d[i + 2] = (byte) ((double) (d[i + 2] & 0xff) * 255 / max);
-//            } else {
-//                d[i] = d[i + 1] = d[i + 2] = 0;
-//            }
-//        }
-//        src.put(0, 0, d);
-//    }
-
-//    private Mat enhanceDocument(Mat src) {
-//        if (colorMode && filterMode) {
-//            src.convertTo(src, -1, colorGain, colorBias);
-//            Mat mask = new Mat(src.size(), CV_8UC1);
-//            cvtColor(src, mask, COLOR_RGBA2GRAY);
-//
-//            Mat copy = new Mat(src.size(), CV_8UC3);
-//            src.copyTo(copy);
-//
-//            Imgproc.adaptiveThreshold(mask, mask, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY_INV, 15, 15);
-//
-//            src.setTo(new Scalar(255, 255, 255));
-//            copy.copyTo(src, mask);
-//
-//            copy.release();
-//            mask.release();
-//
-//            // special color threshold algorithm
-//            colorThresh(src, colorThresh);
-//        } else if (!colorMode) {
-//            cvtColor(src, src, COLOR_RGBA2GRAY);
-//            if (filterMode) {
-//                Imgproc.adaptiveThreshold(src, src, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 15, 15);
-//            }
-//        }
-//        return src;
-//    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
