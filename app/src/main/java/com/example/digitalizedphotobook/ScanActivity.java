@@ -381,7 +381,7 @@ public class ScanActivity extends AppCompatActivity {
                         showToast("Flash Mode : ON");
                         isFlashEnabled = true;
                         editor.putBoolean("flashEnabled", true);
-                    } else if (flashmode == R.drawable.ic_flash_on) {
+                    } else {
                         ivFlash.setImageResource(R.drawable.ic_flash_off);
                         ivFlash.setTag(R.drawable.ic_flash_off);
                         ivFlash.setColorFilter(ContextCompat.getColor(ScanActivity.this, R.color.color_white), PorterDuff.Mode.SRC_IN);
