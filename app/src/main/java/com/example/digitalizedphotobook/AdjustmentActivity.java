@@ -1,7 +1,6 @@
 package com.example.digitalizedphotobook;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -13,7 +12,6 @@ import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
-import android.media.ExifInterface;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -24,15 +22,12 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
 
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
@@ -45,7 +40,6 @@ import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
-import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
@@ -71,11 +65,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
 
 import static android.graphics.Bitmap.createBitmap;
-import static java.lang.Math.log;
 import static java.lang.Math.max;
-import static org.opencv.imgproc.Imgproc.COLOR_RGB2GRAY;
-import static org.opencv.imgproc.Imgproc.cvtColor;
-
 
 public class AdjustmentActivity extends AppCompatActivity {
     private static final String TAG = "AdjustmentActivity123";
@@ -93,7 +83,7 @@ public class AdjustmentActivity extends AppCompatActivity {
     private boolean isFourPointed = false;
     private boolean isCropped = false;
     private int reqCode;
-    private Map<Integer, PointF> points;
+    private Map<Integer, PointF> points, tempPoints;
     private boolean isEditing = false;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
@@ -229,7 +219,6 @@ public class AdjustmentActivity extends AppCompatActivity {
                             alertDialog();
                         }
                     });
-
                 });
     }
 
@@ -244,7 +233,7 @@ public class AdjustmentActivity extends AppCompatActivity {
         Utils.bitmapToMat(scaledBitmap, mat);
         findContours(mat);
 
-        for (int i=0; i < bitmapArr.size(); i ++){
+        for (int i = 0; i < bitmapArr.size(); i++) {
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
             bitmapArr.get(i).compress(Bitmap.CompressFormat.JPEG, 100, stream);
             byte[] bytes = stream.toByteArray();
@@ -273,36 +262,10 @@ public class AdjustmentActivity extends AppCompatActivity {
             polygonView.setLayoutParams(layoutParams);
             polygonView.setPointColor(getResources().getColor(R.color.blue));
 
-//            Mat testMat = mat.clone();
-//            quadArr = findMultipleContours(testMat);
-//            ArrayList<Point[]> points = new ArrayList<>();
-//            for (int i = 0; i < quadArr.size(); i++){
-//                points.add(quadArr.get(i).points);
-//            }
-//            for (int i = 0; i < points.size(); i++){
-//                Mat dest = perspectiveChange(testMat,points.get(i));
-//                Bitmap tfmBmp = createBitmap(dest.width(), dest.height(), Bitmap.Config.ARGB_8888);
-//                Utils.matToBitmap(dest, tfmBmp);
-//                Bitmap rotatedBmp = createBitmap(tfmBmp, 0, 0, tfmBmp.getWidth(), tfmBmp.getHeight());
-//                ByteArrayOutputStream stream = new ByteArrayOutputStream();
-//                rotatedBmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
-//                byte[] bytes = stream.toByteArray();
-//                File testFile = new File(getExternalFilesDir("Test"), "test" + i +".jpg");
-//                try {
-//                    testFile.createNewFile();
-//                    FileOutputStream fileOutputStream = new FileOutputStream(testFile);
-//                    fileOutputStream.write(bytes);
-//                    fileOutputStream.close();
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                }
-//            }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-
 
     private View.OnClickListener btnRotateRight = new View.OnClickListener() {
         @Override
@@ -321,7 +284,6 @@ public class AdjustmentActivity extends AppCompatActivity {
                     });
         }
     };
-
     private View.OnClickListener btnRotateLeft = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -339,7 +301,6 @@ public class AdjustmentActivity extends AppCompatActivity {
                     });
         }
     };
-
     private View.OnClickListener btnCropToFit = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -378,24 +339,24 @@ public class AdjustmentActivity extends AppCompatActivity {
                 pointArr[i] = new Point((double) points.get(i).x, (double) points.get(i).y);
             }
             if (polygonView.isValidShape(points)) {
-                Mat dest = perspectiveChange(mat, pointArr);
-                Matrix matrix = new Matrix();
-                matrix.postRotate(ivResult.getRotation());
-                Bitmap tfmBmp = createBitmap(dest.width(), dest.height(), Bitmap.Config.ARGB_8888);
-                Utils.matToBitmap(dest, tfmBmp);
-                Bitmap rotatedBmp = createBitmap(tfmBmp, 0, 0, tfmBmp.getWidth(), tfmBmp.getHeight(), matrix, true);
-                ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                rotatedBmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
-                byte[] bytes = stream.toByteArray();
-                mFile2 = new File(getExternalFilesDir("Temp"), "temp2.jpg");
-                try {
-                    mFile2.createNewFile();
-                    FileOutputStream fileOutputStream = new FileOutputStream(mFile2);
-                    fileOutputStream.write(bytes);
-                    fileOutputStream.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                    Mat dest = perspectiveChange(mat, pointArr);
+                    Matrix matrix = new Matrix();
+                    matrix.postRotate(ivResult.getRotation());
+                    Bitmap tfmBmp = createBitmap(dest.width(), dest.height(), Bitmap.Config.ARGB_8888);
+                    Utils.matToBitmap(dest, tfmBmp);
+                    Bitmap rotatedBmp = createBitmap(tfmBmp, 0, 0, tfmBmp.getWidth(), tfmBmp.getHeight(), matrix, true);
+                    ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                    rotatedBmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+                    byte[] bytes = stream.toByteArray();
+                    mFile2 = new File(getExternalFilesDir("Temp"), "temp2.jpg");
+                    try {
+                        mFile2.createNewFile();
+                        FileOutputStream fileOutputStream = new FileOutputStream(mFile2);
+                        fileOutputStream.write(bytes);
+                        fileOutputStream.close();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
 //            ivConfirm.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.color_white), PorterDuff.Mode.SRC_IN);
                 isEditing = true;
                 Intent intent = new Intent(AdjustmentActivity.this, ResultActivity.class);
@@ -413,6 +374,126 @@ public class AdjustmentActivity extends AppCompatActivity {
             }
         }
     };
+
+    public Map<Integer, PointF> getOrderedPoints(List<PointF> points) {
+
+        PointF centerPoint = new PointF();
+        int size = points.size();
+        for (PointF pointF : points) {
+            centerPoint.x += pointF.x / size;
+            centerPoint.y += pointF.y / size;
+        }
+        Map<Integer, PointF> orderedPoints = new HashMap<>();
+        for (PointF pointF : points) {
+            int index = -1;
+            if (pointF.x < centerPoint.x && pointF.y < centerPoint.y) {
+                index = 0;
+            } else if (pointF.x > centerPoint.x && pointF.y < centerPoint.y) {
+                index = 1;
+            } else if (pointF.x < centerPoint.x && pointF.y > centerPoint.y) {
+                index = 2;
+            } else if (pointF.x > centerPoint.x && pointF.y > centerPoint.y) {
+                index = 3;
+            }
+            orderedPoints.put(index, pointF);
+        }
+        return orderedPoints;
+    }
+
+    private ArrayList<Bitmap> bitmapArr;
+
+    private Quadrilateral findContours(Mat src) {
+
+        Size size = new Size(src.width(), src.height());
+        Mat grayImage = new Mat(size, CvType.CV_8UC1);
+
+        Imgproc.cvtColor(src, grayImage, Imgproc.COLOR_RGBA2GRAY, 1);
+
+        Imgproc.GaussianBlur(grayImage, grayImage, new Size(5, 5), 0);
+        Mat cannedImage = otsuAutoCanny(grayImage);
+        Imgproc.morphologyEx(cannedImage, cannedImage, 3, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(7, 7)));
+        Imgproc.morphologyEx(cannedImage, cannedImage, 4, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
+        ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        Mat hierarchy = new Mat();
+
+        Imgproc.findContours(cannedImage, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+
+        hierarchy.release();
+        Collections.sort(contours, new Comparator<MatOfPoint>() {
+
+            @Override
+            public int compare(MatOfPoint lhs, MatOfPoint rhs) {
+                return Double.valueOf(Imgproc.contourArea(rhs)).compareTo(Imgproc.contourArea(lhs));
+            }
+        });
+
+        double maxVal = -1;
+        int maxValIdx = 0;
+
+        for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
+            double contourArea = Imgproc.contourArea(contours.get(contourIdx));
+            try {
+                if (maxVal < contourArea) {
+                    maxVal = contourArea;
+                    maxValIdx = contourIdx;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        bitmapArr = new ArrayList<>();
+        try {
+            Mat dest = Mat.zeros(mat.size(), CvType.CV_8UC4);
+            for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
+                MatOfPoint2f c2f = new MatOfPoint2f(contours.get(contourIdx).toArray());
+                double peri = Imgproc.arcLength(c2f, true) * 0.02;
+                MatOfPoint2f approx = new MatOfPoint2f();
+                if (peri > 1) {
+                    Imgproc.approxPolyDP(c2f, approx, peri, true);
+                    MatOfPoint matOfPoint = new MatOfPoint(approx.toArray());
+                    Point[] points = approx.toArray();
+                    // select biggest 4 angles polygon
+                    if (matOfPoint.total() == 4 & Math.abs(Imgproc.contourArea(matOfPoint)) > 1000) {
+
+                        Imgproc.drawContours(mat, contours, contourIdx, new Scalar(0, 255, 0), 2);
+
+                        Point[] foundPoints = sortPoints(points);
+                        isFourPointed = true;
+                        isCropped = true;
+                        ivCrop.setImageResource(R.drawable.ic_magnet);
+                        ivCrop.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
+                        quad = new Quadrilateral(contours.get(contourIdx), foundPoints);
+                        ArrayList<PointF> pointArr = new ArrayList<>();
+                        for (int i = 0; i < points.length; i++) {
+                            pointArr.add(new PointF((float) points[i].x, (float) points[i].y));
+                        }
+                        tempPoints = getOrderedPoints(pointArr);
+                        Point[] sortedPoints = new Point[4];
+                        for (int i = 0; i < tempPoints.size(); i++) {
+                            sortedPoints[i] = new Point((double) tempPoints.get(i).x, (double) tempPoints.get(i).y);
+                        }
+                        Mat tempDest = perspectiveChange(mat, sortedPoints);
+                        Bitmap tfmBmp = createBitmap(tempDest.width(), tempDest.height(), Bitmap.Config.ARGB_8888);
+                        Utils.matToBitmap(tempDest, tfmBmp);
+                        bitmapArr.add(tfmBmp);
+                    }
+                }
+//                quadArr.add(quad);
+            }
+            Utils.matToBitmap(mat, scaledBitmap);
+            ivResult.setImageBitmap(scaledBitmap);
+            Log.d(TAG, "Size: " + bitmapArr.size());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        grayImage.release();
+        cannedImage.release();
+
+        return quad;
+    }
 
     private Bitmap scaledBitmap(Bitmap bitmap, int width, int height) {
         Matrix m = new Matrix();
@@ -514,96 +595,6 @@ public class AdjustmentActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         alertDialog();
-    }
-
-    private ArrayList<Bitmap> bitmapArr;
-
-    private Quadrilateral findContours(Mat src) {
-
-        Size size = new Size(src.width(), src.height());
-        Mat grayImage = new Mat(size, CvType.CV_8UC1);
-
-        Imgproc.cvtColor(src, grayImage, Imgproc.COLOR_RGBA2GRAY, 1);
-
-        Imgproc.GaussianBlur(grayImage, grayImage, new Size(3, 3), 0);
-        Mat cannedImage = otsuAutoCanny(grayImage);
-        Imgproc.morphologyEx(cannedImage, cannedImage, 3, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(7, 7)));
-        Imgproc.morphologyEx(cannedImage, cannedImage, 4, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3)));
-        ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-        Mat hierarchy = new Mat();
-
-        Imgproc.findContours(cannedImage, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
-
-        hierarchy.release();
-        Collections.sort(contours, new Comparator<MatOfPoint>() {
-
-            @Override
-            public int compare(MatOfPoint lhs, MatOfPoint rhs) {
-                return Double.valueOf(Imgproc.contourArea(rhs)).compareTo(Imgproc.contourArea(lhs));
-            }
-        });
-
-        double maxVal = -1;
-        int maxValIdx = 0;
-
-        for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
-            double contourArea = Imgproc.contourArea(contours.get(contourIdx));
-            try {
-                if (maxVal < contourArea) {
-                    maxVal = contourArea;
-                    maxValIdx = contourIdx;
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-        ArrayList<Quadrilateral> quadArr = new ArrayList<>();
-        bitmapArr = new ArrayList<>();
-        try {
-            Mat dest = Mat.zeros(mat.size(), CvType.CV_8UC4);
-            for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
-                MatOfPoint2f c2f = new MatOfPoint2f(contours.get(contourIdx).toArray());
-                double peri = Imgproc.arcLength(c2f, true) * 0.02;
-                MatOfPoint2f approx = new MatOfPoint2f();
-                if (peri > 1) {
-                    Imgproc.approxPolyDP(c2f, approx, peri, true);
-                    MatOfPoint matOfPoint = new MatOfPoint(approx.toArray());
-                    Point[] points = approx.toArray();
-                    // select biggest 4 angles polygon
-                    if (matOfPoint.total() == 4 & Math.abs(Imgproc.contourArea(matOfPoint)) > 1000) {
-
-                        Imgproc.drawContours(dest, contours, contourIdx, new Scalar(255, 255, 255), 2);
-
-                        Point[] foundPoints = sortPoints(points);
-                        isFourPointed = true;
-                        isCropped = true;
-                        ivCrop.setImageResource(R.drawable.ic_magnet);
-                        ivCrop.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
-                        quad = new Quadrilateral(contours.get(contourIdx), foundPoints);
-                        for (Point point : quad.points) {
-                            Imgproc.circle(dest, point, 10, new Scalar(0, 255, 0), 5);
-                        }
-                        Mat tempDest = perspectiveChange(mat, quad.points);
-                        Bitmap tfmBmp = createBitmap(tempDest.width(), tempDest.height(), Bitmap.Config.ARGB_8888);
-                        Utils.matToBitmap(tempDest, tfmBmp);
-                        bitmapArr.add(tfmBmp);
-                    }
-                }
-//                quadArr.add(quad);
-            }
-            Utils.matToBitmap(dest, scaledBitmap);
-            ivResult.setImageBitmap(scaledBitmap);
-            Log.d(TAG, "Size: " + bitmapArr.size());
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        grayImage.release();
-        cannedImage.release();
-
-        return quad;
     }
 
     private Point[] sortPoints(Point[] src) {
