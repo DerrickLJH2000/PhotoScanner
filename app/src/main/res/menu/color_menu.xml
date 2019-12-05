@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/original"
-    android:title="Original" />
-    <item android:id="@+id/greyscale"
-        android:title="Greyscale" />
-    <item android:id="@+id/blackwhite"
-        android:title="Black &amp; White" />
+    <group
+        android:id="@+id/group"
+        android:checkableBehavior="single">
+        <item
+            android:id="@+id/manual"
+            android:title="Manual Crop"
+            android:checked="true"/>
+        <item
+            android:id="@+id/auto"
+            android:title="Auto/ Multiple Crop" />
+    </group>
 </menu>

@@ -445,31 +445,6 @@ public class ResultActivity extends AppCompatActivity{
         }
     }
 
-    //Image Color Options Menu
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.original:
-                Utils.matToBitmap(newMat, newBitMap);
-                ivResult.setImageBitmap(newBitMap);
-                break;
-            case R.id.greyscale:
-                Mat greyscale = new Mat(bitmap.getWidth(), bitmap.getHeight(), CV_8UC1);
-                cvtColor(newMat, greyscale, Imgproc.COLOR_RGB2GRAY, 1);
-                Utils.matToBitmap(greyscale, newBitMap);
-                ivResult.setImageBitmap(newBitMap);
-                break;
-            case R.id.blackwhite:
-                Mat doc = new Mat(newBitMap.getWidth(), newBitMap.getHeight(), CV_8UC4);
-                Utils.bitmapToMat(newBitMap, doc);
-//                enhanceDocument(doc);
-                Utils.matToBitmap(doc, newBitMap);
-                ivResult.setImageBitmap(newBitMap);
-                break;
-            default:
-                return super.onOptionsItemSelected(item);
-        }
-        return true;
-    }
 
     // Set Image with Bitmap Option Settings
     private void setPic(String photoPath) {

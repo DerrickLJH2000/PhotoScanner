@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">DigitalizedPhotoBook</string>
+
+    <string-array name="mode">
+        <item>Manual Crop</item>
+        <item>Auto &amp; Detect Multiple</item>
+    </string-array>
 </resources>
+
