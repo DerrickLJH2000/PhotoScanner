@@ -28,7 +28,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
@@ -60,8 +59,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -72,8 +69,7 @@ import static java.lang.Math.max;
 
 public class AdjustmentActivity extends AppCompatActivity {
     private static final String TAG = "AdjustmentActivity123";
-    private ImageView ivBack, ivCrop, ivConfirm, ivRotateLeft, ivRotateRight, ivPreview;
-    private LinearLayout previewLayout;
+    private ImageView ivBack, ivCrop, ivConfirm, ivRotateLeft, ivRotateRight;
     public static ImageView ivResult;
     private ProgressBar progressBar;
     private FrameLayout frmHolder;
@@ -198,9 +194,7 @@ public class AdjustmentActivity extends AppCompatActivity {
         ivResult = findViewById(R.id.ivResult);
         polygonView = findViewById(R.id.polygonView);
         frmHolder = findViewById(R.id.holderImageCrop);
-        previewLayout = findViewById(R.id.linlay3);
         progressBar = findViewById(R.id.progressBar);
-        ivPreview = findViewById(R.id.outlinePreview);
         if (progressBar.getIndeterminateDrawable() != null)
             progressBar.getIndeterminateDrawable().setColorFilter(Color.parseColor("#ff59a9ff"), android.graphics.PorterDuff.Mode.MULTIPLY);
         else if (progressBar.getProgressDrawable() != null)
@@ -237,8 +231,7 @@ public class AdjustmentActivity extends AppCompatActivity {
         mat = new Mat(scaledBitmap.getWidth(), scaledBitmap.getHeight(), CvType.CV_8UC4);
 //        Bitmap tempBitmap = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
         Utils.bitmapToMat(scaledBitmap, mat);
-        Mat tempMat = mat.clone();
-        findContours(tempMat);
+        findContours(mat);
 
         for (int i = 0; i < bitmapArr.size(); i++) {
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
@@ -259,7 +252,7 @@ public class AdjustmentActivity extends AppCompatActivity {
         try {
             pointFs = getEdgePoints(scaledBitmap);
             polygonView.setPoints(pointFs);
-//            polygonView.setVisibility(View.VISIBLE);
+            polygonView.setVisibility(View.VISIBLE);
 
             int padding = (int) getResources().getDimension(R.dimen.scanPadding);
 
@@ -435,10 +428,23 @@ public class AdjustmentActivity extends AppCompatActivity {
         });
 
         double maxVal = -1;
+        int maxValIdx = 0;
+
+        for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
+            double contourArea = Imgproc.contourArea(contours.get(contourIdx));
+            try {
+                if (maxVal < contourArea) {
+                    maxVal = contourArea;
+                    maxValIdx = contourIdx;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
         bitmapArr = new ArrayList<>();
         try {
-            Mat dest = Mat.zeros(src.size(), CvType.CV_8UC4);
+            Mat dest = Mat.zeros(mat.size(), CvType.CV_8UC4);
             for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
                 MatOfPoint2f c2f = new MatOfPoint2f(contours.get(contourIdx).toArray());
                 double peri = Imgproc.arcLength(c2f, true) * 0.02;
@@ -450,7 +456,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                     // select biggest 4 angles polygon
                     if (matOfPoint.total() == 4 & Math.abs(Imgproc.contourArea(matOfPoint)) > 1000) {
 
-                        Imgproc.drawContours(src, contours, contourIdx, new Scalar(0, 255, 0), 3);
+                        Imgproc.drawContours(mat, contours, contourIdx, new Scalar(0, 255, 0), 2);
 
                         Point[] foundPoints = sortPoints(points);
                         isFourPointed = true;
@@ -475,17 +481,8 @@ public class AdjustmentActivity extends AppCompatActivity {
                 }
 //                quadArr.add(quad);
             }
-            Utils.matToBitmap(src, scaledBitmap);
-            ivPreview.setImageBitmap(scaledBitmap);
-            previewLayout.setVisibility(View.VISIBLE);
-            new Timer().schedule(new TimerTask(){
-                public void run() {
-                    startActivity(new Intent(AdjustmentActivity.this, PhotosActivity.class));
-                    finish();
-
-                    Log.d("MainActivity:", "onCreate: waiting 5 seconds for MainActivity... loading PrimaryActivity.class");
-                }
-            }, 2000 );
+            Utils.matToBitmap(mat, scaledBitmap);
+            ivResult.setImageBitmap(scaledBitmap);
             Log.d(TAG, "Size: " + bitmapArr.size());
 
         } catch (Exception e) {
@@ -531,7 +528,6 @@ public class AdjustmentActivity extends AppCompatActivity {
                 polygonView.setPoints(getOutlinePoints(returnBmp));
             }
         }
-        previewLayout.setVisibility(View.GONE);
     }
 
     private Mat perspectiveChange(Mat src, Point[] points) {

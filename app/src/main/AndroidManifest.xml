@@ -30,17 +30,14 @@
         android:roundIcon="@mipmap/app_icon_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".PhotosActivity"
+        <activity android:name=".ImageFullScreen"></activity>
+        <activity android:name=".ResultActivity"
             android:screenOrientation="portrait"></activity>
-        <activity android:name=".ImageFullScreen" />
-        <activity
-            android:name=".ResultActivity"
-            android:screenOrientation="portrait" />
         <activity
             android:name=".AdjustmentActivity"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".AlbumActivity"
+            android:name=".MainActivity"
             android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

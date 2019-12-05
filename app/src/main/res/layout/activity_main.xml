@@ -7,11 +7,11 @@
     android:layout_gravity="center_horizontal"
     android:background="@color/color_dark_grey"
     android:orientation="vertical"
-    tools:context=".PhotosActivity">
+    tools:context=".MainActivity">
 
     <include
         android:id="@+id/include"
-        layout="@layout/app_bar_albums" />
+        layout="@layout/app_bar_saved_photos" />
 
     <RelativeLayout
         android:layout_width="match_parent"
