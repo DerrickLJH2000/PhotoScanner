@@ -12,16 +12,7 @@ import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
-
-import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import androidx.core.content.PermissionChecker;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.os.Bundle;
-
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -32,6 +23,13 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.PermissionChecker;
 
 import com.example.digitalizedphotobook.classes.NativeClass;
 import com.example.digitalizedphotobook.classes.Quadrilateral;
@@ -60,8 +58,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -70,7 +66,7 @@ import io.reactivex.schedulers.Schedulers;
 import static android.graphics.Bitmap.createBitmap;
 import static java.lang.Math.max;
 
-public class AdjustmentActivity extends AppCompatActivity {
+public class CropActivity extends AppCompatActivity {
     private static final String TAG = "AdjustmentActivity123";
     private ImageView ivBack, ivCrop, ivConfirm, ivRotateLeft, ivRotateRight, ivPreview;
     private LinearLayout previewLayout;
@@ -106,11 +102,11 @@ public class AdjustmentActivity extends AppCompatActivity {
         }
     };
 
-    public AdjustmentActivity() {
+    public CropActivity() {
     }
 
     private void showToast(final String text) {
-        Toast toast = Toast.makeText(AdjustmentActivity.this, text, Toast.LENGTH_SHORT);
+        Toast toast = Toast.makeText(CropActivity.this, text, Toast.LENGTH_SHORT);
         toast.setGravity(Gravity.TOP, 0, 30);
         toast.show();
     }
@@ -124,11 +120,11 @@ public class AdjustmentActivity extends AppCompatActivity {
             return;
         }
 
-        int permissionCheck = ContextCompat.checkSelfPermission(AdjustmentActivity.this,
+        int permissionCheck = ContextCompat.checkSelfPermission(CropActivity.this,
                 Manifest.permission.READ_EXTERNAL_STORAGE);
         if (permissionCheck != PermissionChecker.PERMISSION_GRANTED) {
             Log.i(TAG, "Permission Not Granted");
-            ActivityCompat.requestPermissions(AdjustmentActivity.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
+            ActivityCompat.requestPermissions(CropActivity.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
             return;
         }
         imagePath = new File(getExternalFilesDir("Temp"), "temp.jpg").getAbsolutePath();
@@ -202,9 +198,9 @@ public class AdjustmentActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
         ivPreview = findViewById(R.id.outlinePreview);
         if (progressBar.getIndeterminateDrawable() != null)
-            progressBar.getIndeterminateDrawable().setColorFilter(Color.parseColor("#ff59a9ff"), android.graphics.PorterDuff.Mode.MULTIPLY);
+            progressBar.getIndeterminateDrawable().setColorFilter(Color.parseColor("#ff59a9ff"), PorterDuff.Mode.MULTIPLY);
         else if (progressBar.getProgressDrawable() != null)
-            progressBar.getProgressDrawable().setColorFilter(Color.parseColor("#ff59a9ff"), android.graphics.PorterDuff.Mode.MULTIPLY);
+            progressBar.getProgressDrawable().setColorFilter(Color.parseColor("#ff59a9ff"), PorterDuff.Mode.MULTIPLY);
         setProgressBar(true);
         Observable.fromCallable(() -> {
             setImageRotation();
@@ -318,7 +314,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                 if (isCropped) {
                     // Undo Crop Here
                     ivCrop.setImageResource(R.drawable.ic_crop);
-                    ivCrop.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.color_white), PorterDuff.Mode.SRC_IN);
+                    ivCrop.setColorFilter(ContextCompat.getColor(CropActivity.this, R.color.color_white), PorterDuff.Mode.SRC_IN);
                     Map<Integer, PointF> pointFs = getOutlinePoints(newBmp);
                     polygonView.setPoints(pointFs);
                     polygonView.invalidate();
@@ -327,7 +323,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                 } else {
                     // Auto Crop Here
                     ivCrop.setImageResource(R.drawable.ic_magnet);
-                    ivCrop.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
+                    ivCrop.setColorFilter(ContextCompat.getColor(CropActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
                     Map<Integer, PointF> pointFs = getEdgePoints(newBmp);
                     polygonView.setPoints(pointFs);
                     polygonView.invalidate();
@@ -366,7 +362,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                     }
 //            ivConfirm.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.color_white), PorterDuff.Mode.SRC_IN);
                 isEditing = true;
-                Intent intent = new Intent(AdjustmentActivity.this, ResultActivity.class);
+                Intent intent = new Intent(CropActivity.this, ResultActivity.class);
                 intent.putExtra("croppedPoints", mFile2.getAbsolutePath());
                 float scaledRatio = Float.parseFloat(Integer.toString(ivResult.getWidth()))
                         / Float.parseFloat(Integer.toString(ivResult.getHeight()));
@@ -456,7 +452,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                         isFourPointed = true;
                         isCropped = true;
                         ivCrop.setImageResource(R.drawable.ic_magnet);
-                        ivCrop.setColorFilter(ContextCompat.getColor(AdjustmentActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
+                        ivCrop.setColorFilter(ContextCompat.getColor(CropActivity.this, R.color.blue), PorterDuff.Mode.SRC_IN);
                         quad = new Quadrilateral(contours.get(contourIdx), foundPoints);
                         ArrayList<PointF> pointArr = new ArrayList<>();
                         for (int i = 0; i < points.length; i++) {
@@ -476,16 +472,7 @@ public class AdjustmentActivity extends AppCompatActivity {
 //                quadArr.add(quad);
             }
             Utils.matToBitmap(src, scaledBitmap);
-            ivPreview.setImageBitmap(scaledBitmap);
-            previewLayout.setVisibility(View.VISIBLE);
-            new Timer().schedule(new TimerTask(){
-                public void run() {
-                    startActivity(new Intent(AdjustmentActivity.this, PhotosActivity.class));
-                    finish();
-
-                    Log.d("MainActivity:", "onCreate: waiting 5 seconds for MainActivity... loading PrimaryActivity.class");
-                }
-            }, 2000 );
+            ivResult.setImageBitmap(scaledBitmap);
             Log.d(TAG, "Size: " + bitmapArr.size());
 
         } catch (Exception e) {
@@ -531,7 +518,6 @@ public class AdjustmentActivity extends AppCompatActivity {
                 polygonView.setPoints(getOutlinePoints(returnBmp));
             }
         }
-        previewLayout.setVisibility(View.GONE);
     }
 
     private Mat perspectiveChange(Mat src, Point[] points) {

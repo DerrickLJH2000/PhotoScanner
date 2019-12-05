@@ -18,21 +18,21 @@ import java.io.File;
 import java.util.ArrayList;
 
 
-public class SavedPhotoAdapter extends RecyclerView.Adapter<SavedPhotoAdapter.ViewHolder> {
+public class AlbumAdapter extends RecyclerView.Adapter<AlbumAdapter.ViewHolder> {
     private ArrayList<File> photoArr;
     private static final int LONG_CLICK_DURATION = 500;
     private long startClicktime;
     Vibrator vibrator;
 
     // RecyclerView recyclerView;
-    public SavedPhotoAdapter(ArrayList<File> photoArr) {
+    public AlbumAdapter(ArrayList<File> photoArr) {
         this.photoArr = photoArr;
     }
 
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         LayoutInflater layoutInflater = LayoutInflater.from(parent.getContext());
-        View listItem = layoutInflater.inflate(R.layout.row_saved_photo, parent, false);
+        View listItem = layoutInflater.inflate(R.layout.row_albums, parent, false);
         ViewHolder viewHolder = new ViewHolder(listItem);
         return viewHolder;
     }
@@ -85,11 +85,10 @@ public class SavedPhotoAdapter extends RecyclerView.Adapter<SavedPhotoAdapter.Vi
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         public ImageView imageView;
-        public ImageView ivDelete;
 
         public ViewHolder(View itemView) {
             super(itemView);
-            this.imageView = (ImageView) itemView.findViewById(R.id.ivSavedPhotos);
+            this.imageView = (ImageView) itemView.findViewById(R.id.ivAlbums);
         }
     }
 }

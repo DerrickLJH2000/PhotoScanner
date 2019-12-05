@@ -7,7 +7,7 @@
     android:layout_gravity="center_horizontal"
     android:background="@color/color_dark_grey"
     android:orientation="vertical"
-    tools:context=".PhotosActivity">
+    tools:context=".AlbumActivity">
 
     <include
         android:id="@+id/include"
@@ -18,17 +18,17 @@
         android:layout_height="match_parent">
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvSavedPhotos"
+            android:id="@+id/rvSavedAlbums"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
             android:layout_alignParentBottom="true"
             android:clipToPadding="false"
             android:overScrollMode="never"
-            android:paddingLeft="10dp"
+            android:paddingLeft="20dp"
             android:paddingTop="50dp"
-            android:paddingRight="10dp"
-            android:paddingBottom="10dp"
+            android:paddingRight="20dp"
+            android:paddingBottom="20dp"
             android:scrollbars="none" />
 
 
@@ -50,7 +50,7 @@
             android:paddingLeft="10dp"
             android:paddingTop="15dp"
             android:paddingBottom="10dp"
-            android:text="Recently Saved"
+            android:text="Albums"
             android:textColor="@color/color_light_grey2"
             android:textSize="14sp"></TextView>
 
@@ -62,7 +62,7 @@
             android:fontFamily="@font/allerta"
             android:gravity="center"
             android:paddingBottom="10dp"
-            android:text="There are currently\n no saved photos"
+            android:text="There are currently\n no saved albums"
             android:textColor="@color/color_light_grey2"
             android:textSize="20sp" />
     </RelativeLayout>

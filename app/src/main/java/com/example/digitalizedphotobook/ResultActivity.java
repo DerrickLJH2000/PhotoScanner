@@ -9,14 +9,10 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.BitmapDrawable;
-import android.media.effect.EffectContext;
 import android.net.Uri;
-import android.opengl.GLSurfaceView;
-import android.os.Build;
 import android.provider.MediaStore;
 
 import androidx.annotation.NonNull;
@@ -34,19 +30,14 @@ import androidx.appcompat.widget.Toolbar;
 
 import android.util.Log;
 import android.view.Gravity;
-import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.SeekBar;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.digitalizedphotobook.adapters.FilterAdapter;
 import com.example.digitalizedphotobook.classes.Filter;
-import com.example.digitalizedphotobook.effects.EffectGLSurfaceView;
 import com.example.digitalizedphotobook.effects.MvEffects;
 import com.github.chrisbanes.photoview.PhotoView;
 
@@ -54,14 +45,7 @@ import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
-import org.opencv.core.Core;
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfFloat;
-import org.opencv.core.MatOfInt;
-import org.opencv.core.Point;
-import org.opencv.core.Scalar;
-import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.ByteArrayOutputStream;
@@ -73,24 +57,11 @@ import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.UUID;
 
 
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.opengles.GL10;
-
-import static java.lang.Math.log;
 import static org.opencv.core.CvType.CV_8UC1;
-import static org.opencv.core.CvType.CV_8UC3;
 import static org.opencv.core.CvType.CV_8UC4;
-import static org.opencv.imgproc.Imgproc.COLOR_BGR2RGB;
-import static org.opencv.imgproc.Imgproc.COLOR_GRAY2RGB;
-import static org.opencv.imgproc.Imgproc.COLOR_RGB2BGR;
-import static org.opencv.imgproc.Imgproc.COLOR_RGB2GRAY;
-import static org.opencv.imgproc.Imgproc.COLOR_RGB2RGBA;
-import static org.opencv.imgproc.Imgproc.COLOR_RGBA2GRAY;
-import static org.opencv.imgproc.Imgproc.COLOR_RGBA2RGB;
 import static org.opencv.imgproc.Imgproc.cvtColor;
 
 public class ResultActivity extends AppCompatActivity{
@@ -338,7 +309,7 @@ public class ResultActivity extends AppCompatActivity{
                             toast.setGravity(Gravity.CENTER, 0, 0);
                             toast.show();
                             dialog.cancel();
-                            Intent intent = new Intent(ResultActivity.this, MainActivity.class);
+                            Intent intent = new Intent(ResultActivity.this, PhotosActivity.class);
                             intent.putExtra("folderPath", getExternalFilesDir("Photobook"));
                             startActivity(intent);
                         } else {
