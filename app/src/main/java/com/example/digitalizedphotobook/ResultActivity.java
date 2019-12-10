@@ -304,7 +304,7 @@ public class ResultActivity extends AppCompatActivity{
     //Alert to Save Image
     private void alertDialog() {
         AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
-        builder1.setMessage("Are you sure you want to save this image?");
+        builder1.setMessage("Do you want to save this image to Gallery?");
         builder1.setCancelable(true);
 
         builder1.setPositiveButton(
@@ -348,10 +348,40 @@ public class ResultActivity extends AppCompatActivity{
                 });
 
         builder1.setNegativeButton(
-                "Cancel",
+                "No",
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
-                        dialog.cancel();
+                        File file = new File(imagePath);
+                        boolean deleted = file.delete();
+                        if (newBitMap != null) {
+                            Bitmap tempBitmap = ((BitmapDrawable) ivResult.getDrawable()).getBitmap();
+                            Matrix matrix = new Matrix();
+                            matrix.postRotate(ivResult.getRotation());
+                            Bitmap rotatedBmp = Bitmap.createBitmap(tempBitmap, 0, 0, tempBitmap.getWidth(), tempBitmap.getHeight(), matrix, true);
+                            insertImage(getContentResolver(), rotatedBmp, UUID.randomUUID().toString(), "Saved Photo");
+                            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                            rotatedBmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+                            byte[] bytes = stream.toByteArray();
+                            long yourmilliseconds = System.currentTimeMillis();
+                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
+                            Date date = new Date(yourmilliseconds);
+                            File mFile = new File(getExternalFilesDir("Photobook"), sdf.format(date) + ".jpg");
+                            try {
+                                mFile.createNewFile();
+                                FileOutputStream fileOutputStream = new FileOutputStream(mFile);
+                                fileOutputStream.write(bytes);
+                                fileOutputStream.close();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            Toast toast = Toast.makeText(ResultActivity.this, "Saved!", Toast.LENGTH_SHORT);
+                            toast.setGravity(Gravity.CENTER, 0, 0);
+                            toast.show();
+                            dialog.cancel();
+                            Intent intent = new Intent(ResultActivity.this, MainActivity.class);
+                            intent.putExtra("folderPath", getExternalFilesDir("Photobook"));
+                            startActivity(intent);
+                        }
                     }
                 });
 
