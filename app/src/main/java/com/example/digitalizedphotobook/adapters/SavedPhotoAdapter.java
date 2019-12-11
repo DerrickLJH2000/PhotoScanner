@@ -19,6 +19,7 @@ import java.util.ArrayList;
 
 
 public class SavedPhotoAdapter extends RecyclerView.Adapter<SavedPhotoAdapter.ViewHolder> {
+    private static ClickListener clickListener;
     private ArrayList<File> photoArr;
     private static final int LONG_CLICK_DURATION = 500;
     private long startClicktime;
@@ -43,53 +44,42 @@ public class SavedPhotoAdapter extends RecyclerView.Adapter<SavedPhotoAdapter.Vi
         String imgPath = currItem.getAbsolutePath();
         Bitmap bitmap = BitmapFactory.decodeFile(imgPath);
         holder.imageView.setImageBitmap(bitmap);
-        holder.imageView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(v.getContext(), "click on item: " + currItem.getName(), Toast.LENGTH_SHORT).show();
-                Intent i = new Intent(v.getContext(), ImageFullScreen.class);
-                i.putExtra("path", currItem.getAbsolutePath());
-                v.getContext().startActivity(i);
-            }
-        });
-        //holder.imageView.setImageResource(photoArr[position]);
-        /*holder.imageView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    Log.i("Testing", "User Press down");
-                    Toast.makeText(v.getContext(), "click on item: " + currItem, Toast.LENGTH_SHORT).show();
-                } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                    Log.i("Testing", "Move Motion Detected");
-                    startClicktime = Calendar.getInstance().getTimeInMillis();
-                    long clickDuration = Calendar.getInstance().getTimeInMillis() - startClicktime;
-                    if (clickDuration > LONG_CLICK_DURATION) {
-                        holder.ivDelete.setVisibility(View.VISIBLE);
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE));
-                        } else {
-                            vibrator.vibrate(200);
-                        }
-                    }
-                }
-                return true;
-            }
-        });*/
     }
-
 
     @Override
     public int getItemCount() {
         return photoArr.size();
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
+    public static class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener {
         public ImageView imageView;
         public ImageView ivDelete;
 
         public ViewHolder(View itemView) {
             super(itemView);
+            itemView.setOnClickListener(this);
+            itemView.setOnLongClickListener(this);
             this.imageView = (ImageView) itemView.findViewById(R.id.ivSavedPhotos);
         }
+
+        @Override
+        public void onClick(View v) {
+            clickListener.onItemClick(getAdapterPosition(), v);
+        }
+
+        @Override
+        public boolean onLongClick(View v) {
+            clickListener.onItemLongClick(getAdapterPosition(), v);
+            return false;
+        }
+    }
+
+    public void setOnItemClickListener(ClickListener clickListener) {
+        SavedPhotoAdapter.clickListener = clickListener;
+    }
+
+    public interface ClickListener {
+        void onItemClick(int position, View v);
+        void onItemLongClick(int position, View v);
     }
 }

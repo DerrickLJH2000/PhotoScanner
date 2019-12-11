@@ -1,5 +1,6 @@
 package com.example.digitalizedphotobook;
 
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,7 +19,7 @@ import com.github.chrisbanes.photoview.PhotoView;
 public class ImageFullScreen extends AppCompatActivity {
 
 
-    ImageView ivBack;
+    ImageView ivBack,ivEdit;
     PhotoView myImage;
     String path = "";
     Bitmap bitmap;
@@ -34,6 +35,7 @@ public class ImageFullScreen extends AppCompatActivity {
         setContentView(R.layout.activity_image_full_screen);
         myImage = findViewById(R.id.myImage);
         ivBack = findViewById(R.id.ivBack);
+        ivEdit = findViewById(R.id.ivEdit);
 
         path = getIntent().getStringExtra("path");
 
@@ -45,6 +47,14 @@ public class ImageFullScreen extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 finish();
+            }
+        });
+
+        ivEdit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(ImageFullScreen.this, AdjustmentActivity.class);
+                startActivity(intent);
             }
         });
     }

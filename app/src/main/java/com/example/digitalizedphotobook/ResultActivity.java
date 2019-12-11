@@ -93,12 +93,13 @@ import static org.opencv.imgproc.Imgproc.COLOR_RGBA2GRAY;
 import static org.opencv.imgproc.Imgproc.COLOR_RGBA2RGB;
 import static org.opencv.imgproc.Imgproc.cvtColor;
 
-public class ResultActivity extends AppCompatActivity{
+public class ResultActivity extends AppCompatActivity {
     public static final String TAG = "ResultActivity";
     public ImageView ivFilters, ivBack, ivSave, ivRotate;
     private PhotoView ivResult;
     private LinearLayout linlay1, filterSettings;
     private String imagePath;
+    private ArrayList<String> imagePaths;
     private Toolbar toolbar;
     private Bitmap bitmap, newBitMap;
     private View mView;
@@ -170,7 +171,7 @@ public class ResultActivity extends AppCompatActivity{
         layManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
         rvFilter.setLayoutManager(layManager);
         adapter = new FilterAdapter(filterArr);
-
+        imagePaths = new ArrayList<>();
         imagePath = getIntent().getStringExtra("croppedPoints");
 
         mFile = new File(imagePath);

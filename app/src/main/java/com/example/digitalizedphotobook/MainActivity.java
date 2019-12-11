@@ -1,29 +1,44 @@
 package com.example.digitalizedphotobook;
 
 import android.Manifest;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.PermissionChecker;
 import androidx.appcompat.app.AppCompatActivity;
+
+import android.graphics.Bitmap;
+import android.graphics.Matrix;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.digitalizedphotobook.adapters.SavedPhotoAdapter;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FilenameFilter;
+import java.nio.file.Files;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
+import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
     private static String TAG = "Magnifier";
@@ -56,23 +71,32 @@ public class MainActivity extends AppCompatActivity {
         rvSavedPhotos.setLayoutManager(layManager);
         adapter = new SavedPhotoAdapter(photoArr);
 
-        File folder = getExternalFilesDir("Photobook");
-        if (folder != null){
-            File[] files = folder.listFiles();
-            Log.i(TAG, "Files in Photobook: " + files.toString());
-            for (int i = 0; i < files.length; i++){
-                photoArr.add(files[i]);
+        File folder = getExternalFilesDir("Temp");
+        String[] directories = folder.list(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return new File(dir, name).isDirectory();
             }
-            Collections.sort(photoArr);
+        });
+        Toast.makeText(this, "Count: " + directories.length, Toast.LENGTH_SHORT).show();
+        for( int i = 0; i< directories.length;i++){
+            Log.d(TAG, directories[i]);
+
         }
+//        if (folder != null){
+//            File[] files = folder.listFiles();
+//            Log.i(TAG, "Files in Photobook: " + files.toString());
+//            for (int i = 0; i < files.length; i++){
+//                photoArr.add(files[i]);
+//            }
+//            Collections.sort(photoArr);
+//        }
 
         if (photoArr.size() == 0){
             tvUnavailable.setVisibility(View.VISIBLE);
         } else {
             tvUnavailable.setVisibility(View.GONE);
         }
-        rvSavedPhotos.setAdapter(adapter);
-
 
         fabAdd.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -82,8 +106,50 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        adapter.setOnItemClickListener(new SavedPhotoAdapter.ClickListener() {
+            @Override
+            public void onItemClick(int position, View v) {
+                final File currItem = photoArr.get(position);
+                Toast.makeText(v.getContext(), "click on item: " + currItem.getName(), Toast.LENGTH_SHORT).show();
+                Intent i = new Intent(v.getContext(), ImageFullScreen.class);
+                i.putExtra("path", currItem.getAbsolutePath());
+                v.getContext().startActivity(i);
+            }
+
+            @Override
+            public void onItemLongClick(int position, View v) {
+                deleteDialog(position);
+            }
+        });
+
+        rvSavedPhotos.setAdapter(adapter);
     }
 
+    private void deleteDialog(int position){
+        AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
+        builder1.setMessage("Do you want to delete this image?");
+        builder1.setCancelable(true);
+        builder1.setPositiveButton(
+                "Delete",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        photoArr.get(position).delete();
+                        photoArr.remove(position);
+                        adapter.notifyDataSetChanged();
+                    }
+                });
+
+        builder1.setNegativeButton(
+                "Cancel",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                    }
+                });
+
+        AlertDialog alert11 = builder1.create();
+        alert11.show();
+    };
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {

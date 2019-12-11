@@ -60,10 +60,12 @@ import org.opencv.imgproc.Imgproc;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -353,7 +355,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                     ByteArrayOutputStream stream = new ByteArrayOutputStream();
                     rotatedBmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
                     byte[] bytes = stream.toByteArray();
-                    mFile2 = new File(getExternalFilesDir("Temp"), "test1.jpg");
+                    mFile2 = new File(getExternalFilesDir("Temp"), "test0.jpg");
                     try {
                         mFile2.createNewFile();
                         FileOutputStream fileOutputStream = new FileOutputStream(mFile2);
@@ -378,24 +380,26 @@ public class AdjustmentActivity extends AppCompatActivity {
                     showToast("Invalid Shape!");
                 }
             } else {
-                ArrayList<String>
                 for (int i = 0; i < bitmapArr.size(); i++) {
                     ByteArrayOutputStream stream = new ByteArrayOutputStream();
                     bitmapArr.get(i).compress(Bitmap.CompressFormat.JPEG, 100, stream);
                     byte[] bytes = stream.toByteArray();
-                    mFile2 = new File(getExternalFilesDir("Temp"), "test" + i + ".jpg");
+                    long yourmilliseconds = System.currentTimeMillis();
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
+                    Date date = new Date(yourmilliseconds);
+                    File mFile = new File(getExternalFilesDir("Photobook"), sdf.format(date) + i + ".jpg");
                     try {
-                        mFile2.createNewFile();
-                        FileOutputStream fileOutputStream = new FileOutputStream(mFile2);
+                        mFile.createNewFile();
+                        FileOutputStream fileOutputStream = new FileOutputStream(mFile);
                         fileOutputStream.write(bytes);
                         fileOutputStream.close();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
-                Intent intent = new Intent(AdjustmentActivity.this, ResultActivity.class);
-                intent.putParcelableArrayListExtra("croppedImages", bitmapArr);
+                Intent intent = new Intent(AdjustmentActivity.this, MainActivity.class);
                 startActivity(intent);
+                showToast("Saved!");
             }
         }
     };
@@ -583,7 +587,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                     MatOfPoint matOfPoint = new MatOfPoint(approx.toArray());
                     Point[] points = approx.toArray();
                     // select biggest 4 angles polygon
-                    if (matOfPoint.total() == 4 & Math.abs(Imgproc.contourArea(matOfPoint)) > 1000) {
+                    if (matOfPoint.total() == 4 & Math.abs(Imgproc.contourArea(matOfPoint)) > 2000) {
 //                        Rect rect = Imgproc.boundingRect(matOfPoint);
 //                        Imgproc.rectangle(src, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(0,255,0),5);
 //                        Imgproc.drawContours(src, contours, contourIdx, new Scalar(0, 255, 0), 5);
@@ -591,7 +595,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                         isFourPointed = true;
                         quad = new Quadrilateral(contours.get(contourIdx), foundPoints);
                         for (int i = 0; i < foundPoints.length; i++) {
-                            Imgproc.line(src, points[i], points[(i + 1) % 4], new Scalar(0, 255, 0), 5);
+                            Imgproc.line(mat, points[i], points[(i + 1) % 4], new Scalar(0, 255, 0), 5);
                         }
 
                         ArrayList<PointF> pointArr = new ArrayList<>();
@@ -612,7 +616,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                 }
                 quadArr.add(quad);
             }
-            Utils.matToBitmap(src, scaledBitmap);
+            Utils.matToBitmap(mat, scaledBitmap);
             ivResult.setImageBitmap(scaledBitmap);
             Log.d(TAG, "Size: " + bitmapArr.size());
 
