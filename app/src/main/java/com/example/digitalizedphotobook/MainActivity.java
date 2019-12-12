@@ -31,8 +31,10 @@ import com.example.digitalizedphotobook.adapters.SavedPhotoAdapter;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -48,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
     private FloatingActionButton fabAdd;
     private RecyclerView rvSavedPhotos;
     private RecyclerView.LayoutManager layManager;
+    private String[] directories;
     ArrayList<File> photoArr = new ArrayList<File>();
     SavedPhotoAdapter adapter;
 
@@ -72,17 +75,28 @@ public class MainActivity extends AppCompatActivity {
         adapter = new SavedPhotoAdapter(photoArr);
 
         File folder = getExternalFilesDir("Temp");
-        String[] directories = folder.list(new FilenameFilter() {
+        directories = folder.list(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name) {
                 return new File(dir, name).isDirectory();
             }
         });
-        Toast.makeText(this, "Count: " + directories.length, Toast.LENGTH_SHORT).show();
         for( int i = 0; i< directories.length;i++){
-            Log.d(TAG, directories[i]);
-
+            File file1 = getExternalFilesDir("Temp/" + directories[i]);
+            File[] files = file1.listFiles(new FileFilter() {
+                @Override
+                public boolean accept(File pathname) {
+                    return pathname.getPath().contains("temp");
+                }
+            });
+            if (files.length != 0) {
+                for (int x =0;x < files.length;x++){
+                    photoArr.add(files[x]);
+                }
+            }
         }
+        Collections.sort(photoArr);
+
 //        if (folder != null){
 //            File[] files = folder.listFiles();
 //            Log.i(TAG, "Files in Photobook: " + files.toString());
@@ -133,8 +147,20 @@ public class MainActivity extends AppCompatActivity {
                 "Delete",
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
-                        photoArr.get(position).delete();
-                        photoArr.remove(position);
+                        String tempPath = photoArr.get(position).getParent();
+                        File file = new File(tempPath);
+                        File[] allFiles = file.listFiles();
+                        for (int i = 0;i<allFiles.length;i++){
+                            allFiles[i].delete();
+                        }
+                        boolean deleted = file.delete();
+
+                        if (deleted){
+                            photoArr.remove(position);
+                            Toast.makeText(MainActivity.this, "Successfully Deleted!", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(MainActivity.this, "Error deleting image!", Toast.LENGTH_SHORT).show();
+                        }
                         adapter.notifyDataSetChanged();
                     }
                 });

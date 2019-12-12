@@ -92,7 +92,7 @@ public class AdjustmentActivity extends AppCompatActivity {
     private FrameLayout frmHolder;
     private PolygonView polygonView;
     private File mFile, mFile2;
-    private String imagePath;
+    private String imagePath, uuid;
     private NativeClass nativeClass;
     private Bitmap bmp, newBmp, scaledBitmap;
     private ArrayList<Bitmap> bitmapArr;
@@ -145,8 +145,9 @@ public class AdjustmentActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(AdjustmentActivity.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
             return;
         }
-        imagePath = new File(getExternalFilesDir("Temp"), "temp.jpg").getAbsolutePath();
+        imagePath = getIntent().getStringExtra("image");
         reqCode = getIntent().getIntExtra("reqCode", -1);
+        uuid = getIntent().getStringExtra("process_id");
         mFile = new File(imagePath);
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = false;
@@ -339,7 +340,7 @@ public class AdjustmentActivity extends AppCompatActivity {
     private View.OnClickListener btnConfirmClick = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            if (bitmapArr.size() == 0) {
+            if (bitmapArr.size() == 0 || bitmapArr == null) {
                 points = polygonView.getPoints();
                 Point[] pointArr = new Point[4];
                 for (int i = 0; i < points.size(); i++) {
@@ -355,7 +356,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                     ByteArrayOutputStream stream = new ByteArrayOutputStream();
                     rotatedBmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
                     byte[] bytes = stream.toByteArray();
-                    mFile2 = new File(getExternalFilesDir("Temp"), "test0.jpg");
+                    mFile2 = new File(getExternalFilesDir("Temp"), "draft2.jpg");
                     try {
                         mFile2.createNewFile();
                         FileOutputStream fileOutputStream = new FileOutputStream(mFile2);
@@ -371,6 +372,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                     float scaledRatio = Float.parseFloat(Integer.toString(ivResult.getWidth()))
                             / Float.parseFloat(Integer.toString(ivResult.getHeight()));
                     intent.putExtra("scaledRatio", scaledRatio);
+                    intent.putExtra("process_id", uuid);
                     if (ivResult.getRotation() == 90 || ivResult.getRotation() == -90 || ivResult.getRotation() == 270 || ivResult.getRotation() == -270) {
                         intent.putExtra("isRotated", true);
                     }
@@ -384,10 +386,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                     ByteArrayOutputStream stream = new ByteArrayOutputStream();
                     bitmapArr.get(i).compress(Bitmap.CompressFormat.JPEG, 100, stream);
                     byte[] bytes = stream.toByteArray();
-                    long yourmilliseconds = System.currentTimeMillis();
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
-                    Date date = new Date(yourmilliseconds);
-                    File mFile = new File(getExternalFilesDir("Photobook"), sdf.format(date) + i + ".jpg");
+                    File mFile = new File(getExternalFilesDir("Temp/"+uuid),  "temp" + i +".jpg");
                     try {
                         mFile.createNewFile();
                         FileOutputStream fileOutputStream = new FileOutputStream(mFile);
@@ -509,7 +508,6 @@ public class AdjustmentActivity extends AppCompatActivity {
         builder1.setSingleChoiceItems(R.array.mode, checkedItem, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                imagePath = new File(getExternalFilesDir("Temp"), "temp.jpg").getAbsolutePath();
                 mFile = new File(imagePath);
                 BitmapFactory.Options options = new BitmapFactory.Options();
                 options.inJustDecodeBounds = false;

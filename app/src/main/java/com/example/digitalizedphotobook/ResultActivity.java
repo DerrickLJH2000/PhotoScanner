@@ -104,6 +104,7 @@ public class ResultActivity extends AppCompatActivity {
     private Bitmap bitmap, newBitMap;
     private View mView;
     private File mFile;
+    private String uuid;
     public Mat mat, newMat;
     private boolean isFilterExtended = false;
     private RecyclerView rvFilter;
@@ -173,7 +174,7 @@ public class ResultActivity extends AppCompatActivity {
         adapter = new FilterAdapter(filterArr);
         imagePaths = new ArrayList<>();
         imagePath = getIntent().getStringExtra("croppedPoints");
-
+        uuid = getIntent().getStringExtra("process_id");
         mFile = new File(imagePath);
         Log.i(TAG, "ABSOLUTE PATH" + mFile.getAbsolutePath());
         setPic(mFile.getAbsolutePath());
@@ -323,10 +324,10 @@ public class ResultActivity extends AppCompatActivity {
                             ByteArrayOutputStream stream = new ByteArrayOutputStream();
                             rotatedBmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
                             byte[] bytes = stream.toByteArray();
-                            long yourmilliseconds = System.currentTimeMillis();
+                            /*long yourmilliseconds = System.currentTimeMillis();
                             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
-                            Date date = new Date(yourmilliseconds);
-                            File mFile = new File(getExternalFilesDir("Photobook"), sdf.format(date) + ".jpg");
+                            Date date = new Date(yourmilliseconds);*/
+                            File mFile = new File(getExternalFilesDir("Temp/"+ uuid), "temp2.jpg");
                             try {
                                 mFile.createNewFile();
                                 FileOutputStream fileOutputStream = new FileOutputStream(mFile);
@@ -340,7 +341,6 @@ public class ResultActivity extends AppCompatActivity {
                             toast.show();
                             dialog.cancel();
                             Intent intent = new Intent(ResultActivity.this, MainActivity.class);
-                            intent.putExtra("folderPath", getExternalFilesDir("Photobook"));
                             startActivity(intent);
                         } else {
                             showToast("Error Saving Image to Gallery!");
@@ -363,10 +363,10 @@ public class ResultActivity extends AppCompatActivity {
                             ByteArrayOutputStream stream = new ByteArrayOutputStream();
                             rotatedBmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
                             byte[] bytes = stream.toByteArray();
-                            long yourmilliseconds = System.currentTimeMillis();
+/*                            long yourmilliseconds = System.currentTimeMillis();
                             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
-                            Date date = new Date(yourmilliseconds);
-                            File mFile = new File(getExternalFilesDir("Photobook"), sdf.format(date) + ".jpg");
+                            Date date = new Date(yourmilliseconds);*/
+                            File mFile = new File(getExternalFilesDir("Temp/"+ uuid), "temp2.jpg");
                             try {
                                 mFile.createNewFile();
                                 FileOutputStream fileOutputStream = new FileOutputStream(mFile);
@@ -380,7 +380,6 @@ public class ResultActivity extends AppCompatActivity {
                             toast.show();
                             dialog.cancel();
                             Intent intent = new Intent(ResultActivity.this, MainActivity.class);
-                            intent.putExtra("folderPath", getExternalFilesDir("Photobook"));
                             startActivity(intent);
                         }
                     }

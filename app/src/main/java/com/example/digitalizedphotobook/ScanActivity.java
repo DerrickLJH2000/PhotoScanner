@@ -72,6 +72,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -317,6 +318,7 @@ public class ScanActivity extends AppCompatActivity {
     CameraCharacteristics characteristics;
     Rect rect;
     Boolean isGridEnabled = false;
+    String uuid = UUID.randomUUID().toString();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -333,7 +335,7 @@ public class ScanActivity extends AppCompatActivity {
         fabCamera = findViewById(R.id.fabCamera);
         mGridLineView = findViewById(R.id.grid_line_view);
         mTextureView = (AutoFitTextureView) findViewById(R.id.tvScan);
-        mFile = new File(getExternalFilesDir("Temp"), "temp.jpg");
+        mFile = new File(getExternalFilesDir("Temp/" + uuid), "draft.jpg");
         pref = getApplicationContext().getSharedPreferences("USER_PREF", 0);
         assert mTextureView != null;
         ivBack.setOnClickListener(new View.OnClickListener() {
@@ -362,6 +364,7 @@ public class ScanActivity extends AppCompatActivity {
                 Intent intent = new Intent(ScanActivity.this, AdjustmentActivity.class);
                 intent.putExtra("image", mFile.getAbsolutePath());
                 intent.putExtra("reqCode", 1);
+                intent.putExtra("process_id", uuid);
                 startActivity(intent);
             }
         });
@@ -543,7 +546,7 @@ public class ScanActivity extends AppCompatActivity {
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
             byte[] bytes = stream.toByteArray();
-            File mFile = new File(getExternalFilesDir("Temp"), "temp.jpg");
+            File mFile = new File(getExternalFilesDir("Temp/"+ uuid), "draft.jpg");
             try {
                 mFile.createNewFile();
                 FileOutputStream fileOutputStream = new FileOutputStream(mFile);
@@ -555,7 +558,7 @@ public class ScanActivity extends AppCompatActivity {
             Intent intent = new Intent(ScanActivity.this, AdjustmentActivity.class);
             intent.putExtra("image", mFile.getAbsolutePath());
             intent.putExtra("reqCode", 0);
-
+            intent.putExtra("process_id", uuid);
             startActivity(intent);
 
         }
