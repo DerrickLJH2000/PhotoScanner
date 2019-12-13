@@ -59,7 +59,10 @@ import org.opencv.imgproc.Imgproc;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -92,10 +95,10 @@ public class AdjustmentActivity extends AppCompatActivity {
     private FrameLayout frmHolder;
     private PolygonView polygonView;
     private File mFile, mFile2;
-    private String imagePath, uuid;
+    private String imagePath, uuid, name;
     private NativeClass nativeClass;
     private Bitmap bmp, newBmp, scaledBitmap;
-    private ArrayList<Bitmap> bitmapArr;
+    private ArrayList<Bitmap> bitmapArr = new ArrayList<>();
     private Mat mat;
     private Quadrilateral quad;
     private boolean isFourPointed = false;
@@ -148,7 +151,10 @@ public class AdjustmentActivity extends AppCompatActivity {
         imagePath = getIntent().getStringExtra("image");
         reqCode = getIntent().getIntExtra("reqCode", -1);
         uuid = getIntent().getStringExtra("process_id");
+        name = getIntent().getStringExtra("name");
         mFile = new File(imagePath);
+
+
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = false;
         bmp = BitmapFactory.decodeFile(mFile.getAbsolutePath(), options);
@@ -278,7 +284,6 @@ public class AdjustmentActivity extends AppCompatActivity {
         }
     }
 
-
     private View.OnClickListener btnRotate = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -346,6 +351,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                 for (int i = 0; i < points.size(); i++) {
                     pointArr[i] = new Point((double) points.get(i).x, (double) points.get(i).y);
                 }
+//                writeRecordsToFile(pointArr);
                 if (polygonView.isValidShape(points)) {
                     Mat dest = perspectiveChange(mat, pointArr);
                     Matrix matrix = new Matrix();
@@ -356,7 +362,12 @@ public class AdjustmentActivity extends AppCompatActivity {
                     ByteArrayOutputStream stream = new ByteArrayOutputStream();
                     rotatedBmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
                     byte[] bytes = stream.toByteArray();
-                    mFile2 = new File(getExternalFilesDir("Temp"), "draft2.jpg");
+                    if (name != null) {
+                        mFile2 = new File(getExternalFilesDir("Temp"), name);
+                    } else {
+                        mFile2 = new File(getExternalFilesDir("Temp"), "draft2.jpg");
+                    }
+
                     try {
                         mFile2.createNewFile();
                         FileOutputStream fileOutputStream = new FileOutputStream(mFile2);
@@ -369,6 +380,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                     isEditing = true;
                     Intent intent = new Intent(AdjustmentActivity.this, ResultActivity.class);
                     intent.putExtra("croppedPoints", mFile2.getAbsolutePath());
+                    intent.putExtra("name", name);
                     float scaledRatio = Float.parseFloat(Integer.toString(ivResult.getWidth()))
                             / Float.parseFloat(Integer.toString(ivResult.getHeight()));
                     intent.putExtra("scaledRatio", scaledRatio);
@@ -386,7 +398,7 @@ public class AdjustmentActivity extends AppCompatActivity {
                     ByteArrayOutputStream stream = new ByteArrayOutputStream();
                     bitmapArr.get(i).compress(Bitmap.CompressFormat.JPEG, 100, stream);
                     byte[] bytes = stream.toByteArray();
-                    File mFile = new File(getExternalFilesDir("Temp/"+uuid),  "temp" + i +".jpg");
+                    File mFile = new File(getExternalFilesDir("Temp/" + uuid), "temp" + i + ".jpg");
                     try {
                         mFile.createNewFile();
                         FileOutputStream fileOutputStream = new FileOutputStream(mFile);
@@ -403,6 +415,53 @@ public class AdjustmentActivity extends AppCompatActivity {
         }
     };
 
+   /* public boolean writeRecordsToFile(Point[] points) {
+        FileOutputStream fos;
+        ObjectOutputStream oos = null;
+        File mFile3 = new File(getExternalFilesDir("Temp/" + uuid), "points.txt");
+        try {
+            fos = new FileOutputStream(mFile3);
+            oos = new ObjectOutputStream(fos);
+            oos.writeObject(points);
+            oos.close();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (oos != null)
+                try {
+                    oos.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+        }
+    }
+
+    private boolean readRecordsFromFile(){
+        FileInputStream fin;
+        ObjectInputStream ois=null;
+        try{
+            fin = getApplicationContext().openFileInput("points.txt");
+            ois = new ObjectInputStream(fin);
+            Point[] points = (Point[]) ois.readObject();
+            ois.close();
+            Log.v(TAG, "Records read successfully");
+            return true;
+        }catch(Exception e){
+            Log.e(TAG ,"Cant read saved records"+e.getMessage());
+            return false;
+        }
+        finally{
+            if(ois!=null)
+                try{
+                    ois.close();
+                }catch(Exception e){
+                    Log.e(TAG, "Error in closing stream while reading records"+e.getMessage());
+                }
+        }
+    }
+*/
     private Bitmap scaledBitmap(Bitmap bitmap, int width, int height) {
         Matrix m = new Matrix();
         m.setRectToRect(new RectF(0, 0, bitmap.getWidth(), bitmap.getHeight()), new RectF(0, 0, width, height), Matrix.ScaleToFit.CENTER);
@@ -551,7 +610,6 @@ public class AdjustmentActivity extends AppCompatActivity {
     private ArrayList<Quadrilateral> quadArr = new ArrayList<>();
 
     private void findMultipleContours(Mat src) {
-        bitmapArr = new ArrayList<>();
         Size size = new Size(src.width(), src.height());
         Mat grayImage = new Mat(size, CvType.CV_8UC1);
 

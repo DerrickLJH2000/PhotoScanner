@@ -103,8 +103,8 @@ public class ResultActivity extends AppCompatActivity {
     private Toolbar toolbar;
     private Bitmap bitmap, newBitMap;
     private View mView;
-    private File mFile;
-    private String uuid;
+    private File mFile, mFile2;
+    private String uuid, name;
     public Mat mat, newMat;
     private boolean isFilterExtended = false;
     private RecyclerView rvFilter;
@@ -175,6 +175,7 @@ public class ResultActivity extends AppCompatActivity {
         imagePaths = new ArrayList<>();
         imagePath = getIntent().getStringExtra("croppedPoints");
         uuid = getIntent().getStringExtra("process_id");
+        name = getIntent().getStringExtra("name");
         mFile = new File(imagePath);
         Log.i(TAG, "ABSOLUTE PATH" + mFile.getAbsolutePath());
         setPic(mFile.getAbsolutePath());
@@ -327,10 +328,14 @@ public class ResultActivity extends AppCompatActivity {
                             /*long yourmilliseconds = System.currentTimeMillis();
                             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
                             Date date = new Date(yourmilliseconds);*/
-                            File mFile = new File(getExternalFilesDir("Temp/"+ uuid), "temp2.jpg");
+                            if (name != null) {
+                                mFile2 = new File(getExternalFilesDir("Temp/" + uuid), name);
+                            } else {
+                                mFile2 = new File(getExternalFilesDir("Temp/" + uuid), "temp2.jpg");
+                            }
                             try {
                                 mFile.createNewFile();
-                                FileOutputStream fileOutputStream = new FileOutputStream(mFile);
+                                FileOutputStream fileOutputStream = new FileOutputStream(mFile2);
                                 fileOutputStream.write(bytes);
                                 fileOutputStream.close();
                             } catch (Exception e) {
@@ -366,10 +371,14 @@ public class ResultActivity extends AppCompatActivity {
 /*                            long yourmilliseconds = System.currentTimeMillis();
                             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
                             Date date = new Date(yourmilliseconds);*/
-                            File mFile = new File(getExternalFilesDir("Temp/"+ uuid), "temp2.jpg");
+                            if (name != null) {
+                                mFile2 = new File(getExternalFilesDir("Temp/" + uuid), name);
+                            } else {
+                                mFile2 = new File(getExternalFilesDir("Temp/" + uuid), "temp2.jpg");
+                            }
                             try {
-                                mFile.createNewFile();
-                                FileOutputStream fileOutputStream = new FileOutputStream(mFile);
+                                mFile2.createNewFile();
+                                FileOutputStream fileOutputStream = new FileOutputStream(mFile2);
                                 fileOutputStream.write(bytes);
                                 fileOutputStream.close();
                             } catch (Exception e) {
