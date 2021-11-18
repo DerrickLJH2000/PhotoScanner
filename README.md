@@ -11,7 +11,8 @@ Automatic Edge Detection help will crop the image for user convenience, however,
 
 * Load Image from Gallery
 * Camera Tools e.g. (Flash, Grid lines)
-* Automatic Edge Detection Cropping
+* Automatic Edge Detection and Manual Cropping
+* Automatic Edge Detection for Multiple Objects
 * Google Filters API
 * Zooming of image with Chris Banes' PhotoView dependency
 ```
