@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">DigitalizedPhotoBook</string>
+    <string name="app_name">PhotoScanner</string>
 
     <string-array name="mode">
         <item>Manual Crop</item>

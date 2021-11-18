@@ -1,4 +1,4 @@
-package com.example.digitalizedphotobook;
+package com.example.photoscanner;
 
 import org.junit.Test;
 

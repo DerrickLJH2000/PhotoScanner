@@ -1,6 +1,5 @@
-package com.example.digitalizedphotobook.adapters;
+package com.example.photoscanner.adapters;
 
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Vibrator;
@@ -9,10 +8,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.Toast;
 
-import com.example.digitalizedphotobook.ImageFullScreen;
-import com.example.digitalizedphotobook.R;
+import com.example.photoscanner.R;
 
 import java.io.File;
 import java.util.ArrayList;

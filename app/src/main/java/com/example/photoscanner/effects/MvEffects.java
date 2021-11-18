@@ -1,7 +1,6 @@
-package com.example.digitalizedphotobook.effects;
+package com.example.photoscanner.effects;
 
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.media.effect.Effect;
 import android.media.effect.EffectContext;
 import android.media.effect.EffectFactory;

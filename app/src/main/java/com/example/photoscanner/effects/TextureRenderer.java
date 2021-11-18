@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.example.digitalizedphotobook.effects;
+package com.example.photoscanner.effects;
 
 import android.graphics.Bitmap;
 import android.opengl.GLES20;

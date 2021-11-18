@@ -1,8 +1,8 @@
-package com.example.digitalizedphotobook.classes;
+package com.example.photoscanner.classes;
 
 import android.graphics.Bitmap;
 
-import com.example.digitalizedphotobook.MathUtils;
+import com.example.photoscanner.MathUtils;
 
 import org.opencv.android.Utils;
 import org.opencv.core.Core;

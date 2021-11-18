@@ -1,4 +1,4 @@
-package com.example.digitalizedphotobook.effects;
+package com.example.photoscanner.effects;
 
 import android.opengl.EGL14;
 import android.opengl.EGLConfig;

@@ -1,4 +1,4 @@
-package com.example.digitalizedphotobook;
+package com.example.photoscanner;
 
 import android.Manifest;
 import android.content.DialogInterface;
@@ -6,7 +6,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import androidx.appcompat.app.AlertDialog;
@@ -15,32 +15,21 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.PermissionChecker;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.graphics.Bitmap;
-import android.graphics.Matrix;
-import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import android.util.Log;
-import android.view.Gravity;
+
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.digitalizedphotobook.adapters.SavedPhotoAdapter;
+import com.example.photoscanner.adapters.SavedPhotoAdapter;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileFilter;
-import java.io.FileOutputStream;
 import java.io.FilenameFilter;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
-import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
     private static String TAG = "Magnifier";

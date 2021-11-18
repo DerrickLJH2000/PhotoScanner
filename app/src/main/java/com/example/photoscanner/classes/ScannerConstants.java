@@ -1,4 +1,4 @@
-package com.example.digitalizedphotobook.classes;
+package com.example.photoscanner.classes;
 
 import android.graphics.Bitmap;
 

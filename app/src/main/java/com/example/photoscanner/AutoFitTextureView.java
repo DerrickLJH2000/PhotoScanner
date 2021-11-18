@@ -14,21 +14,12 @@
  * limitations under the License.
  */
 
-package com.example.digitalizedphotobook;
+package com.example.photoscanner;
 
 import android.content.Context;
-import android.content.res.Resources;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.PointF;
 import android.graphics.Rect;
 import android.util.AttributeSet;
-import android.util.DisplayMetrics;
 import android.view.TextureView;
-import android.view.View;
-
-import java.util.Map;
 
 /**
  * A {@link TextureView} that can be adjusted to a specified aspect ratio.

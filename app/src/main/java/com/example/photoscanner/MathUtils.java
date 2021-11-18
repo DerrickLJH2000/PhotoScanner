@@ -1,4 +1,4 @@
-package com.example.digitalizedphotobook;
+package com.example.photoscanner;
 
 import org.opencv.core.CvType;
 import org.opencv.core.MatOfPoint;

@@ -41,13 +41,13 @@
         android:layout_height="match_parent"
         android:layout_weight="1">
 
-        <com.example.digitalizedphotobook.AutoFitTextureView
+        <com.example.photoscanner.AutoFitTextureView
             android:id="@+id/tvScan"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center" />
 
-        <com.example.digitalizedphotobook.GridLineView
+        <com.example.photoscanner.GridLineView
             android:id="@+id/grid_line_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"

@@ -1,7 +1,6 @@
-package com.example.digitalizedphotobook.adapters;
+package com.example.photoscanner.adapters;
 
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Bitmap;
 
 import androidx.annotation.NonNull;
@@ -11,11 +10,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.example.digitalizedphotobook.R;
-import com.example.digitalizedphotobook.ResultActivity;
-import com.example.digitalizedphotobook.classes.Filter;
+import com.example.photoscanner.R;
+import com.example.photoscanner.classes.Filter;
 
 import java.util.ArrayList;
 

@@ -1,23 +1,15 @@
-package com.example.digitalizedphotobook;
+package com.example.photoscanner;
 
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.GestureDetectorCompat;
 
 import android.os.Bundle;
-import android.util.Log;
-import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
-import android.widget.Toast;
 
 import com.github.chrisbanes.photoview.PhotoView;
-
-import java.io.File;
 
 public class ImageFullScreen extends AppCompatActivity {
 
