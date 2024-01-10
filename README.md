@@ -24,3 +24,8 @@ implementation 'com.github.chrisbanes:PhotoView:2.3.0'
 
 OpenCV Library 3.4.3 :  
 https://sourceforge.net/projects/opencvlibrary/files/opencv-android/3.4.3/opencv-3.4.3-android-sdk.zip/download
+
+[product-screenshot1]: static/9.jpg
+[product-screenshot2]: static/7.jpg
+[product-screenshot3]: static/5.jpg
+[product-screenshot3]: static/4.jpg
